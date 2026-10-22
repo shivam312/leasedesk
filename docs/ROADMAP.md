@@ -16,7 +16,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 ## M1. Billing engine (weeks 3–4), before any screens
 
-- [ ] `money.ts` and `dates.ts` with tests (paise rounding, days in month, add months, financial year, quarters)
+- [x] `money.ts` and `dates.ts` with tests (paise rounding, days in month, add months, financial year, quarters)
 - [ ] Charge monthly amounts (fixed, per sq ft, per slot)
 - [ ] Rent-free periods and rent commencement
 - [ ] Escalations: compounding, non-compounding, custom

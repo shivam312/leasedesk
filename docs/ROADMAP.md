@@ -25,7 +25,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 - [x] Invoice lines for a lease and month, monthly and quarterly, advance and arrears
 - [x] GST split and round-off
 - [x] Expected TDS
-- [ ] All golden test cases in `docs/BILLING_RULES.md` passing
+- [x] All golden test cases in `docs/BILLING_RULES.md` passing
 - [ ] Review by the `billing-reviewer` agent
 
 ## M2. Data, auth and setup screens (week 5)
@@ -99,3 +99,4 @@ Found while building M1. The engine follows the most conservative reading noted 
 4. **Increases before a charge starts.** If a charge starts after the escalation anchor (e.g. a charge added mid-lease), the engine ignores increase dates on or before the charge's start, treats the entered amount as its starting amount, and counts non-compounding steps from the first increase it applies.
 5. **Pro-rating a quarterly charge.** Section 6 says "use actual days in the calendar month"; section 7 says a lease starting mid-quarter gets a pro-rated first bill but not how. The engine pro-rates over the actual days in the quarter: golden 10 gives ₹30,000 × 47 / 91 = ₹15,494.51. The alternative (₹10,000 a month, May pro-rated 17/31, plus June) gives ₹15,483.87. Confirm which the pilot landlord uses.
 6. **TDS rounding and the ₹1 tolerance [CA].** Section 10 doesn't say how expected TDS is rounded; the engine uses section 2 (nearest paisa). Many deductors round TDS to the rupee, which the ₹1 tolerance absorbs. The tolerance is applied inclusively (a shortfall exactly ₹1 off the expected TDS is still "paid with TDS"). Confirm both with the CA.
+7. **Where invoice numbering lives.** Golden case 13 needed a number formatter, so `invoiceNumber` is in `src/lib/billing/invoice-number.ts` (pure formatting and the 16-character check). `docs/ARCHITECTURE.md` puts numbering in `src/lib/invoices/`; move it there in M4 when sequence assignment is built.

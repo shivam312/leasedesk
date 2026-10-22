@@ -170,6 +170,42 @@ describe("quarterly", () => {
   });
 });
 
+describe("quarterly in arrears, lease ending mid-quarter", () => {
+  const ending: LeaseInput = {
+    id: "L-11",
+    startDate: "2024-11-21",
+    endDate: "2026-11-20",
+    charges: [
+      {
+        ...rent,
+        id: "cam",
+        type: "cam",
+        amountPaise: 3_000_000, // ₹30,000 per quarter
+        startDate: "2024-11-21",
+        frequency: "quarterly",
+        timing: "arrears",
+      },
+    ],
+  };
+
+  it("bills the final part quarter in the first run after the lease ends", () => {
+    // Oct full: 30,000 ÷ 3 = 10,000.00
+    // 1–20 Nov: 30,000 × 20 / (3 × 30) = 6,666.67 → total ₹16,666.67
+    // Lease ends 20 Nov → December run, not January (after the quarter)
+    expect(invoiceForRun(ending, "2026-11", settings)).toBeNull();
+    expect(lines(invoiceForRun(ending, "2026-12", settings))).toEqual([
+      ["Maintenance (CAM) 01-10-2026 to 20-11-2026", 1_666_667],
+    ]);
+    expect(invoiceForRun(ending, "2027-01", settings)).toBeNull();
+  });
+
+  it("still bills earlier quarters in the month after they end", () => {
+    expect(lines(invoiceForRun(ending, "2026-10", settings))).toEqual([
+      ["Maintenance (CAM) for Jul–Sep 2026", 3_000_000],
+    ]);
+  });
+});
+
 describe("settings", () => {
   it("needs whole due days", () => {
     expect(() =>

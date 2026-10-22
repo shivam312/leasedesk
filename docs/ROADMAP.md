@@ -93,3 +93,5 @@ Online payment links, tenant portal, full Tally / Zoho Books sync, metered utili
 ## Open questions
 
 Found while building M1. The engine follows the most conservative reading noted here until the rule in `docs/BILLING_RULES.md` is confirmed or changed.
+
+1. **Quarterly arrears charge ending before the lease.** Section 7 brings an arrears charge's final bill forward to the run after the *lease* ends. When a quarterly arrears charge ends mid-quarter on its own (e.g. parking given up while the lease continues), the engine still bills it in the run after the quarter ends. Confirm with the pilot whether it should also be billed in the run after the charge ends.

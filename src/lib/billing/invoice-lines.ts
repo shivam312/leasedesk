@@ -1,4 +1,10 @@
-import { addDays, addMonthsToMonth, monthOf, startOfMonth } from "./dates";
+import {
+  addDays,
+  addMonthsToMonth,
+  minDate,
+  monthOf,
+  startOfMonth,
+} from "./dates";
 import type { PlainDate, YearMonth } from "./dates";
 import { formatDate, formatMonth } from "@/lib/format";
 import type { BasisPoints, Paise } from "./money";
@@ -34,7 +40,8 @@ const NOUNS: Record<ChargeType, string> = {
  * - In advance (default): a period is billed in the run of the month its
  *   billable days start (the period's first month, or later if the charge
  *   starts mid-period).
- * - In arrears: a period is billed in the run after the period ends.
+ * - In arrears: a period is billed in the run after the period ends, or the
+ *   run after the lease ends if that is sooner (a lease ending mid-quarter).
  * - A period split by a rent increase gives one line per part.
  */
 export function invoiceForRun(
@@ -49,7 +56,7 @@ export function invoiceForRun(
   }
   const lines = lease.charges.flatMap((charge) =>
     chargePeriods(charge, lease, settings)
-      .filter((p) => billingRun(charge, p) === runMonth)
+      .filter((p) => billingRun(charge, p, lease) === runMonth)
       .flatMap((p) => linesFor(charge, p)),
   );
   if (lines.length === 0) return null;
@@ -61,9 +68,14 @@ export function invoiceForRun(
   };
 }
 
-function billingRun(charge: Charge, p: ChargePeriod): YearMonth {
+function billingRun(
+  charge: Charge,
+  p: ChargePeriod,
+  lease: LeaseInput,
+): YearMonth {
   if ((charge.timing ?? "advance") === "arrears") {
-    return addMonthsToMonth(monthOf(p.period.end), 1);
+    const last = minDate(p.period.end, lease.endDate);
+    return addMonthsToMonth(monthOf(last), 1);
   }
   const first = p.segments[0];
   if (!first) throw new Error(`Charge ${charge.id} has an empty period`);

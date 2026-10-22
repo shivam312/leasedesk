@@ -69,7 +69,7 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 
 - Monthly charges are billed per calendar month.
 - Quarterly charges are billed for April–June, July–September, October–December, January–March. A part quarter (a charge starting or ending mid-quarter, or a quarter split by an increase) is billed month by month: monthly equivalent = quarterly amount ÷ 3; full months at that amount; part months by actual days in that month. Each month is rounded to the paisa once: quarterly × days ÷ (3 × days in month). **[Pilot]**
-- `advance`: the invoice for a period is generated in that period's monthly run (dated the 1st). `arrears`: in the run after the period ends.
+- `advance`: the invoice for a period is generated in that period's monthly run (dated the 1st). `arrears`: in the run after the period ends. When the lease ends mid-period, an arrears charge's final bill is in the first monthly run after the lease ends (lease ends 20 Nov → the December run, not January for an Oct–Dec quarter).
 - Invoice due date = invoice date + `dueDays` (building setting, default 7).
 
 ## 8. GST **[CA]**

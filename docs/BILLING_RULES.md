@@ -48,6 +48,7 @@ An escalation rule: `percentBp`, `everyMonths`, `anchor` (`lease_start`, `rent_c
 - Compounding: new amount = previous amount × (10000 + percentBp) / 10000, rounded per section 2.
 - Non-compounding: new amount = base amount × (10000 + k × percentBp) / 10000.
 - Custom escalations: a list of `{ effectiveDate, newAmount }` or `{ effectiveDate, percentBp }`. These override the rule from their date: from a charge's first custom entry, the rule's later increases stop for good and only custom entries apply. A custom percentage applies to the amount just before it; a custom new amount is used exactly as entered (not rounded).
+- Increases dated on or before a charge's start date are ignored (e.g. a charge added mid-lease): the entered amount is its starting amount, and non-compounding steps count from the first increase that applies.
 - An escalation effective mid-month splits that month into two segments (section 6).
 
 Example: ₹1,00,000/month, 5% every 12 months, compounding, from 1 Apr 2026. Year 2 = ₹1,05,000, year 3 = ₹1,10,250, year 4 = ₹1,15,763 (₹1,15,762.50 rounded to the rupee).

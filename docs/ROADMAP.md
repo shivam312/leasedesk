@@ -26,7 +26,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 - [x] GST split and round-off
 - [x] Expected TDS
 - [x] All golden test cases in `docs/BILLING_RULES.md` passing
-- [ ] Review by the `billing-reviewer` agent
+- [x] Review by the `billing-reviewer` agent
 
 ## M2. Data, auth and setup screens (week 5)
 

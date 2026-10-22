@@ -45,13 +45,23 @@ export function NavLinks({
                 variant === "sidebar" && active && "bg-accent text-foreground",
                 variant === "bottom" &&
                   "flex h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-muted-foreground",
-                variant === "bottom" && active && "text-foreground",
+                variant === "bottom" &&
+                  active &&
+                  "font-semibold text-foreground",
               )}
             >
-              <Icon
-                aria-hidden
-                className={cn("size-5", active && "stroke-[2.5]")}
-              />
+              <span
+                className={cn(
+                  "flex items-center justify-center",
+                  variant === "bottom" && "h-7 w-12 rounded-full",
+                  variant === "bottom" && active && "bg-accent",
+                )}
+              >
+                <Icon
+                  aria-hidden
+                  className={cn("size-5", active && "stroke-[2.5]")}
+                />
+              </span>
               {label}
             </Link>
           </li>

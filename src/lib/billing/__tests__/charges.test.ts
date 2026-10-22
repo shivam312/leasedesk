@@ -79,16 +79,41 @@ describe("chargeBaseAmount", () => {
     expect(explanation.steps).toEqual(["Fixed amount: ₹30,000 per quarter"]);
   });
 
-  it("refuses quarterly per sq ft or per slot (not defined in the rules)", () => {
+  it("quarterly per sq ft: the monthly amount × 3", () => {
     const charge: Charge = {
       ...base,
       type: "cam",
       basis: "per_sqft",
-      ratePaise: 1000,
-      areaHundredths: 100_000,
+      ratePaise: 1225,
+      areaHundredths: 125_050,
       frequency: "quarterly",
     };
-    expect(() => chargeBaseAmount(charge)).toThrow(/quarterly/);
+    // 1,250.50 sq ft × ₹12.25 = ₹15,318.625 → ₹15,318.63 a month
+    // ₹15,318.63 × 3 = ₹45,955.89 a quarter
+    const { amount, explanation } = chargeBaseAmount(charge);
+    expect(amount).toBe(4_595_589);
+    expect(explanation.steps).toEqual([
+      "1,250.50 sq ft × ₹12.25 = ₹15,318.63 per month",
+      "₹15,318.63 × 3 months = ₹45,955.89 per quarter",
+    ]);
+  });
+
+  it("quarterly per slot: the monthly amount × 3", () => {
+    const charge: Charge = {
+      ...base,
+      type: "parking",
+      basis: "per_slot",
+      ratePaise: 250_000,
+      slots: 4,
+      frequency: "quarterly",
+    };
+    // 4 slots × ₹2,500 = ₹10,000 a month; × 3 = ₹30,000 a quarter
+    const { amount, explanation } = chargeBaseAmount(charge);
+    expect(amount).toBe(3_000_000);
+    expect(explanation.steps).toEqual([
+      "4 slots × ₹2,500 = ₹10,000 per month",
+      "₹10,000 × 3 months = ₹30,000 per quarter",
+    ]);
   });
 
   it("rejects negative amounts, zero area and fractional slots", () => {

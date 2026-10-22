@@ -33,6 +33,8 @@ A lease has one or more charges. Each charge has:
 
 Monthly amount for `per_sqft` = round(rate × area / 100). Example: ₹85.50 × 1,250.50 sq ft = ₹1,06,917.75.
 
+Quarterly charges: a `fixed` amount is per quarter. For `per_sqft` and `per_slot`, quarterly amount = monthly amount × 3 (the monthly amount is rounded first). Example: 1,250.50 sq ft × ₹12.25 = ₹15,318.63 a month → ₹45,955.89 a quarter.
+
 ## 4. Rent-free and fit-out periods
 
 - `rentFreeMonths` (or `rentFreeDays`) starts on the lease start date.

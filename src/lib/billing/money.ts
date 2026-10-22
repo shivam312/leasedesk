@@ -52,6 +52,14 @@ export function percentOf(amount: Paise, bp: BasisPoints): Paise {
   return mulDiv(amount, bp, BP_DENOMINATOR);
 }
 
+/**
+ * `bp` basis points of `amount`, rounded once straight to the nearest rupee
+ * (half up). 10% of ₹49,994.95 = ₹4,999.495 → ₹4,999.
+ */
+export function percentOfToRupee(amount: Paise, bp: BasisPoints): Paise {
+  return mulDiv(amount, bp, BP_DENOMINATOR * 100) * 100;
+}
+
 /** `amount` × (10000 + bp) / 10000, rounded to the paisa. */
 export function increaseByPercent(amount: Paise, bp: BasisPoints): Paise {
   return mulDiv(amount, BP_DENOMINATOR + bp, BP_DENOMINATOR);

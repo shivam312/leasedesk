@@ -1,16 +1,17 @@
 import { financialYear, fyQuarter } from "./dates";
 import type { PlainDate } from "./dates";
 import { percent, rupees } from "./explain";
-import { percentOf } from "./money";
+import { percentOfToRupee } from "./money";
 import type { BasisPoints, Paise } from "./money";
 import type { Explained } from "./types";
 
-/** ₹1 tolerance per invoice (docs/BILLING_RULES.md, section 10). */
+/** ₹1 tolerance per invoice, inclusive (docs/BILLING_RULES.md, section 10). */
 const TDS_TOLERANCE_PAISE = 100;
 
 /**
  * Expected TDS on an invoice: the tenant's rate on the taxable value only,
- * GST excluded (section 10) [CA]. Rate is a tenant setting, never a constant.
+ * GST excluded, rounded to the nearest rupee (section 10) [CA]. Rate is a
+ * tenant setting, never a constant.
  */
 export function expectedTds({
   taxablePaise,
@@ -36,13 +37,13 @@ export function expectedTds({
       },
     };
   }
-  const amount = percentOf(taxablePaise, tdsRateBp);
+  const amount = percentOfToRupee(taxablePaise, tdsRateBp);
   return {
     amount,
     explanation: {
       rule: "TDS on taxable value",
       steps: [
-        `TDS ${percent(tdsRateBp)} of taxable value ${rupees(taxablePaise)} (GST excluded) = ${rupees(amount)}`,
+        `TDS ${percent(tdsRateBp)} of taxable value ${rupees(taxablePaise)} (GST excluded), to the nearest rupee = ${rupees(amount)}`,
       ],
       result: amount,
     },

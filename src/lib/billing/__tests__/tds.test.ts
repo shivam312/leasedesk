@@ -11,19 +11,44 @@ describe("expectedTds", () => {
     });
     expect(tds.amount).toBe(1_000_000);
     expect(tds.explanation.steps).toEqual([
-      "TDS 10% of taxable value ₹1,00,000 (GST excluded) = ₹10,000",
+      "TDS 10% of taxable value ₹1,00,000 (GST excluded), to the nearest rupee = ₹10,000",
     ]);
   });
 
-  it("rounds to the paisa", () => {
-    // 2% of ₹1,06,917.75 = ₹2,138.355 → ₹2,138.36
+  it("rounds to the nearest rupee", () => {
+    // 2% of ₹1,06,917.75 = ₹2,138.355 → ₹2,138
+    const tds = expectedTds({
+      taxablePaise: 10_691_775,
+      tdsRateBp: 200,
+      deductsTds: true,
+    });
+    expect(tds.amount).toBe(213_800);
+    expect(tds.explanation.steps).toEqual([
+      "TDS 2% of taxable value ₹1,06,917.75 (GST excluded), to the nearest rupee = ₹2,138",
+    ]);
+  });
+
+  it("rounds half a rupee up", () => {
+    // 10% of ₹1,05,005 = ₹10,500.50 → ₹10,501
     expect(
       expectedTds({
-        taxablePaise: 10_691_775,
-        tdsRateBp: 200,
+        taxablePaise: 10_500_500,
+        tdsRateBp: 1000,
         deductsTds: true,
       }).amount,
-    ).toBe(213_836);
+    ).toBe(1_050_100);
+  });
+
+  it("rounds once, straight to the rupee (not to the paisa first)", () => {
+    // 10% of ₹49,994.95 = ₹4,999.495 → ₹4,999
+    // (rounding to the paisa first would give ₹4,999.50 → ₹5,000)
+    expect(
+      expectedTds({
+        taxablePaise: 4_999_495,
+        tdsRateBp: 1000,
+        deductsTds: true,
+      }).amount,
+    ).toBe(499_900);
   });
 
   it("is zero when the tenant doesn't deduct TDS", () => {
@@ -62,6 +87,17 @@ describe("settlePayment", () => {
     expect(
       settlePayment({ ...invoice, receivedPaise: 10_800_100 }),
     ).toMatchObject({ status: "paid_with_tds", tdsDeductedPaise: 999_900 });
+  });
+
+  it("includes exactly ₹1 over the expected TDS, but not ₹1.01 [CA]", () => {
+    // short by ₹10,001.00 = TDS + ₹1.00 → paid with TDS (tolerance inclusive)
+    expect(
+      settlePayment({ ...invoice, receivedPaise: 10_799_900 }),
+    ).toMatchObject({ status: "paid_with_tds", tdsDeductedPaise: 1_000_100 });
+    // short by ₹10,001.01 = TDS + ₹1.01 → part-paid
+    expect(
+      settlePayment({ ...invoice, receivedPaise: 10_799_899 }),
+    ).toMatchObject({ status: "part_paid" });
   });
 
   it("is part-paid when the shortfall isn't the TDS", () => {

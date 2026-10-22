@@ -93,5 +93,3 @@ Online payment links, tenant portal, full Tally / Zoho Books sync, metered utili
 ## Open questions
 
 Found while building M1. The engine follows the most conservative reading noted here until the rule in `docs/BILLING_RULES.md` is confirmed or changed.
-
-1. **TDS rounding and the ₹1 tolerance [CA].** Section 10 doesn't say how expected TDS is rounded; the engine uses section 2 (nearest paisa). Many deductors round TDS to the rupee, which the ₹1 tolerance absorbs. The tolerance is applied inclusively (a shortfall exactly ₹1 off the expected TDS is still "paid with TDS"). Confirm both with the CA.

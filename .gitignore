@@ -13,6 +13,8 @@ supabase/.temp/
 *.log
 .DS_Store
 CLAUDE.local.md
+.pipeline/
+.local-outbox/
 .claude/settings.local.json
 
 # Next.js / TypeScript

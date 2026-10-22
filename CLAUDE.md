@@ -15,6 +15,12 @@ Read the relevant doc before starting work on an area. Do not load them all at o
 - `docs/BILLING_RULES.md`: exact rules for rent, escalation, pro-rata, GST, TDS, rounding, numbering
 - `docs/UX_PRINCIPLES.md`: the simplicity rules and the words we use in the UI
 - `docs/DECISIONS.md`: decisions already made, and why. Add a new entry when you make one.
+- `docs/AUTONOMY.md`: the decision policy for working without the founder, and how to add a setting
+- `docs/SETTINGS.md`: every setting, its default and where it lives in code
+- `docs/DECISIONS_NEEDED.md`: the founder's inbox: open questions, CA checks and human tasks
+- `docs/BACKLOG.md`: review findings left for later
+- `docs/milestones/`: a plain-language report per finished milestone
+- `PIPELINE.md`: how the autonomous build pipeline (`scripts/pipeline.mjs`) runs
 
 ## Stack (fixed; do not swap without asking)
 
@@ -49,14 +55,15 @@ Not set up yet (M0 Supabase/Drizzle task):
 7. **Every change is logged** in `activity_log` (who, what, before, after). This is done in the data layer, not in screens.
 8. **Indian formats in the UI:** ₹ with lakh/crore grouping (₹12,34,567), DD-MM-YYYY, April–March financial year. Use `src/lib/format.ts`.
 9. **Simplicity rules apply to every screen.** Use the `build-screen` skill for any UI work.
-10. **Tax rules are not guesses.** If a GST or TDS behaviour isn't in `docs/BILLING_RULES.md`, stop and ask rather than inventing it. Flag anything that should be confirmed with a CA.
+10. **Tax rules are not guesses.** If a GST or TDS behaviour isn't in `docs/BILLING_RULES.md`, implement the most conservative reading, write it into `docs/BILLING_RULES.md` marked **[CA]**, and log a `ca` entry in `docs/DECISIONS_NEEDED.md` rather than stopping.
+11. **Settings over questions.** When landlords could reasonably want different behaviour, build it as a setting with a safe default (`docs/AUTONOMY.md`, `docs/SETTINGS.md`). Never stop to ask; log real decisions in `docs/DECISIONS_NEEDED.md` and keep going.
 
 ## How to work
 
 - Start each session by reading `docs/ROADMAP.md` and saying which task you'll do.
-- For anything more than a small fix, propose a short plan (files to touch, tests to add) and wait for approval.
+- For anything more than a small fix: in interactive sessions, propose a short plan (files to touch, tests to add) and wait for approval; in pipeline runs, don't wait, and put a one-line plan in each commit message.
 - Keep changes small: one task, one commit. Commit messages: `area: what changed` (e.g. `billing: pro-rata for mid-month escalation`).
-- Ask before adding any new dependency.
+- Only install packages listed in `.claude/approved-packages.txt`; anything else becomes a `package` entry in `docs/DECISIONS_NEEDED.md`. Don't edit that list, `.claude/settings.json`, `.claude/hooks/` or `scripts/pipeline.mjs`.
 - When you finish a task: run `/ship-check`, tick it off in `docs/ROADMAP.md`, and update any doc whose facts changed.
 - Never commit secrets. Environment variables are listed in `.env.example`; real values live in `.env.local`, which you must not read.
 - If a request conflicts with these rules or the docs, say so before acting.

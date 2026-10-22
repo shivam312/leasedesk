@@ -9,3 +9,6 @@ src/components/ui
 docs
 .claude
 *.md
+
+# Founder-owned; Claude must not edit it (docs/AUTONOMY.md)
+scripts/pipeline.mjs

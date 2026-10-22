@@ -1,0 +1,90 @@
+# The build pipeline
+
+`scripts/pipeline.mjs` builds the roadmap milestone after milestone without you. Each stage runs in a fresh Claude Code session (so it never runs out of context), the script itself checks the results, and anything that needs you goes into one inbox: `docs/DECISIONS_NEEDED.md`.
+
+## What happens for each milestone
+
+1. **Answers:** if you've answered any decisions, they're applied first.
+2. **Build:** Claude works through the milestone's tasks, one commit per task. If it runs out of turns, the script starts another build round (up to 3).
+3. **Checks:** the script itself runs `pnpm typecheck`, `lint`, `test`, `build` and the end-to-end tests. If any fail, a fix stage gets the error output; this repeats up to 3 times.
+4. **Review:** the billing and UX reviewer agents check the milestone's changes. "Must fix" items get fixed, small "Should fix" items too, and the rest go to `docs/BACKLOG.md`. Open questions are turned into settings or decisions.
+5. **Checks again.**
+6. **Wrap-up:** docs updated, a plain-language report written to `docs/milestones/M#.md`, and the milestone tagged in git (`m2-done`, `m3-done`, …).
+7. On to the next milestone.
+
+Tasks that need a person are tagged `(human)` and skipped. Tasks waiting for a decision are tagged `(blocked: D-012)` and skipped until you answer. Everything else keeps going.
+
+## Start it
+
+In a normal terminal (not inside Claude Code), from the project folder:
+
+```
+node scripts/pipeline.mjs
+```
+
+Keep your computer awake while it runs:
+
+- **macOS:** `caffeinate -i node scripts/pipeline.mjs`
+- **Windows:** set Sleep to "Never" while plugged in (Settings → System → Power)
+
+Useful options:
+
+| Command | What it does |
+| --- | --- |
+| `node scripts/pipeline.mjs --to M4` | Stop after M4 |
+| `node scripts/pipeline.mjs --from M3 --to M3` | Run only M3 |
+| `node scripts/pipeline.mjs --dry-run` | Show what would run, without running anything |
+| `node scripts/pipeline.mjs --fix-model sonnet` | Use a faster model for fix, review and wrap-up stages (build stays on your default) |
+| `node scripts/pipeline.mjs --skip-e2e` | Skip end-to-end tests in the checks (faster, less thorough) |
+
+## Check on it
+
+- **`.pipeline/status.md`**: a running log of every stage, how long it took, and a one-line summary
+- **`docs/milestones/`**: one plain-language report per finished milestone
+- **`git log --oneline`**: every task is its own commit
+- **`.pipeline/logs/`**: the full output of every stage, if something went wrong
+
+## Answer decisions
+
+Open `docs/DECISIONS_NEEDED.md`. Each entry has options and a recommendation. Write your answer on the `Answer:` line (a letter is enough), change `Status: open` to `Status: answered`, and save. You can do this while the pipeline is running; it picks answers up between milestones.
+
+The summary table at the top shows what's waiting. Most entries aren't blocking: Claude has already built the recommended option (often as a setting), so your answer only confirms or changes it.
+
+## Stop it
+
+Create an empty file called `STOP` in the `.pipeline` folder:
+
+- **macOS/Linux:** `touch .pipeline/STOP`
+- **Windows:** `type nul > .pipeline\STOP`
+
+It stops after the current stage finishes. Pressing Ctrl+C also works but may leave a half-finished stage; the next run carries on from the last commit.
+
+Run `node scripts/pipeline.mjs` again to continue where it left off.
+
+## Why it might stop on its own
+
+| Message | What to do |
+| --- | --- |
+| Needs the local database | Install and start Docker Desktop, install the Supabase CLI, then run again |
+| Unfinished tasks after 3 build rounds | Read the latest build log in `.pipeline/logs/`; usually a task was too big or stuck. Run again, or split the task in the roadmap |
+| Checks still failing after 3 fix attempts | Look at the last fix log. Open Claude Code and ask it to fix the failing check, then run again |
+| Usage limit | It waits and retries on its own (every 30 minutes, up to 6 hours). On the Pro plan you'll hit limits often; Max helps |
+
+## How long it takes
+
+Each stage takes roughly 10–20 minutes, so a milestone usually takes 1–3 hours, more if it waits for usage limits. M2–M7 overnight is realistic on a Max plan.
+
+## Ground rules while it runs
+
+- Don't edit code in the project folder at the same time. Editing `docs/DECISIONS_NEEDED.md` is fine.
+- Run only one pipeline at a time.
+- The pipeline commits but never pushes. Push to GitHub yourself when you're happy.
+
+## Guardrails
+
+- Claude can only install packages listed in `.claude/approved-packages.txt`. Anything else becomes a `package` decision for you. To approve one, add its name to that file.
+- Claude can't edit the settings, the package list, the hooks, or this script.
+- Pushing, deploying, and touching remote databases need you.
+- Tests can't be weakened to make checks pass, and the golden billing tests can't be changed.
+
+These are guardrails, not a security boundary. Glance at the commits now and then.

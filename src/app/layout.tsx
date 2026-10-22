@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { brand } from "@/lib/config/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "LeaseDesk", template: "%s · LeaseDesk" },
-  description: "Leases, rent invoices and payments for Indian landlords",
+  title: { default: brand.name, template: `%s · ${brand.name}` },
+  description: brand.description,
 };
 
 // viewportFit "cover" lets the bottom tab bar pad for the iPhone home indicator.

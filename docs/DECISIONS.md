@@ -55,4 +55,14 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 ## D10. TDS is set per charge type on the tenant (2026-10-22)
 
 **Why:** Tenants often deduct TDS on rent but treat CAM or parking differently (another rate, or none). One rate per tenant would mark correct short payments as "part-paid".
-**Consequences:** A tenant has a TDS on/off and rate for each of rent, CAM, parking and other. The defaults match the old single setting (10%, on for companies). Expected TDS is summed over the types and rounded once to the rupee. Which rates actually apply to CAM and parking is a [CA] open question.
+**Consequences:** A tenant has a TDS on/off and rate for each of rent, CAM, parking and other. The defaults match the old single setting (10%, on for companies). Expected TDS is summed over the types and rounded once to the rupee. Which rates actually apply to CAM and parking is a [CA] question (D-003 in `docs/DECISIONS_NEEDED.md`).
+
+## D11. Autonomous build pipeline; settings over questions (2026-10-23)
+
+**Why:** The founder can't watch every session. `scripts/pipeline.mjs` builds the roadmap milestone by milestone in fresh Claude Code sessions, and questions collect in one inbox instead of stopping work.
+**Consequences:**
+- When landlords could reasonably want different behaviour, it's built as a setting with a safe default (`docs/AUTONOMY.md`, `docs/SETTINGS.md`), stored as `settings` jsonb on organizations, billing entities, buildings, tenants and leases, and resolved lease → tenant → building → organization → default.
+- Tax rules not covered by `docs/BILLING_RULES.md` are built to the most conservative reading and logged as `ca` entries in `docs/DECISIONS_NEEDED.md`, rather than stopping. They still need a CA's sign-off before the first paying customer.
+- Only packages in `.claude/approved-packages.txt` are installed; a hook blocks the rest. Claude doesn't edit that list, the hook, `.claude/settings.json` or the pipeline script.
+- Interactive sessions still propose a plan and wait for approval; pipeline runs put a one-line plan in each commit message.
+- The Open questions section of `docs/ROADMAP.md` stays empty; questions go to `docs/DECISIONS_NEEDED.md`.

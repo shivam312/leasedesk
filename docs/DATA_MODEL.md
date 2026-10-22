@@ -2,17 +2,19 @@
 
 Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `created_at`, `updated_at`, and row-level security restricting rows to members of the organization. Money columns are `bigint` paise, percentages are `integer` basis points, areas are `integer` hundredths of a sq ft, dates are `date`. Statuses are Postgres enums.
 
+**Settings columns:** `organizations`, `billing_entities`, `buildings`, `tenants` and `leases` each have `settings` (jsonb, default `{}`). Keys and defaults are in `docs/SETTINGS.md`; only values that differ from the default are stored. They're validated by `src/lib/settings/schema.ts` and read only through `src/lib/settings/resolve.ts` (lease → tenant → building → organization → default; billing-entity keys apply to that entity's invoice series).
+
 ## Organization and people
 
-**organizations**: name, legal_name, pan, logo_path, settings (jsonb: roundEscalatedRentToRupee, roundInvoiceTotal, defaultDueDays).
+**organizations**: name, legal_name, pan, logo_path, settings (jsonb).
 
 **memberships**: user_id (Supabase auth user), role (`owner`, `accounts`, `property_manager`, `viewer`), invited_by, status (`invited`, `active`, `removed`).
 
-**billing_entities**: the GSTIN an invoice is issued from. legal_name, gstin, state_code, address, bank_account_name, bank_account_number, ifsc, upi_id.
+**billing_entities**: the GSTIN an invoice is issued from. legal_name, gstin, state_code, address, bank_account_name, bank_account_number, ifsc, upi_id, settings (jsonb).
 
 ## Property
 
-**buildings**: name, address, city, state_code, billing_entity_id, invoice_prefix, credit_note_prefix, default_gst_rate_bp, default_sac_code, default_due_days.
+**buildings**: name, address, city, state_code, billing_entity_id, invoice_prefix, credit_note_prefix, default_gst_rate_bp, default_sac_code, default_due_days, settings (jsonb).
 
 **floors**: building_id, label, sort_order. Optional; small buildings can skip floors.
 
@@ -20,11 +22,11 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 ## Tenants and leases
 
-**tenants**: company_name, gstin (nullable), pan, billing_address, state_code, TDS per charge type (`docs/BILLING_RULES.md` section 10): deducts_tds_rent, tds_rate_bp_rent, deducts_tds_cam, tds_rate_bp_cam, deducts_tds_parking, tds_rate_bp_parking, deducts_tds_other, tds_rate_bp_other (utilities, signage, other), notes.
+**tenants**: company_name, gstin (nullable), pan, billing_address, state_code, TDS per charge type (`docs/BILLING_RULES.md` section 10): deducts_tds_rent, tds_rate_bp_rent, deducts_tds_cam, tds_rate_bp_cam, deducts_tds_parking, tds_rate_bp_parking, deducts_tds_other, tds_rate_bp_other (utilities, signage, other), settings (jsonb), notes.
 
 **tenant_contacts**: tenant_id, name, role (`billing`, `admin`, `legal`, `other`), email, phone, whatsapp (bool), is_primary.
 
-**leases**: tenant_id, building_id, status (`draft`, `active`, `in_notice`, `expired`, `terminated`), start_date, end_date, lock_in_end_date, notice_period_months, rent_free_months, rent_free_days, rent_commencement_date (derived, stored), area_basis (`carpet`, `chargeable`), deposit_amount, version (int), replaces_lease_id (for renewals and amendments), signed_document_id.
+**leases**: tenant_id, building_id, status (`draft`, `active`, `in_notice`, `expired`, `terminated`), start_date, end_date, lock_in_end_date, notice_period_months, rent_free_months, rent_free_days, rent_commencement_date (derived, stored), area_basis (`carpet`, `chargeable`), deposit_amount, version (int), replaces_lease_id (for renewals and amendments), signed_document_id, settings (jsonb).
 
 **lease_units**: lease_id, unit_id, area (hundredths sq ft, copied at signing so later unit edits don't change billing).
 

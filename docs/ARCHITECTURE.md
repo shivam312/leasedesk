@@ -56,6 +56,10 @@ src/
       index.ts               Drizzle client
       scoped.ts              org-scoped query helpers
       activity-log.ts        audit logging helper
+    config/
+      brand.ts               product name, the only place it's written (D-006)
+    settings/                setting keys and defaults (schema.ts), resolution (resolve.ts); docs/SETTINGS.md
+    email/                   email adapter: console driver (.local-outbox/) without RESEND_API_KEY, resend driver
     invoices/                numbering, PDF templates, sending
     payments/                allocation, bank statement parsing and matching
     imports/                 Excel import for buildings, units, tenants, leases

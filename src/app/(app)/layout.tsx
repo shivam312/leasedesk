@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { brand } from "@/lib/config/brand";
 import { AppNav, NavLinks } from "@/components/shell/AppNav";
 import {
   SettingsLink,
@@ -19,7 +20,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       </a>
       <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col gap-6 border-r bg-background px-3 py-4 md:flex">
         <Link href="/today" className="px-3 text-lg font-semibold">
-          LeaseDesk
+          {brand.name}
         </Link>
         <nav aria-label="Main">
           <Suspense fallback={<NavLinks variant="sidebar" pathname={null} />}>
@@ -31,7 +32,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:justify-end md:px-8">
           <Link href="/today" className="text-lg font-semibold md:hidden">
-            LeaseDesk
+            {brand.name}
           </Link>
           <Suspense fallback={<SettingsLinkView active={false} />}>
             <SettingsLink />

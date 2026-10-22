@@ -6,9 +6,10 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 
 | Layer | Choice | Notes |
 | --- | --- | --- |
-| Framework | Next.js, App Router, TypeScript strict | Server components by default; client components only for interactivity |
+| Runtime | Node.js 24 LTS | Pinned in `.nvmrc` |
+| Framework | Next.js 16, App Router, TypeScript strict | Server components by default; client components only for interactivity. `cacheComponents` is on (see D8) |
 | Package manager | pnpm | |
-| UI | Tailwind CSS + shadcn/ui | Components copied into `src/components/ui` |
+| UI | Tailwind CSS 4 + shadcn/ui (Radix) | Components copied into `src/components/ui`; icons from lucide-react |
 | Database | Supabase Postgres, Mumbai region | Row-level security on every table |
 | ORM | Drizzle + drizzle-kit | Schema in TypeScript, SQL migrations in `drizzle/` |
 | Auth | Supabase Auth | Email + password, Google login, invites |
@@ -18,7 +19,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 | PDF | @react-pdf/renderer | Invoice and report PDFs |
 | Email | Resend | Invoices and reminders, delivery status stored |
 | Excel | SheetJS | Import templates, report exports, bank statements |
-| Tests | Vitest (unit), Playwright (end-to-end) | |
+| Tests | Vitest (unit), Playwright (end-to-end) | Unit tests sit next to code in `__tests__/`. Playwright runs at 375px and 1280px against a production build |
 | Hosting | Vercel + Supabase | Daily database backups |
 | Monitoring | Sentry | Added in Milestone 8 |
 
@@ -37,6 +38,7 @@ src/
       settings/              organization, buildings defaults, users
   components/
     ui/                      shadcn components (don't edit by hand unless needed)
+    shell/                   app shell: nav (sidebar on laptop, bottom tabs on phone), page header
     <feature>/               feature components, e.g. leases/LeaseForm.tsx
   lib/
     billing/                 PURE billing engine (no DB, no network, no clock)
@@ -60,6 +62,7 @@ src/
     exports/                 Tally XML, Excel, PDF reports
     alerts/                  critical-date generation and digest building
     format.ts                ₹ and date formatting for the UI
+    utils.ts                 cn() for merging Tailwind classes (shadcn)
     auth.ts                  current user, organization, role checks
   server/
     actions/                 server actions, one file per feature

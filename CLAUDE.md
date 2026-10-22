@@ -22,13 +22,18 @@ Next.js (App Router) + TypeScript strict, pnpm, Tailwind + shadcn/ui, Supabase (
 
 ## Commands
 
-Created in Milestone 0. Keep this list in sync with package.json.
+Keep this list in sync with package.json. Node 24 (`.nvmrc`); Next.js 16 changed many APIs, so check `node_modules/next/dist/docs/` before using one you're unsure of (see `AGENTS.md` and D8).
 
-- `pnpm dev`: run the app locally
-- `pnpm typecheck`: TypeScript check
+- `pnpm dev`: run the app locally (http://localhost:3000)
+- `pnpm build` / `pnpm start`: production build and server
+- `pnpm typecheck`: generate route types, then TypeScript check
 - `pnpm lint`: ESLint
-- `pnpm test`: Vitest unit tests (`pnpm test billing` for the billing engine only)
-- `pnpm test:e2e`: Playwright end-to-end tests
+- `pnpm format` / `pnpm format:check`: Prettier (sorts Tailwind classes)
+- `pnpm test`: Vitest unit tests (`pnpm test billing` for the billing engine only; `pnpm test:watch` to watch)
+- `pnpm test:e2e`: Playwright end-to-end tests at 375px and 1280px, against a production build (first time: `pnpm exec playwright install chromium`)
+
+Not set up yet (M0 Supabase/Drizzle task):
+
 - `pnpm db:generate`: generate a Drizzle migration from schema changes
 - `pnpm db:migrate`: apply migrations (always ask before running against a non-local database)
 - `pnpm db:seed`: load demo data (2 buildings, 40 tenants, 45 leases)

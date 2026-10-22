@@ -11,8 +11,8 @@ Follow these steps once. Total time: about 30–45 minutes.
 
 ## 2. Install the tools on your computer
 
-1. **Node.js 22 LTS** from nodejs.org
-2. **pnpm:** in a terminal, run `npm install -g pnpm`
+1. **Node.js 24 LTS**, ideally through [nvm](https://github.com/nvm-sh/nvm) (`nvm install 24`); the project's `.nvmrc` asks for 24
+2. **pnpm:** in a terminal, run `npm install -g pnpm` (with Node 24 active)
 3. **Git:** from git-scm.com (on Windows this also gives you Git Bash, which Claude Code uses)
 4. **Docker Desktop**, needed to run Supabase locally
 5. **Supabase CLI:** see supabase.com/docs/guides/cli

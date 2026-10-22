@@ -36,3 +36,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 **Why:** At 20–100 tenants the accountant won't retype invoices or record payments one by one.
 **Consequences:** v1 ships a Tally XML export and bank statement matching; full two-way sync waits for v2.
+
+## D8. Node 24, Next.js 16, and a sidebar / bottom-tab app shell (2026-10-22)
+
+**Why:** Next.js 16 is the current release and needs Node 20.9+; Node 24 is the active LTS. The owner mostly uses a phone and the accountant a laptop, so the five nav items need to be one tap away on both: bottom tabs fit five items at 375px, and a sidebar keeps the laptop layout table-dense.
+**Consequences:**
+- `.nvmrc` pins Node 24 and `package.json` requires Node 22 or newer. pnpm comes with that Node install (`packageManager` in `package.json`).
+- Next.js 16 runs with `cacheComponents` and `partialPrefetching` on (the create-next-app defaults). Client components that read the URL (`usePathname`, `useSearchParams`) sit inside a `Suspense` boundary, so pages with dynamic params still prerender. Next.js 16 changed many APIs: check `node_modules/next/dist/docs/` before using an unfamiliar one.
+- From 768px up the nav is a left sidebar; below that it is a fixed bottom tab bar. Settings is the profile icon in the top bar on both.
+- Playwright runs every e2e test at 375px and 1280px against a production build (`next build && next start`), not the dev server.
+- `formatINR` shows negative amounts as `-₹1,200`. The docs didn't specify this; change it here if accountants prefer brackets.

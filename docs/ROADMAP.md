@@ -6,13 +6,13 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 ## M0. Project setup (week 3)
 
-- [ ] Create the Next.js app with TypeScript strict, pnpm, ESLint, Prettier
-- [ ] Add Tailwind and shadcn/ui; set up the app shell with the 5-item nav (Today, Leases, Tenants, Billing, Reports) and mobile layout
-- [ ] Set up Supabase locally (CLI) and Drizzle; `db:generate`, `db:migrate`, `db:seed` scripts
-- [ ] Set up Vitest and Playwright with one passing test each
-- [ ] Add `src/lib/format.ts` (₹ lakh/crore, DD-MM-YYYY) with tests
-- [ ] `.env.example`, README with local setup steps
-- [ ] Update the Commands section in CLAUDE.md to match package.json
+- [x] Create the Next.js app with TypeScript strict, pnpm, ESLint, Prettier
+- [x] Add Tailwind and shadcn/ui; set up the app shell with the 5-item nav (Today, Leases, Tenants, Billing, Reports) and mobile layout
+- [ ] Set up Supabase locally (CLI) and Drizzle; `db:generate`, `db:migrate`, `db:seed` scripts (postponed: needs Docker and the Supabase CLI)
+- [x] Set up Vitest and Playwright with one passing test each
+- [x] Add `src/lib/format.ts` (₹ lakh/crore, DD-MM-YYYY) with tests
+- [x] `.env.example`, README with local setup steps
+- [x] Update the Commands section in CLAUDE.md to match package.json
 
 ## M1. Billing engine (weeks 3–4), before any screens
 

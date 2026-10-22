@@ -47,7 +47,7 @@ v1 produces an XML file the accountant imports into TallyPrime. **Validate the f
 
 ## Formatting
 
-- Money: `formatINR(paise)` → `₹1,18,000` (no decimals when whole rupees; two decimals otherwise). Lakh/crore grouping always.
+- Money: `formatINR(paise)` → `₹1,18,000` (no decimals when whole rupees; two decimals otherwise). Lakh/crore grouping always. Negative: `-₹1,200`.
 - Dates: `formatDate` → `22-10-2026`. Month labels: `Oct 2026`. Financial year: `FY 2026-27`.
 - Amount in words for invoices: Indian system (thousand, lakh, crore).
 

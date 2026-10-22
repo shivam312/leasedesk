@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+build/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+.vercel
+supabase/.temp/
+*.log
+.DS_Store
+CLAUDE.local.md
+.claude/settings.local.json

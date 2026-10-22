@@ -17,7 +17,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 ## M1. Billing engine (weeks 3–4), before any screens
 
 - [x] `money.ts` and `dates.ts` with tests (paise rounding, days in month, add months, financial year, quarters)
-- [ ] Charge monthly amounts (fixed, per sq ft, per slot)
+- [x] Charge monthly amounts (fixed, per sq ft, per slot)
 - [ ] Rent-free periods and rent commencement
 - [ ] Escalations: compounding, non-compounding, custom
 - [ ] Pro-rata and mid-month splits
@@ -88,3 +88,10 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 ## Later (v2, in order)
 
 Online payment links, tenant portal, full Tally / Zoho Books sync, metered utilities, renewals pipeline, WhatsApp Business API, AI lease extraction, maintenance tickets, analytics, custom roles. See `docs/PRODUCT_PLAN.md`.
+
+## Open questions
+
+Found while building M1. The engine follows the most conservative reading noted here until the rule in `docs/BILLING_RULES.md` is confirmed or changed.
+
+1. **Quarterly per sq ft and per slot charges.** Section 1 defines rates per month; section 3 allows `frequency: quarterly` for any basis, but not how a monthly rate becomes a quarterly bill (× 3? by days?). For now the engine refuses quarterly billing for `per_sqft` and `per_slot` charges; quarterly works for `fixed` amounts, which are taken as per quarter.
+2. **Rounding negative amounts.** Section 2 says "round half up". For negative values (credit notes, round-off) the engine rounds half away from zero, so −₹0.005 becomes −₹0.01 and a credit note mirrors its invoice exactly. Confirm with the CA when credit notes are built (M4).

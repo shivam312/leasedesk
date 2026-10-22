@@ -19,7 +19,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 - [x] `money.ts` and `dates.ts` with tests (paise rounding, days in month, add months, financial year, quarters)
 - [x] Charge monthly amounts (fixed, per sq ft, per slot)
 - [x] Rent-free periods and rent commencement
-- [ ] Escalations: compounding, non-compounding, custom
+- [x] Escalations: compounding, non-compounding, custom
 - [ ] Pro-rata and mid-month splits
 - [ ] Full rent schedule for a lease (`schedule.ts`)
 - [ ] Invoice lines for a lease and month, monthly and quarterly, advance and arrears
@@ -95,3 +95,5 @@ Found while building M1. The engine follows the most conservative reading noted 
 
 1. **Quarterly per sq ft and per slot charges.** Section 1 defines rates per month; section 3 allows `frequency: quarterly` for any basis, but not how a monthly rate becomes a quarterly bill (× 3? by days?). For now the engine refuses quarterly billing for `per_sqft` and `per_slot` charges; quarterly works for `fixed` amounts, which are taken as per quarter.
 2. **Rounding negative amounts.** Section 2 says "round half up". For negative values (credit notes, round-off) the engine rounds half away from zero, so −₹0.005 becomes −₹0.01 and a credit note mirrors its invoice exactly. Confirm with the CA when credit notes are built (M4).
+3. **Custom escalations vs the rule.** Section 5 says custom escalations "override the rule from their date". The engine reads this as: from the first custom date for a charge, the rule's later increases stop and only custom entries apply. A custom percentage applies to the amount just before it; a custom new amount is used as entered (not rounded). Confirm with the pilot whether the rule should resume after a custom entry.
+4. **Increases before a charge starts.** If a charge starts after the escalation anchor (e.g. a charge added mid-lease), the engine ignores increase dates on or before the charge's start, treats the entered amount as its starting amount, and counts non-compounding steps from the first increase it applies.

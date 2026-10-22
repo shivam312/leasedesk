@@ -52,3 +52,31 @@ export type LeaseTerms = {
   rentFreeMonths?: number;
   rentFreeDays?: number;
 };
+
+/** escalation_rules (docs/BILLING_RULES.md, section 5). */
+export type EscalationRule = {
+  percentBp: BasisPoints;
+  everyMonths: number;
+  anchor: "lease_start" | "rent_commencement" | "custom";
+  /** Required when `anchor` is `custom`. */
+  anchorDate?: PlainDate;
+  /** Default `true`. */
+  compounding?: boolean;
+  /** Charge ids, or `rent` for every rent charge. Default `rent`. */
+  appliesTo?: "rent" | string[];
+};
+
+/** custom_escalations: set exactly one of `newAmountPaise` or `percentBp`. */
+export type CustomEscalation = {
+  chargeId: string;
+  effectiveDate: PlainDate;
+  newAmountPaise?: Paise;
+  percentBp?: BasisPoints;
+};
+
+/** A charge's amount per billing period from `from` until the next step. */
+export type AmountStep = {
+  from: PlainDate;
+  amount: Paise;
+  explanation: Explanation;
+};

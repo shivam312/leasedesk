@@ -201,12 +201,14 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
       ],
     };
     const invoice = invoiceForRun(lease, "2026-05", settings);
-    // 47 of 91 days: 30,000 × 47 / 91 = 15,494.505 → 15,494.51 (open question 5)
+    // Month by month at 30,000 ÷ 3 = 10,000 a month:
+    // May 17/31 days: 30,000 × 17 / (3 × 31) = 5,483.870… → 5,483.87
+    // June, a full month: 10,000.00. Total 15,483.87
     expect(invoice?.lines).toMatchObject([
       {
         periodStart: "2026-05-15",
         periodEnd: "2026-06-30",
-        taxablePaise: 1_549_451,
+        taxablePaise: 1_548_387,
       },
     ]);
   });

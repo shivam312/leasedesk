@@ -140,26 +140,28 @@ describe("segmentsForPeriod", () => {
     });
   });
 
-  it("golden 10: quarterly ₹30,000 from 15 May is pro-rated over the quarter's days", () => {
+  it("golden 10: quarterly ₹30,000 from 15 May is billed month by month", () => {
     const segments = segmentsForPeriod({
       steps: [step("2026-05-15", 3_000_000)],
       window: { from: "2026-05-15", to: "2029-05-14" },
       period: { start: "2026-04-01", end: "2026-06-30" },
     });
-    // 15 May–30 Jun = 17 + 30 = 47 days; Apr–Jun = 30 + 31 + 30 = 91 days.
-    // ₹30,000 × 47 / 91 = ₹15,494.505 → ₹15,494.51 (open question 5)
+    // 15–31 May = 17 of 31 days: 30,000 × 17 / (3 × 31) = 5,483.870… → 5,483.87
+    // June, full: 30,000 ÷ 3 = 10,000.00. Total 15,483.87
     expect(summary(segments)).toEqual([
       {
         from: "2026-05-15",
         to: "2026-06-30",
         days: 47,
         periodDays: 91,
-        amount: 1_549_451,
+        amount: 1_548_387,
       },
     ]);
-    expect(segments[0]?.explanation.steps.at(-1)).toBe(
-      "15-05-2026 to 30-06-2026: ₹30,000 × 47 / 91 days = ₹15,494.51",
-    );
+    expect(segments[0]?.explanation.steps).toEqual([
+      "15-05-2026 to 31-05-2026: ₹30,000 ÷ 3 × 17 / 31 days = ₹5,483.87",
+      "Jun 2026: ₹30,000 ÷ 3 = ₹10,000",
+      "15-05-2026 to 30-06-2026: ₹5,483.87 + ₹10,000 = ₹15,483.87",
+    ]);
   });
 
   it("is empty when the period is outside the billing window", () => {
@@ -180,5 +182,68 @@ describe("segmentsForPeriod", () => {
         period: september,
       }),
     ).toThrow(/no amount/);
+  });
+
+  describe("part quarters, month by month", () => {
+    const octDec = { start: "2026-10-01", end: "2026-12-31" };
+
+    it("bills a full quarter at the quarterly amount", () => {
+      const segments = segmentsForPeriod({
+        steps: [step("2026-04-01", 3_000_000)],
+        window: { from: "2026-04-01", to: "2029-03-31" },
+        period: octDec,
+      });
+      expect(summary(segments)).toEqual([
+        {
+          from: "2026-10-01",
+          to: "2026-12-31",
+          days: 92,
+          periodDays: 92,
+          amount: 3_000_000,
+        },
+      ]);
+    });
+
+    it("lease ending 20 Nov: October whole, November by days in November", () => {
+      const segments = segmentsForPeriod({
+        steps: [step("2026-04-01", 3_000_000)],
+        window: { from: "2026-04-01", to: "2026-11-20" },
+        period: octDec,
+      });
+      // ₹30,000 ÷ 3 = ₹10,000 a month
+      // October (full): ₹10,000.00
+      // 1–20 Nov: 30,000 × 20 / (3 × 30) = 6,666.666… → ₹6,666.67
+      // Total ₹16,666.67
+      expect(summary(segments)).toEqual([
+        {
+          from: "2026-10-01",
+          to: "2026-11-20",
+          days: 51,
+          periodDays: 92,
+          amount: 1_666_667,
+        },
+      ]);
+      expect(segments[0]?.explanation.steps).toEqual([
+        "Oct 2026: ₹30,000 ÷ 3 = ₹10,000",
+        "01-11-2026 to 20-11-2026: ₹30,000 ÷ 3 × 20 / 30 days = ₹6,666.67",
+        "01-10-2026 to 20-11-2026: ₹10,000 + ₹6,666.67 = ₹16,666.67",
+      ]);
+    });
+
+    it("an increase mid-quarter splits it, each part month by month", () => {
+      const segments = segmentsForPeriod({
+        steps: [step("2026-04-01", 3_000_000), step("2026-11-15", 3_150_000)],
+        window: { from: "2026-04-01", to: "2029-03-31" },
+        period: octDec,
+      });
+      // At ₹30,000: Oct full = 10,000.00; 1–14 Nov = 30,000 × 14 / 90 = 4,666.67
+      //   → 14,666.67
+      // At ₹31,500: 15–30 Nov = 31,500 × 16 / 90 = 5,600.00; Dec full = 10,500.00
+      //   → 16,100.00
+      expect(summary(segments).map((s) => [s.from, s.to, s.amount])).toEqual([
+        ["2026-10-01", "2026-11-14", 1_466_667],
+        ["2026-11-15", "2026-12-31", 1_610_000],
+      ]);
+    });
   });
 });

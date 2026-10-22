@@ -57,7 +57,7 @@ Example: ₹1,00,000/month, 5% every 12 months, compounding, from 1 Apr 2026. Ye
 
 ## 6. Pro-rata (part months)
 
-- Use actual days in the calendar month.
+- Use actual days in the calendar month (part quarters too: see section 7).
 - Amount = round(monthly amount × billable days / days in month).
 - A month with an escalation inside it is billed as two segments, each pro-rated, on one invoice line or two (setting; default two lines with clear labels).
 - Lease end mid-month: bill to the end date inclusive.
@@ -67,7 +67,7 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 ## 7. Billing periods
 
 - Monthly charges are billed per calendar month.
-- Quarterly charges are billed for April–June, July–September, October–December, January–March. A lease starting mid-quarter gets a pro-rated first bill.
+- Quarterly charges are billed for April–June, July–September, October–December, January–March. A part quarter (a charge starting or ending mid-quarter, or a quarter split by an increase) is billed month by month: monthly equivalent = quarterly amount ÷ 3; full months at that amount; part months by actual days in that month. Each month is rounded to the paisa once: quarterly × days ÷ (3 × days in month). **[Pilot]**
 - `advance`: the invoice for a period is generated in that period's monthly run (dated the 1st). `arrears`: in the run after the period ends.
 - Invoice due date = invoice date + `dueDays` (building setting, default 7).
 
@@ -125,7 +125,7 @@ The engine must pass these at all times. Keep them in `src/lib/billing/__tests__
 7. GST same state: ₹1,00,000 taxable → CGST ₹9,000, SGST ₹9,000, total ₹1,18,000.
 8. GST different state: ₹1,00,000 taxable → IGST ₹18,000.
 9. Total with paise (₹1,06,917.75 + 18% GST) → CGST ₹9,622.60 each side, round-off line to the nearest rupee.
-10. Quarterly CAM ₹30,000/quarter, lease from 15 May → first bill pro-rated for 15 May–30 Jun.
+10. Quarterly CAM ₹30,000/quarter, lease from 15 May → first bill for 15 May–30 Jun = ₹15,483.87 (May: ₹30,000 × 17 / (3 × 31) = ₹5,483.87; June: ₹10,000). **[Pilot]**
 11. Lease ends 20 Nov → November billed for 20 days.
 12. Payment ₹1,08,000 against ₹1,18,000 invoice with ₹10,000 expected TDS → paid with TDS, TDS record ₹10,000.
 13. Invoice numbering: 10,000th invoice in FY 26-27 with prefix `B1` stays ≤16 characters.

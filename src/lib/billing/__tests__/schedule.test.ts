@@ -88,7 +88,7 @@ describe("rentSchedule", () => {
     expect(schedule.periods).toHaveLength(25);
   });
 
-  it("bills quarterly charges by FY quarter, pro-rated at both ends", () => {
+  it("bills quarterly charges by FY quarter, part quarters month by month", () => {
     const schedule = rentSchedule(
       {
         id: "L-4",
@@ -108,12 +108,14 @@ describe("rentSchedule", () => {
       settings,
     );
     const periods = schedule.periods.map((p) => [p.period.start, p.amount]);
-    // First: 15 May–30 Jun = 47 of 91 days → ₹30,000 × 47 / 91 = ₹15,494.51
-    // Last: 1 Apr–14 May 2029 = 44 of 91 days → ₹30,000 × 44 / 91
-    //       = ₹14,505.494 → ₹14,505.49
-    expect(periods[0]).toEqual(["2026-04-01", 1_549_451]);
+    // Month by month at ₹30,000 ÷ 3 = ₹10,000:
+    // First: 15–31 May 2026 = 30,000 × 17 / 93 = 5,483.87, plus June 10,000
+    //        → ₹15,483.87
+    // Last: April 2029 10,000, plus 1–14 May = 30,000 × 14 / 93 = 4,516.13
+    //       → ₹14,516.13
+    expect(periods[0]).toEqual(["2026-04-01", 1_548_387]);
     expect(periods[1]).toEqual(["2026-07-01", 3_000_000]);
-    expect(periods.at(-1)).toEqual(["2029-04-01", 1_450_549]);
+    expect(periods.at(-1)).toEqual(["2029-04-01", 1_451_613]);
     expect(periods).toHaveLength(13);
   });
 });

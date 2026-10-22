@@ -142,9 +142,9 @@ describe("quarterly", () => {
 
   it("golden 10: first bill pro-rated for 15 May–30 Jun, in the May run", () => {
     expect(invoiceForRun(quarterly, "2026-04", settings)).toBeNull();
-    // ₹30,000 × 47 / 91 = ₹15,494.51
+    // Month by month: May ₹30,000 × 17 / (3 × 31) = ₹5,483.87; June ₹10,000
     expect(lines(invoiceForRun(quarterly, "2026-05", settings))).toEqual([
-      ["Maintenance (CAM) 15-05-2026 to 30-06-2026", 1_549_451],
+      ["Maintenance (CAM) 15-05-2026 to 30-06-2026", 1_548_387],
     ]);
     expect(invoiceForRun(quarterly, "2026-06", settings)).toBeNull();
   });
@@ -165,7 +165,7 @@ describe("quarterly", () => {
     };
     expect(invoiceForRun(arrears, "2026-05", settings)).toBeNull();
     expect(lines(invoiceForRun(arrears, "2026-07", settings))).toEqual([
-      ["Maintenance (CAM) 15-05-2026 to 30-06-2026", 1_549_451],
+      ["Maintenance (CAM) 15-05-2026 to 30-06-2026", 1_548_387],
     ]);
   });
 });

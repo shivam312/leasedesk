@@ -2,13 +2,18 @@ import {
   addDays,
   compareDates,
   daysBetweenInclusive,
+  daysInYearMonth,
+  endOfMonth,
   maxDate,
   minDate,
+  monthOf,
+  monthsBetween,
+  startOfMonth,
 } from "./dates";
 import type { PlainDate } from "./dates";
 import { rupees } from "./explain";
-import { formatDate } from "@/lib/format";
-import { prorate } from "./money";
+import { formatDate, formatMonth } from "@/lib/format";
+import { mulDiv, prorate, sumPaise } from "./money";
 import type { AmountStep, Explanation } from "./types";
 
 export type Segment = {
@@ -30,8 +35,9 @@ export type Segment = {
  * - `window`: the dates the charge can be billed for, inclusive.
  * - `period`: a calendar month, or a quarter for quarterly charges.
  *
- * A segment covering the whole period is billed at the full amount; any
- * other segment is amount × days ÷ days in the period, rounded to the paisa.
+ * A segment covering the whole period is billed at the full amount. Any
+ * other segment of a month is amount × days ÷ days in the month. Any other
+ * segment of a quarter is billed month by month (section 7) [Pilot].
  */
 export function segmentsForPeriod({
   steps,
@@ -64,10 +70,20 @@ export function segmentsForPeriod({
 
     const days = daysBetweenInclusive(from, to);
     const full = days === periodDays;
-    const amount = full ? step.amount : prorate(step.amount, days, periodDays);
-    const last = full
-      ? `Full ${periodDays > 31 ? "quarter" : "month"}: ${rupees(amount)}`
-      : `${formatDate(from)} to ${formatDate(to)}: ${rupees(step.amount)} × ${days} / ${periodDays} days = ${rupees(amount)}`;
+    const quarter = monthOf(period.start) !== monthOf(period.end);
+    let amount: number;
+    let last: string[];
+    if (full) {
+      amount = step.amount;
+      last = [`Full ${quarter ? "quarter" : "month"}: ${rupees(amount)}`];
+    } else if (quarter) {
+      ({ amount, steps: last } = partQuarterByMonth(step.amount, from, to));
+    } else {
+      amount = prorate(step.amount, days, periodDays);
+      last = [
+        `${formatDate(from)} to ${formatDate(to)}: ${rupees(step.amount)} × ${days} / ${periodDays} days = ${rupees(amount)}`,
+      ];
+    }
     segments.push({
       from,
       to,
@@ -77,10 +93,43 @@ export function segmentsForPeriod({
       amount,
       explanation: {
         rule: full ? step.explanation.rule : "Part period, by actual days",
-        steps: [...step.explanation.steps, last],
+        steps: [...step.explanation.steps, ...last],
         result: amount,
       },
     });
   });
   return segments;
+}
+
+/**
+ * Part of a quarter, month by month: the monthly equivalent is the quarterly
+ * amount ÷ 3; a full month bills that, a part month bills it × days ÷ days in
+ * that month. Each month is rounded to the paisa once:
+ * quarterly × days ÷ (3 × days in month).
+ */
+function partQuarterByMonth(
+  quarterly: number,
+  from: PlainDate,
+  to: PlainDate,
+): { amount: number; steps: string[] } {
+  const pieces = monthsBetween(from, to).map((month) => {
+    const lo = maxDate(from, startOfMonth(month));
+    const hi = minDate(to, endOfMonth(month));
+    const days = daysBetweenInclusive(lo, hi);
+    const monthDays = daysInYearMonth(month);
+    const amount = mulDiv(quarterly, days, 3 * monthDays);
+    const step =
+      days === monthDays
+        ? `${formatMonth(month)}: ${rupees(quarterly)} ÷ 3 = ${rupees(amount)}`
+        : `${formatDate(lo)} to ${formatDate(hi)}: ${rupees(quarterly)} ÷ 3 × ${days} / ${monthDays} days = ${rupees(amount)}`;
+    return { amount, step };
+  });
+  const amount = sumPaise(pieces.map((p) => p.amount));
+  const steps = pieces.map((p) => p.step);
+  if (pieces.length > 1) {
+    steps.push(
+      `${formatDate(from)} to ${formatDate(to)}: ${pieces.map((p) => rupees(p.amount)).join(" + ")} = ${rupees(amount)}`,
+    );
+  }
+  return { amount, steps };
 }

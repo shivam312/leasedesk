@@ -96,7 +96,8 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 
 Tenants usually deduct TDS before paying rent. Section numbers and thresholds changed with the new Income Tax Act, so rates and thresholds are settings, not constants.
 
-- Each tenant has `tdsRateBp` (default 1000 = 10%) and `deductsTds` (default `true` for companies).
+- TDS is set on the tenant per charge type: `rent`, `cam`, `parking` and `other` (utilities, signage and other charges). Each has its own `deductsTds` and `tdsRateBp`. Defaults: the same for every type, `tdsRateBp` 1000 (10%) and `deductsTds` `true` for companies. **[CA]**
+- Expected TDS on an invoice = Σ over the types the tenant deducts on (rate × that type's taxable value), rounded once on the total.
 - Expected TDS is calculated on the taxable value only (excluding GST), when GST is shown separately on the invoice, and rounded once to the nearest rupee (half up). **[CA]**
 - A payment settles: amount received + TDS deducted = amount settled against invoices.
 - A payment that is short by roughly the expected TDS (within ₹1 per invoice, inclusive: exactly ₹1 off still counts) is treated as "paid with TDS", not "part-paid". **[CA]**

@@ -38,10 +38,13 @@ export function mulDiv(a: number, b: number, c: number): number {
   assertSafeInteger(c, "mulDiv divisor");
   if (c <= 0) throw new RangeError(`mulDiv divisor must be positive, got ${c}`);
 
-  const product = BigInt(a) * BigInt(b);
-  const divisor = BigInt(c);
-  const negative = product < 0n;
-  const abs = negative ? -product : product;
+  return roundDiv(BigInt(a) * BigInt(b), BigInt(c));
+}
+
+/** round(n ÷ divisor), half away from zero, as a safe number. */
+function roundDiv(n: bigint, divisor: bigint): number {
+  const negative = n < 0n;
+  const abs = negative ? -n : n;
   // floor(abs / c + 1/2) = floor((2·abs + c) / 2c)
   const rounded = (2n * abs + divisor) / (2n * divisor);
   return toSafeNumber(negative ? -rounded : rounded);
@@ -52,17 +55,25 @@ export function percentOf(amount: Paise, bp: BasisPoints): Paise {
   return mulDiv(amount, bp, BP_DENOMINATOR);
 }
 
-/**
- * `bp` basis points of `amount`, rounded once straight to the nearest rupee
- * (half up). 10% of ₹49,994.95 = ₹4,999.495 → ₹4,999.
- */
-export function percentOfToRupee(amount: Paise, bp: BasisPoints): Paise {
-  return mulDiv(amount, bp, BP_DENOMINATOR * 100) * 100;
-}
-
 /** `amount` × (10000 + bp) / 10000, rounded to the paisa. */
 export function increaseByPercent(amount: Paise, bp: BasisPoints): Paise {
   return mulDiv(amount, BP_DENOMINATOR + bp, BP_DENOMINATOR);
+}
+
+/**
+ * Σ (amount × bp ÷ 10000) over several parts, rounded once straight to the
+ * nearest rupee. Rent ₹49,994.95 at 10% + CAM ₹0.05 at 10% = ₹4,999.50 → ₹5,000.
+ */
+export function sumOfPercentsToRupee(
+  parts: readonly { amount: Paise; bp: BasisPoints }[],
+): Paise {
+  let total = 0n;
+  for (const { amount, bp } of parts) {
+    assertSafeInteger(amount, "amount");
+    assertSafeInteger(bp, "basis points");
+    total += BigInt(amount) * BigInt(bp);
+  }
+  return roundDiv(total, BigInt(BP_DENOMINATOR * 100)) * 100;
 }
 
 /**

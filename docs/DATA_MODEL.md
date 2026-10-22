@@ -20,7 +20,7 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 ## Tenants and leases
 
-**tenants**: company_name, gstin (nullable), pan, billing_address, state_code, deducts_tds (bool), tds_rate_bp, notes.
+**tenants**: company_name, gstin (nullable), pan, billing_address, state_code, TDS per charge type (`docs/BILLING_RULES.md` section 10): deducts_tds_rent, tds_rate_bp_rent, deducts_tds_cam, tds_rate_bp_cam, deducts_tds_parking, tds_rate_bp_parking, deducts_tds_other, tds_rate_bp_other (utilities, signage, other), notes.
 
 **tenant_contacts**: tenant_id, name, role (`billing`, `admin`, `legal`, `other`), email, phone, whatsapp (bool), is_primary.
 

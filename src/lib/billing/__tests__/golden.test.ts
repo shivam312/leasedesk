@@ -10,7 +10,12 @@ import { invoiceForRun } from "../invoice-lines";
 import { invoiceNumber } from "../invoice-number";
 import { rentSchedule } from "../schedule";
 import type { LeaseInput } from "../schedule";
-import { expectedTds, settlePayment, tdsQuarter } from "../tds";
+import {
+  expectedTds,
+  settlePayment,
+  tdsQuarter,
+  tenantTdsDefaults,
+} from "../tds";
 import type { Charge } from "../types";
 
 const settings = { roundEscalatedRentToRupee: true, dueDays: 7 };
@@ -233,9 +238,8 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
   it("12. ₹1,08,000 paid against ₹1,18,000 with ₹10,000 expected TDS → paid with TDS, TDS record ₹10,000", () => {
     // TDS 10% of taxable 1,00,000 = 10,000; 1,08,000 + 10,000 = 1,18,000
     const tds = expectedTds({
-      taxablePaise: 10_000_000,
-      tdsRateBp: 1000,
-      deductsTds: true,
+      lines: [{ chargeType: "rent", taxablePaise: 10_000_000 }],
+      tds: tenantTdsDefaults({ deductsTds: true }),
     });
     const result = settlePayment({
       invoiceTotalPaise: 11_800_000,

@@ -1,64 +1,149 @@
 import { describe, expect, it } from "vitest";
-import { expectedTds, settlePayment, tdsQuarter } from "../tds";
+import {
+  expectedTds,
+  settlePayment,
+  tdsGroup,
+  tdsQuarter,
+  tenantTdsDefaults,
+} from "../tds";
+import type { TenantTds } from "../tds";
+
+const company = tenantTdsDefaults({ deductsTds: true });
+
+describe("tenantTdsDefaults", () => {
+  it("is the same setting for every charge type: 10% when the tenant deducts", () => {
+    expect(company).toEqual({
+      rent: { deductsTds: true, tdsRateBp: 1000 },
+      cam: { deductsTds: true, tdsRateBp: 1000 },
+      parking: { deductsTds: true, tdsRateBp: 1000 },
+      other: { deductsTds: true, tdsRateBp: 1000 },
+    });
+    expect(tenantTdsDefaults({ deductsTds: false }).cam).toEqual({
+      deductsTds: false,
+      tdsRateBp: 1000,
+    });
+  });
+});
+
+describe("tdsGroup", () => {
+  it("puts utilities and signage under other", () => {
+    expect(tdsGroup("rent")).toBe("rent");
+    expect(tdsGroup("cam")).toBe("cam");
+    expect(tdsGroup("parking")).toBe("parking");
+    expect(tdsGroup("utilities")).toBe("other");
+    expect(tdsGroup("signage")).toBe("other");
+    expect(tdsGroup("other")).toBe("other");
+  });
+});
 
 describe("expectedTds", () => {
   it("is the tenant's rate on the taxable value, excluding GST", () => {
     // 10% of ₹1,00,000 taxable = ₹10,000 (GST ₹18,000 not included)
     const tds = expectedTds({
-      taxablePaise: 10_000_000,
-      tdsRateBp: 1000,
-      deductsTds: true,
+      lines: [{ chargeType: "rent", taxablePaise: 10_000_000 }],
+      tds: company,
     });
     expect(tds.amount).toBe(1_000_000);
     expect(tds.explanation.steps).toEqual([
-      "TDS 10% of taxable value ₹1,00,000 (GST excluded), to the nearest rupee = ₹10,000",
+      "Rent: TDS 10% of ₹1,00,000 (GST excluded)",
+      "Expected TDS, to the nearest rupee = ₹10,000",
     ]);
+  });
+
+  it("uses each charge type's own setting", () => {
+    const tds: TenantTds = {
+      rent: { deductsTds: true, tdsRateBp: 1000 },
+      cam: { deductsTds: false, tdsRateBp: 1000 },
+      parking: { deductsTds: true, tdsRateBp: 200 },
+      other: { deductsTds: true, tdsRateBp: 1000 },
+    };
+    const result = expectedTds({
+      lines: [
+        { chargeType: "rent", taxablePaise: 10_000_000 },
+        { chargeType: "cam", taxablePaise: 2_500_000 },
+        { chargeType: "parking", taxablePaise: 500_000 },
+        { chargeType: "signage", taxablePaise: 333_333 },
+      ],
+      tds,
+    });
+    // Rent 10% of 1,00,000 = 10,000
+    // CAM: not deducted
+    // Parking 2% of 5,000 = 100
+    // Signage (other) 10% of 3,333.33 = 333.333
+    // Total 10,433.333 → ₹10,433
+    expect(result.amount).toBe(1_043_300);
+    expect(result.explanation.steps).toEqual([
+      "Rent: TDS 10% of ₹1,00,000 (GST excluded)",
+      "Maintenance (CAM): no TDS on ₹25,000",
+      "Parking: TDS 2% of ₹5,000 (GST excluded)",
+      "Other charges: TDS 10% of ₹3,333.33 (GST excluded)",
+      "Expected TDS, to the nearest rupee = ₹10,433",
+    ]);
+  });
+
+  it("adds lines of the same type before applying the rate", () => {
+    // Rent split by an increase: 36,129.03 + 46,064.52 = 82,193.55
+    // 10% = 8,219.355 → ₹8,219
+    expect(
+      expectedTds({
+        lines: [
+          { chargeType: "rent", taxablePaise: 3_612_903 },
+          { chargeType: "rent", taxablePaise: 4_606_452 },
+        ],
+        tds: company,
+      }).amount,
+    ).toBe(821_900);
   });
 
   it("rounds to the nearest rupee", () => {
     // 2% of ₹1,06,917.75 = ₹2,138.355 → ₹2,138
     const tds = expectedTds({
-      taxablePaise: 10_691_775,
-      tdsRateBp: 200,
-      deductsTds: true,
+      lines: [{ chargeType: "rent", taxablePaise: 10_691_775 }],
+      tds: { ...company, rent: { deductsTds: true, tdsRateBp: 200 } },
     });
     expect(tds.amount).toBe(213_800);
-    expect(tds.explanation.steps).toEqual([
-      "TDS 2% of taxable value ₹1,06,917.75 (GST excluded), to the nearest rupee = ₹2,138",
-    ]);
   });
 
   it("rounds half a rupee up", () => {
     // 10% of ₹1,05,005 = ₹10,500.50 → ₹10,501
     expect(
       expectedTds({
-        taxablePaise: 10_500_500,
-        tdsRateBp: 1000,
-        deductsTds: true,
+        lines: [{ chargeType: "rent", taxablePaise: 10_500_500 }],
+        tds: company,
       }).amount,
     ).toBe(1_050_100);
   });
 
-  it("rounds once, straight to the rupee (not to the paisa first)", () => {
-    // 10% of ₹49,994.95 = ₹4,999.495 → ₹4,999
-    // (rounding to the paisa first would give ₹4,999.50 → ₹5,000)
+  it("rounds once, on the total, straight to the rupee", () => {
+    // Rent 10% of ₹49,994.95 = ₹4,999.495; CAM 10% of ₹0.05 = ₹0.005
+    // Total ₹4,999.50 → ₹5,000 (rounding each type first would give ₹4,999)
     expect(
       expectedTds({
-        taxablePaise: 4_999_495,
-        tdsRateBp: 1000,
-        deductsTds: true,
+        lines: [
+          { chargeType: "rent", taxablePaise: 4_999_495 },
+          { chargeType: "cam", taxablePaise: 5 },
+        ],
+        tds: company,
       }).amount,
-    ).toBe(499_900);
+    ).toBe(500_000);
   });
 
-  it("is zero when the tenant doesn't deduct TDS", () => {
-    expect(
+  it("is zero when the tenant doesn't deduct TDS on any of the charges", () => {
+    const result = expectedTds({
+      lines: [{ chargeType: "rent", taxablePaise: 10_000_000 }],
+      tds: tenantTdsDefaults({ deductsTds: false }),
+    });
+    expect(result.amount).toBe(0);
+    expect(result.explanation.rule).toBe("No TDS");
+  });
+
+  it("refuses a rate that isn't whole basis points ≥ 0", () => {
+    expect(() =>
       expectedTds({
-        taxablePaise: 10_000_000,
-        tdsRateBp: 1000,
-        deductsTds: false,
-      }).amount,
-    ).toBe(0);
+        lines: [{ chargeType: "rent", taxablePaise: 10_000_000 }],
+        tds: { ...company, rent: { deductsTds: true, tdsRateBp: -1 } },
+      }),
+    ).toThrow(RangeError);
   });
 });
 

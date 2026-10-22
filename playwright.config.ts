@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 3000;
+// Not 3000: a running `pnpm dev` there would be reused and tested instead of
+// the production build (the phone nav test failed against a stale dev server).
+const PORT = 3100;
 
 // Every e2e test runs at phone (375px) and laptop (1280px) widths,
 // the two sizes in the screen checklist (docs/UX_PRINCIPLES.md).
@@ -36,7 +38,7 @@ export default defineConfig({
     // A production build, so tests see what ships and pages are not compiled on first visit.
     command: `pnpm build && pnpm start --port ${PORT}`,
     url: `http://localhost:${PORT}/today`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 180_000,
   },
 });

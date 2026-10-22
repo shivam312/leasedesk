@@ -214,6 +214,43 @@ describe("which charges", () => {
       ["2027-04-01", 10_500_000],
     ]);
   });
+
+  it("applies an increase dated on the lease's last day", () => {
+    const steps = amountSteps({
+      charge: rent,
+      lease: { ...lease, endDate: "2027-04-01" },
+      rules: [fivePercentYearly],
+      ...rounding,
+    });
+    // 1 Apr 2026 + 12 months = 1 Apr 2027 = lease end → applies (on or before)
+    expect(amounts(steps)).toEqual([
+      ["2026-04-01", 10_000_000],
+      ["2027-04-01", 10_500_000],
+    ]);
+  });
+
+  it("applies an increase dated on the charge's last day, the same rule", () => {
+    const steps = amountSteps({
+      charge: { ...rent, endDate: "2027-04-01" },
+      lease,
+      rules: [fivePercentYearly],
+      ...rounding,
+    });
+    expect(amounts(steps)).toEqual([
+      ["2026-04-01", 10_000_000],
+      ["2027-04-01", 10_500_000],
+    ]);
+  });
+
+  it("ignores an increase dated the day after the lease ends", () => {
+    const steps = amountSteps({
+      charge: rent,
+      lease: { ...lease, endDate: "2027-03-31" },
+      rules: [fivePercentYearly],
+      ...rounding,
+    });
+    expect(amounts(steps)).toEqual([["2026-04-01", 10_000_000]]);
+  });
 });
 
 describe("custom escalations", () => {

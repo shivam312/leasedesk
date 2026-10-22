@@ -47,7 +47,7 @@ Quarterly charges: a `fixed` amount is per quarter. For `per_sqft` and `per_slot
 
 An escalation rule: `percentBp`, `everyMonths`, `anchor` (`lease_start`, `rent_commencement`, or a custom date), `compounding` (default `true`), and which charges it applies to (default: rent only).
 
-- Effective dates = anchor + k × `everyMonths`, for k = 1, 2, 3… while before the lease end.
+- Effective dates = anchor + k × `everyMonths`, for k = 1, 2, 3…. An increase (rule or custom) applies if its date is on or before the lease end date and on or before the charge's end date, if it has one: the same rule for both. An increase on the last day applies to that day.
 - Compounding: new amount = previous amount × (10000 + percentBp) / 10000, rounded per section 2.
 - Non-compounding: new amount = base amount × (10000 + k × percentBp) / 10000.
 - Custom escalations: a list of `{ effectiveDate, newAmount }` or `{ effectiveDate, percentBp }`. These override the rule from their date: from a charge's first custom entry, the rule's later increases stop for good and only custom entries apply. A custom percentage applies to the amount just before it; a custom new amount is used exactly as entered (not rounded).

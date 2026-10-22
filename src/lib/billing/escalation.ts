@@ -55,8 +55,10 @@ export function amountSteps({
     .sort((a, b) => compareDates(a.effectiveDate, b.effectiveDate));
   const firstCustom = customs[0]?.effectiveDate;
 
+  // An increase applies if dated on or before the lease end and the charge
+  // end: the same rule for both (section 5).
   const inForce = (date: PlainDate) =>
-    compareDates(date, lease.endDate) < 0 &&
+    compareDates(date, lease.endDate) <= 0 &&
     (!charge.endDate || compareDates(date, charge.endDate) <= 0);
 
   const events: Event[] = [];

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LeaseDesk",
+  title: { default: "LeaseDesk", template: "%s · LeaseDesk" },
   description: "Leases, rent invoices and payments for Indian landlords",
 };
 

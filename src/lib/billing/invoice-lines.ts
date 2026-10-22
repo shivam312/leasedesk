@@ -1,10 +1,4 @@
-import {
-  addDays,
-  addMonthsToMonth,
-  minDate,
-  monthOf,
-  startOfMonth,
-} from "./dates";
+import { addDays, monthOf, startOfMonth } from "./dates";
 import type { PlainDate, YearMonth } from "./dates";
 import { formatDate, formatMonth } from "@/lib/format";
 import type { BasisPoints, Paise } from "./money";
@@ -58,7 +52,7 @@ export function invoiceForRun(
   const lines = lease.charges
     .flatMap((charge) =>
       chargePeriods(charge, lease, settings)
-        .filter((p) => billingRun(charge, p, lease) === runMonth)
+        .filter((p) => p.billedIn === runMonth)
         .flatMap((p) => linesFor(charge, p)),
     )
     .filter((line) => line.taxablePaise !== 0);
@@ -71,30 +65,17 @@ export function invoiceForRun(
   };
 }
 
-function billingRun(
-  charge: Charge,
-  p: ChargePeriod,
-  lease: LeaseInput,
-): YearMonth {
-  if ((charge.timing ?? "advance") === "arrears") {
-    const last = minDate(p.period.end, lease.endDate);
-    return addMonthsToMonth(monthOf(last), 1);
-  }
-  const first = p.segments[0];
-  if (!first) throw new Error(`Charge ${charge.id} has an empty period`);
-  return monthOf(first.from);
-}
-
 function linesFor(charge: Charge, p: ChargePeriod): InvoiceLine[] {
   const noun = charge.label ?? NOUNS[charge.type];
   return p.segments.map((segment) => {
     const whole =
-      segment.from === p.period.start && segment.to === p.period.end;
+      segment.from === p.calendarPeriod.start &&
+      segment.to === p.calendarPeriod.end;
     return {
       chargeId: charge.id,
       chargeType: charge.type,
       description: whole
-        ? `${noun} for ${periodLabel(p.period.start, p.period.end)}`
+        ? `${noun} for ${periodLabel(p.calendarPeriod.start, p.calendarPeriod.end)}`
         : `${noun} ${formatDate(segment.from)} to ${formatDate(segment.to)}`,
       periodStart: segment.from,
       periodEnd: segment.to,

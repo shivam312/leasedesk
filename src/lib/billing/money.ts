@@ -65,6 +65,17 @@ export function increaseByPercent(amount: Paise, bp: BasisPoints): Paise {
   return mulDiv(amount, BP_DENOMINATOR + bp, BP_DENOMINATOR);
 }
 
+/**
+ * `amount` × (10000 + bp) / 10000, rounded once straight to the nearest
+ * rupee. ₹90,015.71 + 5% = ₹94,516.4955 → ₹94,516 (not ₹94,516.50 → ₹94,517).
+ */
+export function increaseByPercentToRupee(
+  amount: Paise,
+  bp: BasisPoints,
+): Paise {
+  return mulDiv(amount, BP_DENOMINATOR + bp, BP_DENOMINATOR * 100) * 100;
+}
+
 /** Nearest whole rupee, half up. ₹1,15,762.50 → ₹1,15,763. */
 export function roundToRupee(amount: Paise): Paise {
   return mulDiv(amount, 1, 100) * 100;

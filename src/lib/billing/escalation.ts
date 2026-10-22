@@ -3,7 +3,7 @@ import { addMonths, compareDates } from "./dates";
 import type { PlainDate } from "./dates";
 import { percent, rupees } from "./explain";
 import { formatDate } from "@/lib/format";
-import { increaseByPercent, roundToRupee } from "./money";
+import { increaseByPercent, increaseByPercentToRupee } from "./money";
 import { rentCommencement } from "./rent-free";
 import type {
   AmountStep,
@@ -93,50 +93,66 @@ export function amountSteps({
       explanation: base.explanation,
     },
   ];
+  // Escalated rent is rounded to the rupee (section 2); everything else to
+  // the paisa. Either way each step is rounded exactly once.
+  const toRupee = charge.type === "rent" && roundEscalatedRentToRupee;
+  const raise = (amount: number, bp: number) =>
+    toRupee
+      ? increaseByPercentToRupee(amount, bp)
+      : increaseByPercent(amount, bp);
+  const rounding = toRupee ? ", to the nearest rupee" : "";
+  const change = (from: number, bp: number) =>
+    bp < 0
+      ? `${rupees(from)} − ${percent(-bp)}`
+      : `${rupees(from)} + ${percent(bp)}`;
+
   let previous = base.amount;
   for (const event of events) {
     const on = formatDate(event.date);
     const lines: string[] = [];
     let amount: number;
-    let roundable = true;
+    let word: string;
 
     if (event.kind === "rule") {
       const { rule: r, count } = event;
       if (ruleIntro) lines.push(ruleIntro);
       if (r.compounding ?? true) {
-        amount = increaseByPercent(previous, r.percentBp);
+        amount = raise(previous, r.percentBp);
+        word = amount < previous ? "decrease" : "increase";
         lines.push(
-          `${noun} increase on ${on}: ${rupees(previous)} + ${percent(r.percentBp)} = ${rupees(amount)}`,
+          `${noun} ${word} on ${on}: ${change(previous, r.percentBp)}${rounding} = ${rupees(amount)}`,
         );
       } else {
-        amount = increaseByPercent(base.amount, count * r.percentBp);
+        amount = raise(base.amount, count * r.percentBp);
+        word = amount < previous ? "decrease" : "increase";
         lines.push(
-          `${noun} increase on ${on}: ${rupees(base.amount)} + ${count} × ${percent(r.percentBp)} = ${rupees(amount)}`,
+          `${noun} ${word} on ${on}: ${rupees(base.amount)} + ${count} × ${percent(r.percentBp)}${rounding} = ${rupees(amount)}`,
         );
       }
     } else if (event.entry.newAmountPaise !== undefined) {
+      // An agreed amount is used exactly as entered, never rounded.
       amount = event.entry.newAmountPaise;
-      roundable = false;
-      lines.push(`${noun} changes on ${on} to the agreed ${rupees(amount)}`);
+      word = amount < previous ? "decrease" : "increase";
+      lines.push(
+        `${noun} ${amount < previous ? "decreases" : "changes"} on ${on} to the agreed ${rupees(amount)}`,
+      );
     } else {
       const bp = event.entry.percentBp ?? 0;
-      amount = increaseByPercent(previous, bp);
+      amount = raise(previous, bp);
+      word = amount < previous ? "decrease" : "increase";
       lines.push(
-        `${noun} increase on ${on}: ${rupees(previous)} + ${percent(bp)} = ${rupees(amount)}`,
+        `${noun} ${word} on ${on}: ${change(previous, bp)}${rounding} = ${rupees(amount)}`,
       );
-    }
-
-    if (roundable && charge.type === "rent" && roundEscalatedRentToRupee) {
-      const rounded = roundToRupee(amount);
-      if (rounded !== amount)
-        lines.push(`Rounded to the nearest rupee: ${rupees(rounded)}`);
-      amount = rounded;
     }
 
     steps.push({
       from: event.date,
       amount,
-      explanation: { rule: "Rent increase", steps: lines, result: amount },
+      explanation: {
+        rule: `Rent ${word}`,
+        steps: lines,
+        result: amount,
+      },
     });
     previous = amount;
   }

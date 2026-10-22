@@ -16,7 +16,7 @@ This is the specification for the billing engine in `src/lib/billing/`. If code 
 
 - Round half up to the nearest paisa after every multiplication or division.
 - Negative amounts (credit notes, round-off) round half away from zero: −₹0.005 becomes −₹0.01, so a credit note mirrors its invoice exactly.
-- Monthly rent after an escalation is rounded to the nearest whole rupee by default (organization setting `roundEscalatedRentToRupee`, default `true`). **[Pilot]**
+- Monthly rent after an escalation is rounded to the nearest whole rupee by default (organization setting `roundEscalatedRentToRupee`, default `true`). **[Pilot]** Each step is rounded once, straight to the rupee (not to the paisa first): ₹90,015.71 + 5% = ₹94,516.4955 → ₹94,516.
 - Each tax line (CGST, SGST, IGST) is rounded to the nearest paisa separately.
 - Invoice total is rounded to the nearest rupee with a separate "Round off" line (setting `roundInvoiceTotal`, default `true`). **[CA]**
 
@@ -48,7 +48,7 @@ Quarterly charges: a `fixed` amount is per quarter. For `per_sqft` and `per_slot
 An escalation rule: `percentBp`, `everyMonths`, `anchor` (`lease_start`, `rent_commencement`, or a custom date), `compounding` (default `true`), and which charges it applies to (default: rent only).
 
 - Effective dates = anchor + k × `everyMonths`, for k = 1, 2, 3…. An increase (rule or custom) applies if its date is on or before the lease end date and on or before the charge's end date, if it has one: the same rule for both. An increase on the last day applies to that day.
-- Compounding: new amount = previous amount × (10000 + percentBp) / 10000, rounded per section 2.
+- Compounding: new amount = previous amount × (10000 + percentBp) / 10000, rounded once per section 2.
 - Non-compounding: new amount = base amount × (10000 + k × percentBp) / 10000.
 - Custom escalations: a list of `{ effectiveDate, newAmount }` or `{ effectiveDate, percentBp }`. These override the rule from their date: from a charge's first custom entry, the rule's later increases stop for good and only custom entries apply. A custom percentage applies to the amount just before it; a custom new amount is used exactly as entered (not rounded).
 - Increases dated on or before a charge's start date are ignored (e.g. a charge added mid-lease): the entered amount is its starting amount, and non-compounding steps count from the first increase that applies.
@@ -70,6 +70,7 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 - Monthly charges are billed per calendar month.
 - Quarterly charges are billed for April–June, July–September, October–December, January–March. A part quarter (a charge starting or ending mid-quarter, or a quarter split by an increase) is billed month by month: monthly equivalent = quarterly amount ÷ 3; full months at that amount; part months by actual days in that month. Each month is rounded to the paisa once: quarterly × days ÷ (3 × days in month). **[Pilot]**
 - `advance`: the invoice for a period is generated in that period's monthly run (dated the 1st). `arrears`: in the run after the period ends. When the lease ends mid-period, an arrears charge's final bill is in the first monthly run after the lease ends (lease ends 20 Nov → the December run, not January for an Oct–Dec quarter).
+- An invoice line's period is the dates actually billed: it never starts before the lease, the charge or rent commencement (for waived charges), and never ends after the lease or charge ends.
 - Invoice due date = invoice date + `dueDays` (building setting, default 7).
 - Lines that come to ₹0 (a waived charge, a ₹0 amount) are left off the invoice. If every line is ₹0, no invoice is created for that lease and month.
 
@@ -133,3 +134,4 @@ The engine must pass these at all times. Keep them in `src/lib/billing/__tests__
 13. Invoice numbering: 10,000th invoice in FY 26-27 with prefix `B1` stays ≤16 characters.
 14. 5% every 12 months from 29 Feb 2028 → increases on 1 Mar 2029 and 1 Mar 2030.
 15. Lease from 31 Jan 2027 with 1 month rent-free → rent starts 1 Mar 2027; first rent invoice is March.
+16. ₹90,015.71 + 5% compounding, rupee rounding on → ₹94,516 (one rounding, not ₹94,517).

@@ -1,8 +1,10 @@
 import {
   addDays,
+  addMonthsToMonth,
   compareDates,
   endOfMonth,
   fyQuarter,
+  minDate,
   monthOf,
   monthsBetween,
   startOfMonth,
@@ -37,7 +39,12 @@ export type Period = { start: PlainDate; end: PlainDate };
 export type ChargePeriod = {
   chargeId: string;
   charge: Charge;
+  /** The dates billed: inside the lease and the charge's own dates. */
   period: Period;
+  /** The whole calendar month or FY quarter the dates fall in. */
+  calendarPeriod: Period;
+  /** The monthly run that bills this period (section 7). */
+  billedIn: YearMonth;
   segments: Segment[];
   amount: Paise;
 };
@@ -65,19 +72,46 @@ export function chargePeriods(
           end: endOfMonth(m),
         }));
 
-  return periods.flatMap((period) => {
-    const segments = segmentsForPeriod({ steps, window, period });
-    if (segments.length === 0) return [];
+  return periods.flatMap((calendarPeriod) => {
+    const segments = segmentsForPeriod({
+      steps,
+      window,
+      period: calendarPeriod,
+    });
+    const first = segments[0];
+    const last = segments.at(-1);
+    if (!first || !last) return [];
+    const period = { start: first.from, end: last.to };
     return [
       {
         chargeId: charge.id,
         charge,
         period,
+        calendarPeriod,
+        billedIn: billingRun(charge, period, calendarPeriod, lease),
         segments,
         amount: sumPaise(segments.map((s) => s.amount)),
       },
     ];
   });
+}
+
+/**
+ * The monthly run that bills a period (section 7). In advance: the month its
+ * billed dates start. In arrears: the run after the calendar period ends, or
+ * the run after the lease ends if that is sooner.
+ */
+function billingRun(
+  charge: Charge,
+  period: Period,
+  calendarPeriod: Period,
+  lease: LeaseTerms,
+): YearMonth {
+  if ((charge.timing ?? "advance") === "arrears") {
+    const last = minDate(calendarPeriod.end, lease.endDate);
+    return addMonthsToMonth(monthOf(last), 1);
+  }
+  return monthOf(period.start);
 }
 
 /** The full schedule for a lease: every charge, every period, in date order. */
@@ -93,10 +127,10 @@ export function rentSchedule(
     .flatMap((charge) => chargePeriods(charge, lease, settings))
     .sort((a, b) => compareDates(a.period.start, b.period.start));
 
+  // Totals by the month whose run bills them, so they match the invoices.
   const totals = new Map<YearMonth, Paise[]>();
   for (const p of periods) {
-    const month = monthOf(p.period.start);
-    totals.set(month, [...(totals.get(month) ?? []), p.amount]);
+    totals.set(p.billedIn, [...(totals.get(p.billedIn) ?? []), p.amount]);
   }
   return {
     rentStartsOn: rentCommencement(lease).date,

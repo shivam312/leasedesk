@@ -88,6 +88,78 @@ describe("rentSchedule", () => {
     expect(schedule.periods).toHaveLength(25);
   });
 
+  it("never starts or ends a period outside the lease or charge dates", () => {
+    const schedule = rentSchedule(
+      {
+        id: "L-3",
+        startDate: "2024-11-21",
+        endDate: "2026-11-20",
+        charges: [
+          { ...rent, amountPaise: 9_000_000, startDate: "2024-11-21" },
+          {
+            ...rent,
+            id: "cam",
+            type: "cam",
+            amountPaise: 3_000_000,
+            startDate: "2025-02-10",
+            frequency: "quarterly",
+          },
+        ],
+      },
+      settings,
+    );
+    const rentPeriods = schedule.periods.filter((p) => p.chargeId === "rent");
+    const camPeriods = schedule.periods.filter((p) => p.chargeId === "cam");
+    expect(rentPeriods.at(0)?.period).toEqual({
+      start: "2024-11-21",
+      end: "2024-11-30",
+    });
+    expect(rentPeriods.at(-1)?.period).toEqual({
+      start: "2026-11-01",
+      end: "2026-11-20",
+    });
+    // CAM starts 10 Feb 2025, inside the Jan–Mar quarter
+    expect(camPeriods.at(0)?.period).toEqual({
+      start: "2025-02-10",
+      end: "2025-03-31",
+    });
+    expect(camPeriods.at(-1)?.period).toEqual({
+      start: "2026-10-01",
+      end: "2026-11-20",
+    });
+  });
+
+  it("totals each month by what that month's run bills", () => {
+    const cam: Charge = {
+      ...rent,
+      id: "cam",
+      type: "cam",
+      amountPaise: 3_000_000, // ₹30,000 per quarter
+      startDate: "2026-05-15",
+      frequency: "quarterly",
+    };
+    const lease = {
+      id: "L-5",
+      startDate: "2026-05-15",
+      endDate: "2029-05-14",
+      charges: [cam],
+    };
+    // In advance: 15 May–30 Jun (₹15,483.87) in the May run, Jul–Sep in July
+    expect(rentSchedule(lease, settings).totalsByMonth.slice(0, 2)).toEqual([
+      { month: "2026-05", total: 1_548_387 },
+      { month: "2026-07", total: 3_000_000 },
+    ]);
+    // In arrears: 15 May–30 Jun in the July run, Jul–Sep in October
+    const arrears = {
+      ...lease,
+      charges: [{ ...cam, timing: "arrears" as const }],
+    };
+    expect(rentSchedule(arrears, settings).totalsByMonth.slice(0, 2)).toEqual([
+      { month: "2026-07", total: 1_548_387 },
+      { month: "2026-10", total: 3_000_000 },
+    ]);
+  });
+
   it("bills quarterly charges by FY quarter, part quarters month by month", () => {
     const schedule = rentSchedule(
       {
@@ -113,7 +185,7 @@ describe("rentSchedule", () => {
     //        → ₹15,483.87
     // Last: April 2029 10,000, plus 1–14 May = 30,000 × 14 / 93 = 4,516.13
     //       → ₹14,516.13
-    expect(periods[0]).toEqual(["2026-04-01", 1_548_387]);
+    expect(periods[0]).toEqual(["2026-05-15", 1_548_387]);
     expect(periods[1]).toEqual(["2026-07-01", 3_000_000]);
     expect(periods.at(-1)).toEqual(["2029-04-01", 1_451_613]);
     expect(periods).toHaveLength(13);

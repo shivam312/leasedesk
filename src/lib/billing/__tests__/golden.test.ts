@@ -306,4 +306,16 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
     expect(lines(lease, "2027-02")).toEqual([]);
     expect(lines(lease, "2027-03")).toEqual([["rent", 10_000_000]]);
   });
+
+  it("16. ₹90,015.71 + 5% rounds once to the rupee → ₹94,516", () => {
+    const steps = amountSteps({
+      charge: { ...rent, amountPaise: 9_001_571 },
+      lease: { id: "G16", startDate: "2026-04-01", endDate: "2029-03-31" },
+      rules: [{ percentBp: 500, everyMonths: 12, anchor: "lease_start" }],
+      roundEscalatedRentToRupee: true,
+    });
+    // 90,015.71 × 1.05 = 94,516.4955 → ₹94,516
+    // (paisa first: 94,516.50 → ₹94,517 — the bug this guards against)
+    expect(steps[1]?.amount).toBe(9_451_600);
+  });
 });

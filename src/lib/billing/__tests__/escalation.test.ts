@@ -62,9 +62,20 @@ describe("compounding", () => {
     ]);
     expect(steps[3]?.explanation.steps).toEqual([
       "Rent goes up 5% every 12 months from 01-04-2026",
-      "Rent increase on 01-04-2029: ₹1,10,250 + 5% = ₹1,15,762.50",
-      "Rounded to the nearest rupee: ₹1,15,763",
+      "Rent increase on 01-04-2029: ₹1,10,250 + 5%, to the nearest rupee = ₹1,15,763",
     ]);
+  });
+
+  it("rounds once per step, straight to the rupee", () => {
+    const steps = amountSteps({
+      charge: { ...rent, amountPaise: 9_001_571 }, // ₹90,015.71
+      lease,
+      rules: [fivePercentYearly],
+      ...rounding,
+    });
+    // 90,015.71 × 1.05 = 94,516.4955 → ₹94,516
+    // (rounding to the paisa first gives 94,516.50 → ₹94,517, which is wrong)
+    expect(amounts(steps)[1]).toEqual(["2027-04-01", 9_451_600]);
   });
 
   it("keeps paise when rupee rounding is off", () => {
@@ -269,7 +280,7 @@ describe("custom escalations", () => {
       ...rounding,
     });
     // Rule until then (1,05,000 in 2027), then ₹1,20,000 from 1 Apr 2028.
-    // Rule increases from that date on are dropped (open question 3).
+    // Rule increases from that date on are dropped (section 5).
     expect(amounts(steps)).toEqual([
       ["2026-04-01", 10_000_000],
       ["2027-04-01", 10_500_000],
@@ -295,6 +306,47 @@ describe("custom escalations", () => {
       ["2028-04-01", 11_550_000],
       ["2030-04-01", 12_416_300],
     ]);
+  });
+
+  it("a negative percentage is explained as a decrease", () => {
+    const steps = amountSteps({
+      charge: rent,
+      lease,
+      rules: [fivePercentYearly],
+      custom: [
+        { chargeId: "rent", effectiveDate: "2028-04-01", percentBp: -1000 },
+      ],
+      ...rounding,
+    });
+    // 1,05,000 × 0.90 = 94,500
+    expect(amounts(steps)[2]).toEqual(["2028-04-01", 9_450_000]);
+    expect(steps[2]?.explanation).toEqual({
+      rule: "Rent decrease",
+      steps: [
+        "Rent decrease on 01-04-2028: ₹1,05,000 − 10%, to the nearest rupee = ₹94,500",
+      ],
+      result: 9_450_000,
+    });
+  });
+
+  it("a lower agreed amount is a decrease", () => {
+    const steps = amountSteps({
+      charge: rent,
+      lease,
+      custom: [
+        {
+          chargeId: "rent",
+          effectiveDate: "2028-04-01",
+          newAmountPaise: 9_000_000,
+        },
+      ],
+      ...rounding,
+    });
+    expect(steps[1]?.explanation).toEqual({
+      rule: "Rent decrease",
+      steps: ["Rent decreases on 01-04-2028 to the agreed ₹90,000"],
+      result: 9_000_000,
+    });
   });
 
   it("works without a rule, and ignores other charges' entries", () => {

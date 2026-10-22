@@ -20,7 +20,9 @@ test("main nav opens every section, and the profile icon opens Settings", async 
     await expect(link).toHaveAttribute("aria-current", "page");
   }
 
-  await page.getByRole("link", { name: "Profile and settings" }).click();
+  const settings = page.getByRole("link", { name: "Settings" });
+  await settings.click();
   await expect(page).toHaveURL("/settings");
+  await expect(settings).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Settings");
 });

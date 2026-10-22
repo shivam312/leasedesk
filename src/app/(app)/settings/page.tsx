@@ -7,7 +7,7 @@ export default function SettingsPage() {
   return (
     <PageHeader
       title="Settings"
-      description="Your organization, billing details, building defaults and users."
+      description="Your business details, building defaults (GST, due days, invoice prefix) and team members."
     />
   );
 }

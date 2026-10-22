@@ -39,10 +39,12 @@ export function NavLinks({
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                "outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 variant === "sidebar" &&
-                  "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
-                variant === "sidebar" && active && "bg-accent text-foreground",
+                  "flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
+                variant === "sidebar" &&
+                  active &&
+                  "bg-accent font-semibold text-foreground",
                 variant === "bottom" &&
                   "flex h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-muted-foreground",
                 variant === "bottom" &&

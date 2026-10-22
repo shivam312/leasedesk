@@ -7,7 +7,7 @@ export default function LeasesPage() {
   return (
     <PageHeader
       title="Leases"
-      description="Your buildings, units and leases."
+      description="Your buildings and units, and every lease: who rents what, the rent, and when it ends."
     />
   );
 }

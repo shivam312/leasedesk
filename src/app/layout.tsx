@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,11 +17,14 @@ export const metadata: Metadata = {
   description: "Leases, rent invoices and payments for Indian landlords",
 };
 
+// viewportFit "cover" lets the bottom tab bar pad for the iPhone home indicator.
+export const viewport: Viewport = { viewportFit: "cover" };
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en-IN"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-pt-16 scroll-pb-28 antialiased md:scroll-pb-0`}
     >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>

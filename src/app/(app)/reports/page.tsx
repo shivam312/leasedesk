@@ -7,7 +7,7 @@ export default function ReportsPage() {
   return (
     <PageHeader
       title="Reports"
-      description="Rent roll, unpaid rent, GST and TDS summaries, ready to export."
+      description="Rent roll (every lease and its rent), unpaid rent, and GST and TDS summaries, ready to export."
     />
   );
 }

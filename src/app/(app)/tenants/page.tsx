@@ -7,7 +7,7 @@ export default function TenantsPage() {
   return (
     <PageHeader
       title="Tenants"
-      description="Everyone who rents from you, with their contacts and what they owe."
+      description="Everyone who rents from you, with their contacts and what is unpaid."
     />
   );
 }

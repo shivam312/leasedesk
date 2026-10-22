@@ -12,7 +12,7 @@ The app should feel like a monthly routine, not a database. A property manager w
 6. **Plain words.** Use the glossary below. Accounting terms only in reports.
 7. **Every amount explains itself.** Tapping an amount shows how it was calculated, in a sentence.
 8. **Every screen ends in an action.** A list of problems always has the button that fixes them.
-9. **Phone first for the owner, table-dense for the accountant.** Lists become cards below 640px wide. Billing tables stay usable on a laptop with keyboard navigation.
+9. **Phone first for the owner, table-dense for the accountant.** Lists become cards below 768px wide (Tailwind `md`), the same width at which the nav switches from bottom tabs to the sidebar. Billing tables stay usable on a laptop with keyboard navigation.
 10. **No custom fields or per-customer workflows.** If several customers need something, it becomes a feature for everyone.
 
 ## Screen checklist

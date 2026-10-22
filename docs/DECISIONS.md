@@ -43,6 +43,6 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Consequences:**
 - `.nvmrc` pins Node 24 and `package.json` requires Node 22 or newer. pnpm comes with that Node install (`packageManager` in `package.json`).
 - Next.js 16 runs with `cacheComponents` and `partialPrefetching` on (the create-next-app defaults). Client components that read the URL (`usePathname`, `useSearchParams`) sit inside a `Suspense` boundary, so pages with dynamic params still prerender. Next.js 16 changed many APIs: check `node_modules/next/dist/docs/` before using an unfamiliar one.
-- From 768px up the nav is a left sidebar; below that it is a fixed bottom tab bar. Settings is the profile icon in the top bar on both.
+- One layout breakpoint: 768px (Tailwind `md`). From 768px up the nav is a left sidebar and lists are tables; below that the nav is a fixed bottom tab bar and lists are cards. This replaces the earlier 640px for cards, so a tablet never shows a laptop table above the phone tab bar. Settings is the profile icon in the top bar on both.
 - Playwright runs every e2e test at 375px and 1280px against a production build (`next build && next start`), not the dev server.
 - `formatINR` shows negative amounts as `-₹1,200`. The docs didn't specify this; change it here if accountants prefer brackets.

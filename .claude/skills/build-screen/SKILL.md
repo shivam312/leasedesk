@@ -16,7 +16,7 @@ Our users are busy building owners and accountants, not software people. Every s
 5. **Server first.** Fetch data in a server component; use client components only for interactive parts (forms, selection, dialogs). Mutations go through server actions in `src/server/actions/`.
 6. **Write the copy with the glossary.** "Rent increase", not "escalation". Buttons are verbs: "Send 42 invoices", "Record payment", "Add lease".
 7. **Build all states:** empty, loading, error, one item, many items (use the seed data with 40 tenants), and a very long tenant name.
-8. **Check both widths:** 375px (phone) and 1280px (laptop). Lists become cards on phones.
+8. **Check both widths:** 375px (phone) and 1280px (laptop). Lists become cards below 768px (`md`), the same breakpoint as the nav.
 9. **Run the screen checklist** in `docs/UX_PRINCIPLES.md` and fix anything that fails.
 
 ## Patterns to reuse

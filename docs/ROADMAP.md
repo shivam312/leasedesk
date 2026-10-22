@@ -20,7 +20,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 - [x] Charge monthly amounts (fixed, per sq ft, per slot)
 - [x] Rent-free periods and rent commencement
 - [x] Escalations: compounding, non-compounding, custom
-- [ ] Pro-rata and mid-month splits
+- [x] Pro-rata and mid-month splits
 - [ ] Full rent schedule for a lease (`schedule.ts`)
 - [ ] Invoice lines for a lease and month, monthly and quarterly, advance and arrears
 - [ ] GST split and round-off
@@ -97,3 +97,4 @@ Found while building M1. The engine follows the most conservative reading noted 
 2. **Rounding negative amounts.** Section 2 says "round half up". For negative values (credit notes, round-off) the engine rounds half away from zero, so −₹0.005 becomes −₹0.01 and a credit note mirrors its invoice exactly. Confirm with the CA when credit notes are built (M4).
 3. **Custom escalations vs the rule.** Section 5 says custom escalations "override the rule from their date". The engine reads this as: from the first custom date for a charge, the rule's later increases stop and only custom entries apply. A custom percentage applies to the amount just before it; a custom new amount is used as entered (not rounded). Confirm with the pilot whether the rule should resume after a custom entry.
 4. **Increases before a charge starts.** If a charge starts after the escalation anchor (e.g. a charge added mid-lease), the engine ignores increase dates on or before the charge's start, treats the entered amount as its starting amount, and counts non-compounding steps from the first increase it applies.
+5. **Pro-rating a quarterly charge.** Section 6 says "use actual days in the calendar month"; section 7 says a lease starting mid-quarter gets a pro-rated first bill but not how. The engine pro-rates over the actual days in the quarter: golden 10 gives ₹30,000 × 47 / 91 = ₹15,494.51. The alternative (₹10,000 a month, May pro-rated 17/31, plus June) gives ₹15,483.87. Confirm which the pilot landlord uses.

@@ -18,7 +18,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 - [x] `money.ts` and `dates.ts` with tests (paise rounding, days in month, add months, financial year, quarters)
 - [x] Charge monthly amounts (fixed, per sq ft, per slot)
-- [ ] Rent-free periods and rent commencement
+- [x] Rent-free periods and rent commencement
 - [ ] Escalations: compounding, non-compounding, custom
 - [ ] Pro-rata and mid-month splits
 - [ ] Full rent schedule for a lease (`schedule.ts`)

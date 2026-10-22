@@ -41,3 +41,14 @@ export type Charge = ChargeAmount & {
   /** Default `true` for rent, `false` for everything else. */
   waivedDuringRentFree?: boolean;
 };
+
+/** The lease dates the engine needs (leases table). */
+export type LeaseTerms = {
+  id: string;
+  startDate: PlainDate;
+  /** Last day of the lease, inclusive. */
+  endDate: PlainDate;
+  /** Set months or days, not both. */
+  rentFreeMonths?: number;
+  rentFreeDays?: number;
+};

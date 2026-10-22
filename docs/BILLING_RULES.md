@@ -14,6 +14,7 @@ This is the specification for the billing engine in `src/lib/billing/`. If code 
 ## 2. Rounding
 
 - Round half up to the nearest paisa after every multiplication or division.
+- Negative amounts (credit notes, round-off) round half away from zero: −₹0.005 becomes −₹0.01, so a credit note mirrors its invoice exactly.
 - Monthly rent after an escalation is rounded to the nearest whole rupee by default (organization setting `roundEscalatedRentToRupee`, default `true`). **[Pilot]**
 - Each tax line (CGST, SGST, IGST) is rounded to the nearest paisa separately.
 - Invoice total is rounded to the nearest rupee with a separate "Round off" line (setting `roundInvoiceTotal`, default `true`). **[CA]**

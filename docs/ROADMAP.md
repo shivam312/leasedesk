@@ -52,6 +52,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 - [ ] Schema: invoice series, invoices, invoice lines, credit notes
 - [ ] Monthly billing run: generate drafts for all active leases (Inngest job + manual button)
 - [ ] Review and "Send all": assign numbers, generate PDFs, email via Resend
+- [ ] Move invoice number formatting from `src/lib/billing/invoice-number.ts` to `src/lib/invoices/` with sequence assignment (D9)
 - [ ] Invoice PDF with GST fields, bank details and UPI QR code
 - [ ] "Explain this amount" on every line
 - [ ] Credit notes
@@ -96,4 +97,3 @@ Found while building M1. The engine follows the most conservative reading noted 
 1. **Quarterly per sq ft and per slot charges.** Section 1 defines rates per month; section 3 allows `frequency: quarterly` for any basis, but not how a monthly rate becomes a quarterly bill (× 3? by days?). For now the engine refuses quarterly billing for `per_sqft` and `per_slot` charges; quarterly works for `fixed` amounts, which are taken as per quarter.
 2. **Pro-rating a quarterly charge.** Section 6 says "use actual days in the calendar month"; section 7 says a lease starting mid-quarter gets a pro-rated first bill but not how. The engine pro-rates over the actual days in the quarter: golden 10 gives ₹30,000 × 47 / 91 = ₹15,494.51. The alternative (₹10,000 a month, May pro-rated 17/31, plus June) gives ₹15,483.87. Confirm which the pilot landlord uses.
 3. **TDS rounding and the ₹1 tolerance [CA].** Section 10 doesn't say how expected TDS is rounded; the engine uses section 2 (nearest paisa). Many deductors round TDS to the rupee, which the ₹1 tolerance absorbs. The tolerance is applied inclusively (a shortfall exactly ₹1 off the expected TDS is still "paid with TDS"). Confirm both with the CA.
-4. **Where invoice numbering lives.** Golden case 13 needed a number formatter, so `invoiceNumber` is in `src/lib/billing/invoice-number.ts` (pure formatting and the 16-character check). `docs/ARCHITECTURE.md` puts numbering in `src/lib/invoices/`; move it there in M4 when sequence assignment is built.

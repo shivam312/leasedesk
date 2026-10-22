@@ -206,6 +206,28 @@ describe("quarterly in arrears, lease ending mid-quarter", () => {
   });
 });
 
+describe("₹0 amounts", () => {
+  const signage: Charge = {
+    ...rent,
+    id: "signage",
+    type: "signage",
+    amountPaise: 0, // waived by agreement
+  };
+
+  it("skips ₹0 lines", () => {
+    const withZero = { ...lease, charges: [rent, signage] };
+    // October: rent ₹90,000 full month; signage ₹0 → no line
+    expect(lines(invoiceForRun(withZero, "2026-10", settings))).toEqual([
+      ["Rent for Oct 2026", 9_000_000],
+    ]);
+  });
+
+  it("creates no invoice when every line is ₹0", () => {
+    const allZero = { ...lease, charges: [signage] };
+    expect(invoiceForRun(allZero, "2026-10", settings)).toBeNull();
+  });
+});
+
 describe("settings", () => {
   it("needs whole due days", () => {
     expect(() =>

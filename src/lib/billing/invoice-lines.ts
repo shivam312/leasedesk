@@ -43,6 +43,7 @@ const NOUNS: Record<ChargeType, string> = {
  * - In arrears: a period is billed in the run after the period ends, or the
  *   run after the lease ends if that is sooner (a lease ending mid-quarter).
  * - A period split by a rent increase gives one line per part.
+ * - ₹0 lines are skipped; with no lines left there is no invoice.
  */
 export function invoiceForRun(
   lease: LeaseInput,
@@ -54,11 +55,13 @@ export function invoiceForRun(
       `Due days must be a whole number ≥ 0, got ${settings.dueDays}`,
     );
   }
-  const lines = lease.charges.flatMap((charge) =>
-    chargePeriods(charge, lease, settings)
-      .filter((p) => billingRun(charge, p, lease) === runMonth)
-      .flatMap((p) => linesFor(charge, p)),
-  );
+  const lines = lease.charges
+    .flatMap((charge) =>
+      chargePeriods(charge, lease, settings)
+        .filter((p) => billingRun(charge, p, lease) === runMonth)
+        .flatMap((p) => linesFor(charge, p)),
+    )
+    .filter((line) => line.taxablePaise !== 0);
   if (lines.length === 0) return null;
   const invoiceDate = startOfMonth(runMonth);
   return {

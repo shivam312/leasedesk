@@ -23,7 +23,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 - [x] Pro-rata and mid-month splits
 - [x] Full rent schedule for a lease (`schedule.ts`)
 - [x] Invoice lines for a lease and month, monthly and quarterly, advance and arrears
-- [ ] GST split and round-off
+- [x] GST split and round-off
 - [ ] Expected TDS
 - [ ] All golden test cases in `docs/BILLING_RULES.md` passing
 - [ ] Review by the `billing-reviewer` agent

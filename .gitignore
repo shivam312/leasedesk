@@ -14,3 +14,11 @@ supabase/.temp/
 .DS_Store
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Next.js / TypeScript
+next-env.d.ts
+*.tsbuildinfo
+*.pem
+.pnpm-debug.log*
+/blob-report/
+/playwright/.cache/

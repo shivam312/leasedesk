@@ -10,6 +10,7 @@ This is the specification for the billing engine in `src/lib/billing/`. If code 
 - **Rates per sq ft:** paise per sq ft per month. ₹85.50/sq ft = `8550`.
 - **Dates:** `YYYY-MM-DD` strings or a plain-date type. Never `Date` objects with times.
 - **Financial year:** 1 April to 31 March. FY label `2026-27`.
+- **Adding months:** same day in the target month. If that day doesn't exist there, roll forward to the 1st of the next month: 31 Jan + 1 month = 1 Mar; 29 Feb 2028 + 12 months = 1 Mar 2029. Applies to rent-free months and escalation dates.
 
 ## 2. Rounding
 
@@ -129,3 +130,5 @@ The engine must pass these at all times. Keep them in `src/lib/billing/__tests__
 11. Lease ends 20 Nov → November billed for 20 days.
 12. Payment ₹1,08,000 against ₹1,18,000 invoice with ₹10,000 expected TDS → paid with TDS, TDS record ₹10,000.
 13. Invoice numbering: 10,000th invoice in FY 26-27 with prefix `B1` stays ≤16 characters.
+14. 5% every 12 months from 29 Feb 2028 → increases on 1 Mar 2029 and 1 Mar 2030.
+15. Lease from 31 Jan 2027 with 1 month rent-free → rent starts 1 Mar 2027; first rent invoice is March.

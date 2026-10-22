@@ -273,4 +273,37 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
       }),
     ).toThrow(/16/);
   });
+
+  it("14. 5% every 12 months from 29 Feb 2028 → first increase on 1 Mar 2029", () => {
+    const steps = amountSteps({
+      charge: { ...rent, startDate: "2028-02-29" },
+      lease: { id: "G14", startDate: "2028-02-29", endDate: "2031-02-28" },
+      rules: [{ percentBp: 500, everyMonths: 12, anchor: "lease_start" }],
+      roundEscalatedRentToRupee: true,
+    });
+    // 29 Feb 2028 + 12 months: no 29 Feb 2029 → 1 Mar 2029
+    // 29 Feb 2028 + 24 months: no 29 Feb 2030 → 1 Mar 2030
+    // 1,00,000 × 1.05 = 1,05,000; × 1.05 = 1,10,250
+    expect(steps.map((s) => [s.from, s.amount])).toEqual([
+      ["2028-02-29", 10_000_000],
+      ["2029-03-01", 10_500_000],
+      ["2030-03-01", 11_025_000],
+    ]);
+  });
+
+  it("15. lease from 31 Jan with 1 month rent-free → rent starts 1 Mar", () => {
+    const lease: LeaseInput = {
+      id: "G15",
+      startDate: "2027-01-31",
+      endDate: "2030-01-30",
+      rentFreeMonths: 1,
+      charges: [{ ...rent, startDate: "2027-01-31" }],
+    };
+    // 31 Jan + 1 month: no 31 Feb → 1 Mar. Nothing in Jan or Feb;
+    // March is a full month at ₹1,00,000.
+    expect(rentSchedule(lease, settings).rentStartsOn).toBe("2027-03-01");
+    expect(lines(lease, "2027-01")).toEqual([]);
+    expect(lines(lease, "2027-02")).toEqual([]);
+    expect(lines(lease, "2027-03")).toEqual([["rent", 10_000_000]]);
+  });
 });

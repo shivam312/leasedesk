@@ -100,16 +100,28 @@ export function maxDate(a: PlainDate, b: PlainDate): PlainDate {
   return compareDates(a, b) >= 0 ? a : b;
 }
 
-/** Same day `months` later; clamps to month end (31 Jan + 1 month = 28/29 Feb). */
+/**
+ * Same day `months` later. When that day doesn't exist in the target month,
+ * rolls forward to the 1st of the next month (docs/BILLING_RULES.md,
+ * section 1): 31 Jan + 1 month = 1 Mar; 29 Feb 2028 + 12 months = 1 Mar 2029.
+ * Going backwards to a day that doesn't exist has no rule, so it throws.
+ */
 export function addMonths(date: PlainDate, months: number): PlainDate {
   const { year, month, day } = parseDate(date);
   const index = year * 12 + (month - 1) + months;
   const newYear = Math.floor(index / 12);
   const newMonth = (index % 12) + 1;
-  return toPlainDate(
-    newYear,
-    newMonth,
-    Math.min(day, daysInMonth(newYear, newMonth)),
+  if (day <= daysInMonth(newYear, newMonth)) {
+    return toPlainDate(newYear, newMonth, day);
+  }
+  if (months < 0) {
+    throw new RangeError(
+      `${date} minus ${-months} months: day ${day} doesn't exist in ${newYear}-${pad2(newMonth)}`,
+    );
+  }
+  return addDays(
+    toPlainDate(newYear, newMonth, daysInMonth(newYear, newMonth)),
+    1,
   );
 }
 

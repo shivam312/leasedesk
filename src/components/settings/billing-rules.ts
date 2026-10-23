@@ -1,6 +1,7 @@
 // Form fields for Settings → Billing rules.
 
 import type { FormField } from "@/components/forms/SimpleForm";
+import { formatINR } from "@/lib/format";
 import { SETTING_LABELS } from "@/lib/settings/labels";
 import { fieldName, toFieldValue } from "@/lib/settings/rules-form";
 import {
@@ -21,7 +22,7 @@ export function describeValue(key: SettingKey, value: unknown): string {
     case "percent":
       return `${toFieldValue(key, value)}%`;
     case "rupees":
-      return `₹${toFieldValue(key, value)}`;
+      return formatINR(value as number);
     case "days":
       return `${String(value)} days`;
     default:

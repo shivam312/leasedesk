@@ -225,12 +225,7 @@ export async function seedDemo(
         checked.dates,
       );
     });
-    await db.transaction(async (tx) => {
-      await tx
-        .update(schema.units)
-        .set({ status: "leased" })
-        .where(eq(schema.units.id, unit.id));
-    });
+    await db.transaction((tx) => markUnitLeased(tx, organizationId, unit.id));
   }
 
   // Each past month: the billing run makes the drafts, the owner sends them
@@ -519,6 +514,23 @@ async function seedSetup(tx: Tx, userId: string) {
   return { organizationId, tenantIds };
 }
 
+/** Mark a demo unit as leased once its lease is saved. */
+export async function markUnitLeased(
+  tx: Tx,
+  organizationId: string,
+  unitId: string,
+) {
+  await tx
+    .update(schema.units)
+    .set({ status: "leased" })
+    .where(
+      and(
+        eq(schema.units.organizationId, organizationId),
+        eq(schema.units.id, unitId),
+      ),
+    );
+}
+
 /** Each building's id and units, floor by floor as in the plan. */
 async function unitsByBuilding(tx: Tx, organizationId: string) {
   const out = {} as Record<
@@ -548,7 +560,12 @@ async function unitsByBuilding(tx: Tx, organizationId: string) {
         chargeableArea: schema.units.chargeableArea,
       })
       .from(schema.units)
-      .where(eq(schema.units.buildingId, building.id));
+      .where(
+        and(
+          eq(schema.units.organizationId, organizationId),
+          eq(schema.units.buildingId, building.id),
+        ),
+      );
     const byCode = new Map(rows.map((r) => [r.code, r]));
     out[b.key] = {
       buildingId: building.id,

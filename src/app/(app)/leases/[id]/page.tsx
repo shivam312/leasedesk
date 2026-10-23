@@ -14,10 +14,12 @@ import { runScoped } from "@/lib/db/scoped";
 import { formatArea, formatDate, formatINR } from "@/lib/format";
 import { bpText } from "@/lib/leases/prefill";
 import { getLease } from "@/lib/leases/queries";
-import { reviewRows } from "@/lib/leases/review";
+import { chargeSummary, reviewRows } from "@/lib/leases/review";
 import { billingSettings } from "@/lib/settings/billing";
 import { loadSettings } from "@/lib/settings/store";
 import { terminateLease } from "@/server/actions/leases";
+
+const monthsText = (n: number) => `${n} ${n === 1 ? "month" : "months"}`;
 
 export const metadata: Metadata = { title: "Lease" };
 
@@ -91,7 +93,7 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           {editable && (
             <Button asChild variant="ghost" className="h-11 md:h-9">
               <Link href={`/leases/new?copy=${lease.id}`}>
-                Use as a template for a new lease
+                Copy to a new lease
               </Link>
             </Button>
           )}
@@ -124,7 +126,7 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           <dt className="text-muted-foreground">Notice period</dt>
           <dd className="font-medium">
             {lease.noticePeriodMonths
-              ? `${lease.noticePeriodMonths} months`
+              ? monthsText(lease.noticePeriodMonths)
               : "None"}
           </dd>
         </div>
@@ -141,35 +143,38 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           Rent and charges
         </h2>
         <ul className="flex flex-col gap-2">
-          {saved.charges.map((c) => (
-            <li key={c.id}>
-              <Card className="flex flex-col gap-1 text-sm">
-                <p className="font-medium">
-                  {c.label ?? CHARGE_NAMES[c.type] ?? "Charge"}
-                </p>
-                <p className="text-muted-foreground">
-                  {formatINR(c.rateOrAmount)}
-                  {c.basis === "per_sqft"
-                    ? " per sq ft a month"
-                    : c.basis === "per_slot"
-                      ? ` per slot a month × ${c.quantity}`
-                      : c.frequency === "quarterly"
-                        ? " a quarter"
-                        : " a month"}
-                  {" · "}
-                  {c.timing === "advance" ? "In advance" : "After the month"}
-                  {" · "}GST {bpText(c.gstRateBp)}%
-                  {c.endDate && ` · Ends ${formatDate(c.endDate)}`}
-                </p>
-              </Card>
-            </li>
-          ))}
+          {saved.input.charges.map((c) => {
+            const summary = chargeSummary(c);
+            return (
+              <li key={c.id}>
+                <Card className="flex flex-col gap-1 text-sm">
+                  <div className="flex flex-wrap justify-between gap-x-4">
+                    <p className="font-medium">
+                      {c.label ?? CHARGE_NAMES[c.type] ?? "Charge"}
+                    </p>
+                    <p className="font-medium tabular-nums">{summary.amount}</p>
+                  </div>
+                  {summary.how && (
+                    <p className="text-muted-foreground">{summary.how}</p>
+                  )}
+                  <p className="text-muted-foreground">
+                    {c.timing === "advance"
+                      ? "Billed in advance"
+                      : "Billed after the month"}
+                    {" · "}GST {bpText(c.gstRateBp)}%
+                    {c.endDate && ` · Ends ${formatDate(c.endDate)}`}
+                  </p>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
         {saved.rules.length > 0 && (
           <ul className="mt-3 flex flex-col gap-1 text-sm">
             {saved.rules.map((r) => (
               <li key={r.id}>
-                Rent goes up {bpText(r.percentBp)}% every {r.everyMonths} months
+                Rent goes up {bpText(r.percentBp)}% every{" "}
+                {r.everyMonths === 1 ? "month" : monthsText(r.everyMonths)}
                 {r.compounding ? "" : ", each time on the starting rent"}.
               </li>
             ))}

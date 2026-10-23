@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { billingSettings } from "@/lib/settings/billing";
 import { defaultSettings } from "@/lib/settings/schema";
-import { reviewRows } from "../review";
+import { chargeSummary, reviewRows } from "../review";
 
 const settings = billingSettings(defaultSettings());
 
@@ -119,5 +119,51 @@ describe("reviewRows", () => {
         rentIncreased: false,
       },
     ]);
+  });
+});
+
+describe("chargeSummary", () => {
+  it("shows a per sq ft charge's monthly amount and how it's worked out", () => {
+    // 1,412 sq ft × ₹85 = ₹1,20,020 a month.
+    expect(
+      chargeSummary({
+        ...charge,
+        id: "rent",
+        type: "rent",
+        basis: "per_sqft",
+        ratePaise: 8500,
+        areaHundredths: 141200,
+      }),
+    ).toEqual({
+      amount: "₹1,20,020 a month",
+      how: "1,412 sq ft × ₹85 = ₹1,20,020 per month",
+    });
+  });
+
+  it("shows a quarterly per-slot charge per quarter", () => {
+    // 4 slots × ₹3,000 = ₹12,000 a month; × 3 = ₹36,000 a quarter.
+    const s = chargeSummary({
+      ...charge,
+      id: "p",
+      type: "parking",
+      basis: "per_slot",
+      ratePaise: 300000,
+      slots: 4,
+      frequency: "quarterly",
+    });
+    expect(s.amount).toBe("₹36,000 a quarter");
+    expect(s.how).toContain("₹36,000 per quarter");
+  });
+
+  it("needs no working for a fixed amount", () => {
+    expect(
+      chargeSummary({
+        ...charge,
+        id: "c",
+        type: "cam",
+        basis: "fixed",
+        amountPaise: 1500000,
+      }),
+    ).toEqual({ amount: "₹15,000 a month", how: null });
   });
 });

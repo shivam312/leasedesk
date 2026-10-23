@@ -770,7 +770,7 @@ export function ScheduleTable({
             <tr key={r.month} className="border-t">
               <td className="py-2">
                 {formatMonth(r.month)}{" "}
-                {r.rentIncreased && <Badge tone="good">Rent increase</Badge>}
+                {r.rentIncreased && <Badge>Rent increase</Badge>}
               </td>
               <td className="py-2 text-right tabular-nums">
                 {formatINR(r.rent)}
@@ -795,7 +795,7 @@ export function ScheduleTable({
             <div className="text-muted-foreground">
               Rent {formatINR(r.rent)} · Other {formatINR(r.other)}
             </div>
-            {r.rentIncreased && <Badge tone="good">Rent increase</Badge>}
+            {r.rentIncreased && <Badge>Rent increase</Badge>}
           </li>
         ))}
       </ul>

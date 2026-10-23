@@ -4,8 +4,10 @@
 
 import { monthOf, monthsBetween, type YearMonth } from "@/lib/billing/dates";
 import { sumPaise, type Paise } from "@/lib/billing/money";
+import { chargeBaseAmount } from "@/lib/billing/charges";
 import { rentSchedule, type LeaseInput } from "@/lib/billing/schedule";
-import type { BillingSettings } from "@/lib/billing/types";
+import type { BillingSettings, Charge } from "@/lib/billing/types";
+import { formatINR } from "@/lib/format";
 
 export type ReviewRow = {
   /** The monthly run that bills these amounts, so rows match the invoices. */
@@ -70,4 +72,20 @@ export function reviewRows(
       rentIncreased: r.rentIncreased,
     };
   });
+}
+
+/**
+ * A charge's amount for one billing period, before rent increases, and the
+ * engine's working for it (null for a fixed amount, which needs none).
+ */
+export function chargeSummary(charge: Charge): {
+  amount: string;
+  how: string | null;
+} {
+  const base = chargeBaseAmount(charge);
+  const per = charge.frequency === "quarterly" ? "a quarter" : "a month";
+  return {
+    amount: `${formatINR(base.amount)} ${per}`,
+    how: charge.basis === "fixed" ? null : base.explanation.steps.join(" · "),
+  };
 }

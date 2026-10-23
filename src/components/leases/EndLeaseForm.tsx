@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { errorProps, Field, FormMessage } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,11 @@ export function EndLeaseForm({
   const id = `${useId()}-exitDate`;
   const error = state.fieldErrors?.exitDate;
   const validDate = /^\d{4}-\d{2}-\d{2}$/.test(exitDate);
+  const endButton = useRef<HTMLButtonElement>(null);
+  // Move to the confirmation's button when it opens, so it's read and reached.
+  useEffect(() => {
+    if (confirming) endButton.current?.focus();
+  }, [confirming]);
 
   return (
     <form
@@ -63,7 +68,11 @@ export function EndLeaseForm({
         <FormMessage message={state.message} tone={state.tone} />
       )}
       {confirming && validDate ? (
-        <div className="flex flex-col gap-3 rounded-lg border p-4" role="alert">
+        <div
+          className="flex flex-col gap-3 rounded-lg border p-4"
+          role="group"
+          aria-label="Confirm ending the lease"
+        >
           <p className="text-sm">
             End {tenantName}&apos;s lease on {formatDate(exitDate)}? Billing
             stops after that day and the last invoice covers part of the month.
@@ -72,6 +81,7 @@ export function EndLeaseForm({
           </p>
           <div className="flex flex-wrap gap-2">
             <Button
+              ref={endButton}
               type="submit"
               variant="destructive"
               disabled={pending}

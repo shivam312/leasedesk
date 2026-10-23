@@ -66,4 +66,4 @@ supabase stop       # when you're done
 ### Error reporting and password reset
 
 - Errors are reported to Sentry only when `SENTRY_DSN` (server) and `NEXT_PUBLIC_SENTRY_DSN` (browser) are set; without them nothing is sent and errors are only logged. Reports carry record ids, never tenant names or amounts (D41 in `docs/DECISIONS.md`).
-- "Forgot your password?" on the login page emails a reset link. Locally the email lands in Mailpit (http://127.0.0.1:54324, part of `supabase start`). A cloud Supabase project needs its Site URL and `<APP_URL>/auth/confirm` in its redirect URLs (D42).
+- "Forgot your password?" on the login page emails a reset link. Locally the email lands in Mailpit (http://127.0.0.1:54324, part of `supabase start`). Reset links use `APP_URL`; without it they work only on this computer (localhost), and a deployed app doesn't send them. A cloud Supabase project needs its Site URL and `<APP_URL>/auth/confirm` in its redirect URLs (D42).

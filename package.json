@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "dev": "next dev",
@@ -48,7 +48,7 @@
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^22",
+    "@types/node": "^24",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",

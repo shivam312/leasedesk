@@ -11,6 +11,16 @@ test("an owner changes a billing rule; advanced rules sit under More options", a
     "Billing rules",
   );
 
+  // Building defaults come before the form, so opening one never drops
+  // unsaved organization rules.
+  const buildingsTop = (await page
+    .getByRole("heading", { name: "Building defaults" })
+    .boundingBox())!.y;
+  const saveTop = (await page
+    .getByRole("button", { name: "Save billing rules" })
+    .boundingBox())!.y;
+  expect(buildingsTop).toBeLessThan(saveTop);
+
   const rounding = page.getByLabel("Round rent after an increase");
   await expect(rounding).toBeHidden();
   await page.getByText("More options").click();

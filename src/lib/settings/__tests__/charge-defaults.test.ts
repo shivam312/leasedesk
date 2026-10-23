@@ -98,6 +98,19 @@ describe("gst.defaultRateBp and gst.defaultSac (building)", () => {
       ).sacCode,
     ).toBe("997212");
   });
+
+  it("an empty SAC from a form is blank: the building's SAC fills it", () => {
+    // A form sends "" (or spaces) for a field left empty; an invoice can't
+    // print an empty SAC, so it takes the building's 997211.
+    for (const sacCode of ["", "  "]) {
+      expect(
+        withBuildingDefaults(
+          { ...utilities, sacCode },
+          forBuilding({ "gst.defaultSac": "997211" }),
+        ).sacCode,
+      ).toBe("997211");
+    }
+  });
 });
 
 describe("changing a building default later", () => {

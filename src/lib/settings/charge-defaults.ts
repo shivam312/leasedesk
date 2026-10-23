@@ -31,7 +31,10 @@ export function chargeDefaults(settings: Settings) {
   };
 }
 
-/** Fill what the user left blank from the building defaults; what they set wins, including 0%. */
+/**
+ * Fill what the user left blank (missing, or an empty SAC) from the building
+ * defaults; what they set wins, including 0%.
+ */
 export function withBuildingDefaults(
   draft: ChargeDraft,
   settings: Settings,
@@ -41,6 +44,7 @@ export function withBuildingDefaults(
     ...draft,
     timing: draft.timing ?? defaults.timing,
     gstRateBp: draft.gstRateBp ?? defaults.gstRateBp,
-    sacCode: draft.sacCode ?? defaults.sacCode,
+    // A form sends "" for an empty field; that's blank too.
+    sacCode: draft.sacCode?.trim() || defaults.sacCode,
   } as SavedCharge;
 }

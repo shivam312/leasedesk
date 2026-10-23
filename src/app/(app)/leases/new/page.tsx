@@ -172,7 +172,12 @@ async function Form({
       {"note" in data && data.note && (
         <p className="max-w-2xl text-sm text-muted-foreground">{data.note}</p>
       )}
+      {/* Next keeps this page's state between visits (Cache Components), so
+          a renewal or copy must not open on another lease's half-done form. */}
       <LeaseForm
+        key={
+          isId(renew) ? `renew-${renew}` : isId(copy) ? `copy-${copy}` : "new"
+        }
         initial={data.initial}
         options={data.options}
         settingFields={data.settingFields}

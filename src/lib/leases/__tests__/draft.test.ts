@@ -39,7 +39,12 @@ describe("parseLeaseForm", () => {
       input({
         charges: [
           { type: "rent", basis: "per_sqft", amount: "100" },
-          { type: "cam", basis: "fixed", amount: "5000", endDate: "2026-03-31" },
+          {
+            type: "cam",
+            basis: "fixed",
+            amount: "5000",
+            endDate: "2026-03-31",
+          },
         ],
       }),
     );

@@ -168,8 +168,15 @@ export function LeaseForm({
         );
         return;
       }
-      if (result.ok === "saved") router.push(`/leases/${result.id}`);
-      else show(result);
+      if (result.ok === "saved") {
+        // Next keeps this page alive after leaving it; the next "Add lease"
+        // starts from a blank form, not this saved one.
+        setValues(initial);
+        setStep("parties");
+        setReview(undefined);
+        setErrors({});
+        router.push(`/leases/${result.id}`);
+      } else show(result);
     });
   }
 

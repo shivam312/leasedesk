@@ -135,7 +135,6 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
             <Link
               href={`/billing/payments/new?tenant=${invoice.tenantId}`}
               className={buttonVariants({
-                variant: "outline",
                 className: "h-11 self-start md:h-9",
               })}
             >

@@ -59,7 +59,7 @@ export function AuthForm({
           </Field>
         );
       })}
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" disabled={pending} className="h-11">
         {pending ? pendingLabel : submitLabel}
       </Button>
     </form>

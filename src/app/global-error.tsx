@@ -26,9 +26,10 @@ export default function GlobalError({
             Something went wrong
           </h1>
           <p className="text-sm text-muted-foreground">
-            The app didn&apos;t load. Try again in a moment.
+            The app didn&apos;t load. Your data is safe. Wait a moment and try
+            again; if it keeps happening, contact support.
           </p>
-          <div>
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => retry()}
@@ -36,6 +37,13 @@ export default function GlobalError({
             >
               Try again
             </button>
+            {/* A plain link: the app's router may be what broke. */}
+            <a
+              href="/today"
+              className="inline-flex h-11 items-center rounded-md border px-4 text-sm font-medium"
+            >
+              Go to Today
+            </a>
           </div>
         </div>
       </body>

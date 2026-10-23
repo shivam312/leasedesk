@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { SimpleForm } from "@/components/forms/SimpleForm";
 import { buildingFields } from "@/components/property/fields";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
@@ -47,6 +48,11 @@ async function NewBuilding() {
           </Link>
           . Then come back to add the building.
         </p>
+        <Button asChild className="mt-3 h-11 md:h-9">
+          <Link href="/settings/business/entities/new">
+            Add business details
+          </Link>
+        </Button>
       </Card>
     );
   }

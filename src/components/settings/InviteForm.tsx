@@ -59,7 +59,7 @@ export function InviteForm() {
             ))}
           </Select>
         </Field>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} className="h-11 md:h-9">
           {pending ? "Creating link…" : "Create invite link"}
         </Button>
       </form>

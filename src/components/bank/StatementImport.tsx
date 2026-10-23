@@ -262,7 +262,7 @@ export function StatementImport({
                   ? "No money received in this file."
                   : `${count} ${count === 1 ? "payment" : "payments"} received from ${formatDate(preview.periodStart!)} to ${formatDate(preview.periodEnd!)}, ${formatINR(preview.lines.reduce((s, l) => s + l.creditPaise, 0))} in all.`}{" "}
                 {preview.debits > 0 &&
-                  `${preview.debits} lines of money paid out are left out.`}{" "}
+                  `${preview.debits} ${preview.debits === 1 ? "line of money paid out is" : "lines of money paid out are"} left out.`}{" "}
                 Lines already imported from an earlier statement are skipped.
               </p>
               {preview.lines.length > 0 && (

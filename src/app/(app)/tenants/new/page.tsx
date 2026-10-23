@@ -27,7 +27,7 @@ export default function NewTenantPage() {
               ...f,
               label: f.label.startsWith("Contact")
                 ? f.label
-                : `Contact ${f.label.toLowerCase()}`,
+                : `Contact ${f.label.charAt(0).toLowerCase()}${f.label.slice(1)}`,
             })),
           ]}
           submitLabel="Add tenant"

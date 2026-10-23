@@ -45,8 +45,8 @@ async function Invite({ params }: { params: Promise<{ token: string }> }) {
         Join {invite.organizationName}
       </h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        You&apos;re invited as <strong>{role.label}</strong>:{" "}
-        {role.description.toLowerCase()}.
+        You&apos;re invited as <strong>{role.label}</strong>: {role.description}
+        .
       </p>
       <JoinForm token={token} email={invite.email} />
     </>

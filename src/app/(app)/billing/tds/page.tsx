@@ -34,7 +34,7 @@ export default function TdsPage({ searchParams }: PageProps<"/billing/tds">) {
       </Link>
       <PageHeader
         title="TDS certificates"
-        description={`TDS tenants kept back from rent, by quarter, and whether their ${TAX_LABELS.tdsCertificate} is in.`}
+        description={`TDS tenants kept back from rent, by quarter, and whether their TDS certificate (${TAX_LABELS.tdsCertificate}) is in.`}
       />
       <Suspense
         fallback={<p className="text-sm text-muted-foreground">Loading TDS…</p>}
@@ -155,8 +155,8 @@ async function Tracker({
         <div className="flex max-w-2xl flex-col gap-3">
           <p className="text-sm">
             No TDS recorded for FY {fy}. When you record a payment with TDS, it
-            shows here so you can collect the tenant&apos;s{" "}
-            {TAX_LABELS.tdsCertificate}.
+            shows here so you can collect the tenant&apos;s TDS certificate (
+            {TAX_LABELS.tdsCertificate}).
           </p>
           {canUpload && (
             <Link

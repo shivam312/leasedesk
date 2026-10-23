@@ -42,7 +42,7 @@ async function Buildings() {
     <div className="flex max-w-3xl flex-col gap-4">
       {editable && list.length > 0 && (
         <div>
-          <Button asChild>
+          <Button asChild className="h-11 md:h-9">
             <Link href="/leases/buildings/new">Add building</Link>
           </Button>
         </div>
@@ -54,7 +54,7 @@ async function Buildings() {
             come next.
           </p>
           {editable && (
-            <Button asChild>
+            <Button asChild className="h-11 md:h-9">
               <Link href="/leases/buildings/new">Add building</Link>
             </Button>
           )}

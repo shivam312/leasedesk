@@ -28,11 +28,14 @@ export default function AppError({
         Something went wrong
       </h1>
       <p className="text-sm text-muted-foreground">
-        This page didn&apos;t load. Try again, or go back to Today.
+        This page didn&apos;t load. Your data is safe. Try again, and if it
+        keeps happening, go back to Today and tell us what you were doing.
       </p>
-      <div className="flex gap-2">
-        <Button onClick={() => retry()}>Try again</Button>
-        <Button asChild variant="outline">
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => retry()} className="h-11 md:h-9">
+          Try again
+        </Button>
+        <Button asChild variant="outline" className="h-11 md:h-9">
           <Link href="/today">Go to Today</Link>
         </Button>
       </div>

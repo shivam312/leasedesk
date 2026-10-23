@@ -106,7 +106,7 @@ export function SimpleForm({
           className="rounded-md border px-4 py-2"
           open={advanced.some((f) => state.fieldErrors?.[f.name])}
         >
-          <summary className="cursor-pointer py-1 text-sm font-medium">
+          <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">
             More options
           </summary>
           <div className="mt-3 flex flex-col gap-4 pb-2">

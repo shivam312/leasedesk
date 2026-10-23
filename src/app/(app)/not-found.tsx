@@ -8,10 +8,11 @@ export default function NotFound() {
         We couldn&apos;t find that
       </h1>
       <p className="text-sm text-muted-foreground">
-        It may have been removed, or the link is wrong.
+        It may have been removed, or the link is wrong. Go back to Today, or use
+        the menu to find it.
       </p>
       <div>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="h-11 md:h-9">
           <Link href="/today">Go to Today</Link>
         </Button>
       </div>

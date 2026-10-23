@@ -17,7 +17,7 @@ export default function TenantsPage() {
     <>
       <PageHeader
         title="Tenants"
-        description="Everyone who rents from you, with their contacts and what is unpaid."
+        description="Everyone who rents from you, with their contacts."
       />
       <Suspense
         fallback={
@@ -39,7 +39,7 @@ async function Tenants() {
     <div className="flex flex-col gap-4">
       {editable && list.length > 0 && (
         <div>
-          <Button asChild>
+          <Button asChild className="h-11 md:h-9">
             <Link href="/tenants/new">Add tenant</Link>
           </Button>
         </div>
@@ -51,7 +51,7 @@ async function Tenants() {
             contact who receives invoices.
           </p>
           {editable && (
-            <Button asChild>
+            <Button asChild className="h-11 md:h-9">
               <Link href="/tenants/new">Add tenant</Link>
             </Button>
           )}

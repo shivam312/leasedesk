@@ -43,7 +43,8 @@ async function Import({ params }: { params: Promise<{ id: string }> }) {
   const skipped = [
     imp.duplicateCount > 0 &&
       `${imp.duplicateCount} already imported from an earlier statement`,
-    imp.debitCount > 0 && `${imp.debitCount} lines of money paid out`,
+    imp.debitCount > 0 &&
+      `${imp.debitCount} ${imp.debitCount === 1 ? "line" : "lines"} of money paid out`,
   ].filter(Boolean);
   return (
     <div className="flex flex-col gap-6">

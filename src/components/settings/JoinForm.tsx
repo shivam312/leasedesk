@@ -32,7 +32,7 @@ export function JoinForm({ token, email }: { token: string; email: string }) {
           {...errorProps("password", error, true)}
         />
       </Field>
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" disabled={pending} className="h-11">
         {pending ? "Joining…" : "Join the team"}
       </Button>
     </form>

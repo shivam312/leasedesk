@@ -310,7 +310,9 @@ export function LeaseForm({
                 ))}
               </div>
               {errors.unitIds && (
-                <p className="text-sm text-destructive">{errors.unitIds}</p>
+                <p role="alert" className="text-sm text-destructive">
+                  {errors.unitIds}
+                </p>
               )}
             </fieldset>
           )}
@@ -545,7 +547,9 @@ export function LeaseForm({
                 <Card key={i} className="flex flex-col gap-4 p-4">
                   <p className="text-sm">
                     Rent goes up {String(r.percent || "…")}% every{" "}
-                    {String(r.everyMonths || "…")} months
+                    {String(r.everyMonths) === "1"
+                      ? "month"
+                      : `${r.everyMonths || "…"} months`}
                   </p>
                   {field(k("percent"), "Increase in %", (common) => (
                     <Input

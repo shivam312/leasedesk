@@ -56,7 +56,7 @@ async function CreditNote({ params }: { params: Promise<{ id: string }> }) {
         href={`/billing/invoices/${invoice.id}`}
         className="mb-2 inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline md:min-h-0"
       >
-        ← Back to invoice {invoice.number}
+        ← Back to {invoice.number ? `invoice ${invoice.number}` : "the invoice"}
       </Link>
       <PageHeader
         title="Issue a credit note"

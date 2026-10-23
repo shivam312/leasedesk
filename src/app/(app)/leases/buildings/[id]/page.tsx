@@ -49,19 +49,19 @@ async function Building({ params }: { params: Promise<{ id: string }> }) {
         />
         <div className="-mt-3 flex flex-wrap gap-2">
           {editable && units.length > 0 && (
-            <Button asChild>
+            <Button asChild className="h-11 md:h-9">
               <Link href={`/leases/buildings/${building.id}/units/new`}>
                 Add unit
               </Link>
             </Button>
           )}
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="h-11 md:h-9">
             <Link href={`/leases/buildings/${building.id}/stacking`}>
               Stacking plan
             </Link>
           </Button>
           {editable && (
-            <Button asChild variant="ghost">
+            <Button asChild variant="ghost" className="h-11 md:h-9">
               <Link href={`/leases/buildings/${building.id}/edit`}>
                 Edit building
               </Link>
@@ -84,7 +84,7 @@ async function Building({ params }: { params: Promise<{ id: string }> }) {
               .
             </p>
             {editable && (
-              <Button asChild>
+              <Button asChild className="h-11 md:h-9">
                 <Link href={`/leases/buildings/${building.id}/units/new`}>
                   Add unit
                 </Link>

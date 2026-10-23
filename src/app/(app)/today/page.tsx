@@ -204,19 +204,30 @@ function NothingToDo({ anyLeases }: { anyLeases: boolean }) {
       <p className="text-sm">
         {anyLeases
           ? "Nothing needs attention today. Unpaid rent, invoices to send and lease dates coming up show here when they need you."
-          : "No leases yet. Add your first lease, and Today will show the invoices to send, unpaid rent and lease dates each month."}
+          : "No leases yet. Add your first lease or import them from Excel, and Today will show the invoices to send, unpaid rent and lease dates each month."}
       </p>
       {anyLeases ? (
         <Link href="/leases" className={linkButton}>
           See leases
         </Link>
       ) : (
-        <Link
-          href="/leases/new"
-          className={buttonVariants({ className: "h-11 self-start md:h-9" })}
-        >
-          Add lease
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/leases/new"
+            className={buttonVariants({ className: "h-11 md:h-9" })}
+          >
+            Add lease
+          </Link>
+          <Link
+            href="/leases/import"
+            className={buttonVariants({
+              variant: "outline",
+              className: "h-11 md:h-9",
+            })}
+          >
+            Import from Excel
+          </Link>
+        </div>
       )}
     </div>
   );
@@ -354,7 +365,7 @@ function Item({
       return (
         <>
           <Heading
-            title={`${item.count} bank ${item.count === 1 ? "line" : "lines"} to match`}
+            title={`${item.count} ${item.count === 1 ? "payment" : "payments"} in your bank statement to match`}
             detail="Money in your bank statement that isn't recorded as a payment yet."
           />
           <Link href="/billing/bank/match" className={linkButton}>

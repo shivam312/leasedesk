@@ -84,14 +84,14 @@ async function Upload({
   return (
     <>
       <PageHeader
-        title={`${TAX_LABELS.tdsCertificate} from ${data.tenant.tenant.companyName}`}
+        title={`TDS certificate from ${data.tenant.tenant.companyName}`}
         description={`Q${quarter} (${QUARTERS[quarter - 1]}) of FY ${fy}${cell && cell.amount > 0 ? `: ${formatINR(cell.amount)} TDS per your records. Check the certificate shows the same amount.` : "."}`}
       />
       <CertificateUpload
         tenantId={tenant}
         financialYear={fy}
         quarter={quarter}
-        label={`${TAX_LABELS.tdsCertificate} file`}
+        label={`TDS certificate (${TAX_LABELS.tdsCertificate}) file`}
         action={uploadCertificateAction}
       />
     </>

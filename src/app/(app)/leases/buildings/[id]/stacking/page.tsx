@@ -88,7 +88,7 @@ async function Stacking({ params }: { params: Promise<{ id: string }> }) {
             building floor by floor.
           </p>
           {editable && (
-            <Button asChild className="mt-3">
+            <Button asChild className="mt-3 h-11 md:h-9">
               <Link href={`/leases/buildings/${building.id}/units/new`}>
                 Add unit
               </Link>

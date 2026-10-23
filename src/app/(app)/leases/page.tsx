@@ -71,7 +71,7 @@ async function Leases() {
         <p className="max-w-2xl text-sm">
           No leases yet.{" "}
           {editable
-            ? "Add your first lease: the tenant, units, dates and rent. Or import them from Excel, below."
+            ? "Add your first lease: the tenant, units, dates and rent. Or import them from Excel with the link below."
             : "An owner or property manager can add them."}
         </p>
       ) : (

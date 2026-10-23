@@ -173,6 +173,16 @@ function scoreTenant(
       );
     invoices = numbered;
     fit = amountFit(line.creditPaise, numbered, tolerancePaise);
+    // The named invoices with the oldest ones before them: a payment of
+    // Oct and Nov that names only Nov still has its TDS worked out on both.
+    for (let k = 0; !fit && k < open.length; k++) {
+      const set = open.filter(
+        (i, j) => j <= k || numbered.some((n) => n.id === i.id),
+      );
+      if (set.length === numbered.length) continue;
+      fit = amountFit(line.creditPaise, set, tolerancePaise);
+      if (fit) invoices = set;
+    }
   } else {
     // The oldest k invoices, as a typed payment's TDS is suggested
     // (BILLING_RULES section 10); a newer invoice only when it's named.

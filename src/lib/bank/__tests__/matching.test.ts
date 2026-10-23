@@ -232,6 +232,23 @@ describe("matchLine", () => {
     expect(m?.invoiceIds).toEqual(["a-oct"]);
   });
 
+  it("works the TDS out with the older invoices when only the newer one is named", () => {
+    // Acme owes Oct and Nov, each ₹1,38,060 with ₹11,700 TDS expected.
+    // The bank names only Nov, but ₹2,52,720 = 2 × ₹1,38,060 − 2 × ₹11,700
+    // (₹2,76,120 − ₹23,400): it pays both, ₹23,400 TDS deducted.
+    // Named Nov alone doesn't fit (₹2,52,720 > ₹1,38,060).
+    const m = matchLine({
+      line: line("NEFT ACME SOFTWARE INV T/26-27/0004", 25_272_000),
+      tenants,
+      settings,
+    });
+    expect(m).toMatchObject({
+      tenantId: "acme",
+      invoiceIds: ["a-oct", "a-nov"],
+      tdsPaise: 2_340_000,
+    });
+  });
+
   it("is null for money that matches nobody", () => {
     expect(
       matchLine({ line: line("INTEREST CREDIT", 12_345), tenants, settings }),

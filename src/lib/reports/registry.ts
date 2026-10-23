@@ -179,3 +179,40 @@ export function searchReport(report: Report, query: string): Report {
     })),
   };
 }
+
+/** "rent-roll-2026-10-23.xlsx", "collections-2026-10-01-to-2026-10-23.pdf". */
+export function exportFileName(
+  def: ReportDefinition,
+  p: ReportParams,
+  extension: "xlsx" | "pdf",
+): string {
+  const when = {
+    asOf: p.asOf,
+    range: `${p.from}-to-${p.to}`,
+    month: p.month,
+    fy: `FY-${p.financialYear}`,
+    today: p.today,
+  }[def.filter];
+  return `${def.slug}-${when}.${extension}`;
+}
+
+/** The address of a report's export, with the same filters as the screen. */
+export function exportHref(
+  def: ReportDefinition,
+  p: ReportParams,
+  q: string,
+  extension: "xlsx" | "pdf",
+): string {
+  const params = new URLSearchParams(
+    {
+      asOf: { asOf: p.asOf },
+      range: { from: p.from, to: p.to },
+      month: { month: p.month },
+      fy: { fy: p.financialYear },
+      today: {} as Record<string, string>,
+    }[def.filter],
+  );
+  if (q.trim()) params.set("q", q.trim());
+  const query = params.toString();
+  return `/reports/${def.slug}/${extension}${query ? `?${query}` : ""}`;
+}

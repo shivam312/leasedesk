@@ -5,11 +5,12 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { ReportView } from "@/components/reports/ReportView";
 import { PageHeader } from "@/components/shell/PageHeader";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { appDb, requireMember } from "@/lib/auth";
 import { runScoped } from "@/lib/db/scoped";
 import {
+  exportHref,
   findReport,
   REPORTS,
   reportParams,
@@ -155,6 +156,15 @@ async function Body({
           Show
         </Button>
       </form>
+      <div className="flex flex-wrap gap-2">
+        <a
+          href={exportHref(def, p, q, "xlsx")}
+          download
+          className={buttonVariants({ className: "h-11 md:h-9" })}
+        >
+          Download Excel
+        </a>
+      </div>
       <p className="text-sm text-muted-foreground">
         {report.period}
         {q ? ` · ${rows} ${rows === 1 ? "row matches" : "rows match"}` : ""}

@@ -31,6 +31,10 @@ test("an owner reads the rent roll and vacancy", async ({ page }) => {
     page.getByText("₹1,00,000").filter({ visible: true }).first(),
   ).toBeVisible();
 
+  const download = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download Excel" }).click();
+  expect((await download).suggestedFilename()).toBe(`rent-roll-${today}.xlsx`);
+
   // Before the lease starts, nothing is running.
   await page.getByLabel("As on").fill("2020-01-01");
   await page.getByRole("button", { name: "Show" }).click();

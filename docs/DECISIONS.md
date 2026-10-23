@@ -292,3 +292,12 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Builders are pure (`rent-roll.ts`, `vacancy.ts`, ...); loaders are in `queries.ts`.
 - The rent roll's rent comes from the engine's own rent steps (`amountSteps`), with each lease's resolved settings, so it matches what the invoices bill. A quarterly charge shows a third of its quarter per month, rounded half up to the paisa (a report figure only).
 - A unit is leased on a date when a saved (not draft) lease covers it. The unit's own status field is shown but not trusted, because nothing keeps it in step with leases.
+
+## D38. Report exports: Excel cells are real numbers and dates; files come from the same registry (2026-10-23)
+
+**Why:** Accountants open the Excel file to add up, filter and paste into returns. Text like "₹1,18,000" can't be added up, and a separate export query could disagree with the screen.
+**Consequences:**
+- `/reports/[report]/xlsx` (and `/pdf`) load the report through the registry with the same filters and search as the screen (`exportHref`), so the file always matches what was on screen.
+- Money is written as rupees (paise turned into a decimal by string, never by float arithmetic on stored values) with an Indian ₹ format (`₹1,18,000.00`, lakh and crore groups); area as sq ft; percent as a fraction shown as `18.00%`; dates as Excel dates shown DD-MM-YYYY (serial = days since 1970 + 25569, no `Date`).
+- One sheet per section, with the title and period on top, the totals row, and the column hints and notes underneath.
+- Downloading a report isn't a change, so it isn't written to the activity log.

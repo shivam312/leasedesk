@@ -387,4 +387,45 @@ describe("custom escalations", () => {
       ).toThrow(/L-104/);
     }
   });
+
+  it("refuses two custom increases for one charge on the same date, in either order", () => {
+    // ₹1,00,000 with +5% and +10% both on 1 Apr 2028 is ambiguous:
+    // 1,00,000 × 1.05 × 1.10 = ₹1,15,500, but read as one change it could be
+    // ₹1,10,000 or ₹1,05,000. The input order must not decide the rent.
+    const five = {
+      chargeId: "rent",
+      effectiveDate: "2028-04-01",
+      percentBp: 500,
+    };
+    const ten = { ...five, percentBp: 1000 };
+    // Agreed ₹1,20,000 and +5% on one date: ₹1,20,000 × 1.05 = ₹1,26,000 in
+    // one order, ₹1,20,000 in the other.
+    const agreed = {
+      chargeId: "rent",
+      effectiveDate: "2028-04-01",
+      newAmountPaise: 12_000_000,
+    };
+    for (const custom of [
+      [five, ten],
+      [ten, five],
+      [agreed, five],
+      [five, agreed],
+    ]) {
+      expect(() =>
+        amountSteps({ charge: rent, lease, custom, ...rounding }),
+      ).toThrow(/L-104.*more than one custom rent increase on 2028-04-01/);
+    }
+    // Same date on a different charge is fine.
+    const steps = amountSteps({
+      charge: rent,
+      lease,
+      custom: [five, { ...ten, chargeId: "cam" }],
+      ...rounding,
+    });
+    // 1,00,000 × 1.05 = ₹1,05,000
+    expect(amounts(steps)).toEqual([
+      ["2026-04-01", 10_000_000],
+      ["2028-04-01", 10_500_000],
+    ]);
+  });
 });

@@ -63,6 +63,14 @@ export function amountSteps({
     .filter((entry) => entry.chargeId === charge.id)
     .map((entry) => validateCustom(entry, charge, lease))
     .sort((a, b) => compareDates(a.effectiveDate, b.effectiveDate));
+  // Two entries on one date would make the input order decide the rent.
+  customs.forEach((entry, i) => {
+    if (i > 0 && customs[i - 1]?.effectiveDate === entry.effectiveDate) {
+      throw new Error(
+        `Lease ${lease.id}: charge ${charge.id} has more than one custom rent increase on ${entry.effectiveDate}`,
+      );
+    }
+  });
   const firstCustom = customs[0]?.effectiveDate;
 
   // An increase applies if dated on or before the lease end and the charge

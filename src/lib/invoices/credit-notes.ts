@@ -21,7 +21,7 @@ import {
 } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
 import { formatDate, formatINR } from "@/lib/format";
-import { lockTenantMoney } from "@/lib/payments/payments";
+import { lockTenantMoney, refreshInvoiceStatus } from "@/lib/payments/payments";
 import { loadSettings } from "@/lib/settings/store";
 import { takeNumber } from "./numbering";
 import { SendError } from "./send";
@@ -228,6 +228,8 @@ export async function issueCreditNote(s: Scoped, input: IssueCreditNote) {
   // Nothing left to pay on it: the invoice reads "Credit note issued".
   if (amounts.fullyCredited)
     await updateLogged(s, invoices, invoice.id, { status: "cancelled" });
+  // Part paid, and this credit takes off the rest: it reads "Paid".
+  else await refreshInvoiceStatus(s, [invoice.id]);
   return note;
 }
 

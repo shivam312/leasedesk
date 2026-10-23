@@ -8,6 +8,7 @@ import {
   inRollback,
   type TestTx,
 } from "@/lib/db/__tests__/harness";
+import { recordPayment } from "@/lib/payments/payments";
 import { issueCreditNote } from "../credit-notes";
 import { issueInvoice, SendError } from "../send";
 import { madeDraft } from "./db-fixtures";
@@ -15,11 +16,12 @@ import { madeDraft } from "./db-fixtures";
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
 
 async function sentInvoice(tx: TestTx) {
-  const { ctx, invoice, line } = await madeDraft(tx);
+  const made = await madeDraft(tx);
+  const { ctx, invoice, line } = made;
   await runScoped(asDb(tx), ctx, (s) =>
     issueInvoice(s, invoice.id, new Date("2026-11-01T04:30:00Z")),
   );
-  return { ctx, invoice, line };
+  return { ...made, ctx, invoice, line };
 }
 
 describe.skipIf(skipDbTests)("issueCreditNote", () => {
@@ -65,6 +67,45 @@ describe.skipIf(skipDbTests)("issueCreditNote", () => {
         .where(eq(schema.invoices.id, invoice.id));
       expect(row?.status).toBe("cancelled");
       await expect(credit(100)).rejects.toBeInstanceOf(SendError);
+    });
+  });
+
+  it("marks a part-paid invoice paid when a credit note takes off the rest", async () => {
+    await inRollback(async (tx) => {
+      const { a, ctx, invoice, line } = await sentInvoice(tx);
+      // ₹1,38,060 invoice; ₹20,060 paid leaves ₹1,18,000.
+      await runScoped(asDb(tx), ctx, (s) =>
+        recordPayment(
+          s,
+          {
+            tenantId: a.tenant.id,
+            receivedDate: "2026-11-10",
+            amountReceivedPaise: 2_006_000,
+            tdsPaise: 0,
+            mode: "neft",
+            reference: null,
+            note: null,
+            allocations: "auto",
+          },
+          "2026-11-10",
+        ),
+      );
+      // Credit ₹1,00,000 of the rent + 9% + 9% GST = ₹1,18,000: nothing
+      // left to pay, though ₹17,000 of the rent line isn't credited.
+      await runScoped(asDb(tx), ctx, (s) =>
+        issueCreditNote(s, {
+          invoiceId: invoice.id,
+          date: "2026-11-20",
+          reason: "waiver",
+          note: null,
+          lines: [{ lineId: line.id, taxablePaise: 10_000_000 }],
+        }),
+      );
+      const [row] = await tx
+        .select({ status: schema.invoices.status })
+        .from(schema.invoices)
+        .where(eq(schema.invoices.id, invoice.id));
+      expect(row?.status).toBe("paid");
     });
   });
 

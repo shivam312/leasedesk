@@ -23,7 +23,7 @@ test("an owner adds a tenant with a contact, then finds them in the list", async
   await page.getByLabel("Billing address").fill("101, Andheri East, Mumbai");
   await page.getByLabel("Contact name").fill("Priya Shah");
   await page.getByLabel("Contact phone (optional)").fill("98200 12345");
-  await page.getByLabel("Contact WhatsApp on this number").selectOption("yes");
+  await page.getByLabel("Contact's phone is on WhatsApp").selectOption("yes");
 
   // TDS on CAM at 2% while rent stays at 10%.
   await page.getByText("More options").click();

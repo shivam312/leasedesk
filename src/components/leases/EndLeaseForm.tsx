@@ -75,9 +75,9 @@ export function EndLeaseForm({
         >
           <p className="text-sm">
             End {tenantName}&apos;s lease on {formatDate(exitDate)}? Billing
-            stops after that day and the last invoice covers part of the month.
-            Invoices already sent don&apos;t change; refund anything billed
-            after that day with a credit note.
+            stops after that day and the last invoice covers only part of the
+            month. Invoices already sent stay as they are; for anything billed
+            after that day, issue a credit note.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button

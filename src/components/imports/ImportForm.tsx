@@ -65,19 +65,43 @@ export function ImportForm({
             </Link>
           )}
           {state.problems && state.problems.length > 0 && (
-            <ul
-              aria-label="Rows to fix"
-              className="flex flex-col gap-1 rounded-lg border p-3 text-sm"
-            >
-              {state.problems.map((p) => (
-                <li key={p} className="break-words">
-                  {p}
-                </li>
-              ))}
-            </ul>
+            <ProblemList problems={state.problems} />
           )}
         </div>
       )}
     </form>
+  );
+}
+
+/** How many rows to fix are shown before "Show all", so a long list doesn't bury the form on a phone. */
+const SHOWN_PROBLEMS = 10;
+
+function ProblemList({ problems }: { problems: string[] }) {
+  const shown = problems.slice(0, SHOWN_PROBLEMS);
+  const rest = problems.slice(SHOWN_PROBLEMS);
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border p-3 text-sm">
+      <ul aria-label="Rows to fix" className="flex flex-col gap-1">
+        {shown.map((p) => (
+          <li key={p} className="break-words">
+            {p}
+          </li>
+        ))}
+      </ul>
+      {rest.length > 0 && (
+        <details>
+          <summary className="min-h-11 cursor-pointer py-2 font-medium md:min-h-9">
+            Show {rest.length} more rows to fix
+          </summary>
+          <ul aria-label="More rows to fix" className="flex flex-col gap-1">
+            {rest.map((p) => (
+              <li key={p} className="break-words">
+                {p}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
   );
 }

@@ -27,7 +27,9 @@ export default function NewTenantPage() {
               ...f,
               label: f.label.startsWith("Contact")
                 ? f.label
-                : `Contact ${f.label.charAt(0).toLowerCase()}${f.label.slice(1)}`,
+                : f.label.startsWith("WhatsApp")
+                  ? "Contact's phone is on WhatsApp"
+                  : `Contact ${f.label.toLowerCase()}`,
             })),
           ]}
           submitLabel="Add tenant"

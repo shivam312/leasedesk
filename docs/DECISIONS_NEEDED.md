@@ -450,7 +450,7 @@ Things only a person can do. Tick them when done.
   - B) Start the pilot now and review the remaining screens alongside it
   - C) Review the remaining screens yourself on a phone instead of the agent
 - Recommendation: A, because several of the missed screens (Today, payments, Excel import) are the ones a pilot landlord uses on day one, the review needs no accounts or money, and it can run while the human M8 tasks (Sentry and Supabase cloud accounts, staging, backups) are still open, so it doesn't delay the pilot.
-- Done meanwhile: the roadmap task was narrowed and the missed screens became an open M8 task (commit 915c072); the matching backlog row was removed. No code changed.
+- Done meanwhile: the roadmap task was narrowed and the missed screens became an open M8 task (commit 915c072); the matching backlog row was removed. No code changed. Then A was done on 2026-10-24: the pipeline reviewed every missed screen, fixed the must-fixes and backlogged the rest. Each screen's outcome is in the "UX review, second pass" table in `docs/milestones/M8.md`. You can close this entry with "A".
 - Answer:
 
 ## Applied

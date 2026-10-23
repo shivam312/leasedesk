@@ -200,16 +200,6 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
         )}
       </section>
 
-      <section aria-labelledby="schedule-heading" className="max-w-2xl">
-        <h2 id="schedule-heading" className="mb-2 text-lg font-semibold">
-          Rent schedule
-        </h2>
-        <p className="mb-2 text-sm text-muted-foreground">
-          Before GST, in the month each amount is billed.
-        </p>
-        <ScheduleTable rows={rows} />
-      </section>
-
       {editable && canEnd && (
         <details className="max-w-2xl">
           <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">
@@ -223,6 +213,16 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </details>
       )}
+
+      <section aria-labelledby="schedule-heading" className="max-w-2xl">
+        <h2 id="schedule-heading" className="mb-2 text-lg font-semibold">
+          Rent schedule
+        </h2>
+        <p className="mb-2 text-sm text-muted-foreground">
+          Before GST, in the month each amount is billed.
+        </p>
+        <ScheduleTable rows={rows} />
+      </section>
     </div>
   );
 }

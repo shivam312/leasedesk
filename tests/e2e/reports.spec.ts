@@ -32,7 +32,7 @@ test("an owner reads the rent roll and vacancy", async ({ page }) => {
   ).toBeVisible();
 
   const download = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Download Excel" }).click();
+  await page.getByRole("link", { name: "Download as Excel" }).click();
   expect((await download).suggestedFilename()).toBe(`rent-roll-${today}.xlsx`);
   const pdf = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download PDF" }).click();

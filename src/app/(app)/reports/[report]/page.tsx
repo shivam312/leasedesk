@@ -162,7 +162,7 @@ async function Body({
           download
           className={buttonVariants({ className: "h-11 md:h-9" })}
         >
-          Download Excel
+          Download as Excel
         </a>
         <a
           href={exportHref(def, p, q, "pdf")}

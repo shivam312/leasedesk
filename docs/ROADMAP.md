@@ -67,7 +67,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [x] Renewal (new version)
 - [x] Termination
 
-Built on branch `m3-leases-schema`; the lease migrations (`drizzle/0008`–`0011`) were applied by hand on 2026-10-23 and every unit and database test passes. Still to add: a Playwright test for adding, renewing and ending a lease (`docs/BACKLOG.md`).
+Merged into `main` on 2026-10-23; the lease migrations (`drizzle/0008`–`0011`) are applied. Adding a lease crashed until 2026-10-23 (a setting with no label); fixed, and `tests/e2e/flow.spec.ts` now adds one. Still to add: a Playwright test for renewing and ending a lease (`docs/BACKLOG.md`).
 
 ## M4. Invoicing (week 7)
 
@@ -82,7 +82,7 @@ Built on branch `m3-leases-schema`; the lease migrations (`drizzle/0008`–`0011
 - [x] Credit notes
 - [ ] (human) Create a Resend account, verify the sending domain and put `RESEND_API_KEY` in `.env.local`
 
-Built on branch `m3-leases-schema` (report: `docs/milestones/M4.md`). The invoice migrations (`drizzle/0012`–`0013`) are not applied yet (Human task in `docs/DECISIONS_NEEDED.md`): until then the invoice database tests are skipped and the invoice screens can't save. Still to add: Playwright tests for sending and credit notes (`docs/BACKLOG.md`). Reviewed by the billing and UX reviewers on 2026-10-23; the fixes and open decisions (D-015 to D-019) are in the report.
+Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice migrations (`drizzle/0012`–`0013`) are applied and the invoice database tests run. Sending is covered by `tests/e2e/flow.spec.ts`; still to add: a Playwright test for credit notes (`docs/BACKLOG.md`). Reviewed by the billing and UX reviewers on 2026-10-23; the fixes and open decisions (D-015 to D-019) are in the report.
 
 ## M5. Payments and TDS (week 8)
 
@@ -95,6 +95,8 @@ Built on branch `m3-leases-schema` (report: `docs/milestones/M4.md`). The invoic
 - [ ] Reminders: one-tap WhatsApp link
 - [ ] Tenant ledger with running balance
 - [ ] (human) Get one real bank statement export (CSV or Excel) per major bank the pilots use, personal details removed, into `tests/fixtures/bank/`
+
+On `main`. All migrations to `drizzle/0020` are applied locally, and the database tests no longer skip when a table is missing: they fail. Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`).
 
 ## M6. Today screen and alerts (week 8)
 

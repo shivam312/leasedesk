@@ -50,7 +50,7 @@ supabase stop       # when you're done
 - Studio (a table browser) is at http://127.0.0.1:54323.
 - To try the app, open http://localhost:3000 and create an account. The seeded demo organization has no login yet.
 - `db:migrate` and `db:seed` refuse to run against a database that isn't on your machine. To do it on purpose, prefix the command with `ALLOW_REMOTE_DB=yes`.
-- Database tests (`*.db.test.ts`) run against the local stack; tests for tables whose migrations aren't applied yet are skipped and say so in their titles.
+- Database tests (`*.db.test.ts`) run against the local stack, so apply the migrations first (`pnpm db:migrate`); a missing table makes them fail. `SKIP_DB_TESTS=1` skips them all.
 - If `pnpm` says it's version 8, a Homebrew pnpm is ahead of the project's one on your `PATH`. Run `brew uninstall pnpm`, or `corepack enable`.
 
 ### Email and background jobs

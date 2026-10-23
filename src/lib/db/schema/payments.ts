@@ -17,8 +17,10 @@ import {
   pgTable,
   text,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { bankStatementLines } from "./bank";
 import { id, timestamps } from "./columns";
 import { invoices } from "./invoices";
 import { tenants } from "./tenants";
@@ -51,7 +53,7 @@ export const payments = pgTable(
     mode: paymentMode().notNull(),
     reference: text(),
     note: text(),
-    // The bank statement line it was matched from (M5 bank import).
+    // The bank statement line it was recorded from, if any.
     bankStatementLineId: uuid(),
     status: paymentStatus().notNull().default("active"),
     reversesPaymentId: uuid(),
@@ -65,6 +67,19 @@ export const payments = pgTable(
     unique().on(t.organizationId, t.id),
     unique().on(t.organizationId, t.tenantId, t.id),
     unique().on(t.reversesPaymentId),
+    // A bank line pays at most one active payment.
+    uniqueIndex("payments_one_per_bank_line")
+      .on(t.bankStatementLineId)
+      .where(
+        sql`${t.kind} = 'payment' and ${t.status} = 'active' and ${t.bankStatementLineId} is not null`,
+      ),
+    foreignKey({
+      columns: [t.organizationId, t.bankStatementLineId],
+      foreignColumns: [
+        bankStatementLines.organizationId,
+        bankStatementLines.id,
+      ],
+    }).onDelete("restrict"),
     foreignKey({
       columns: [t.organizationId, t.tenantId],
       foreignColumns: [tenants.organizationId, tenants.id],

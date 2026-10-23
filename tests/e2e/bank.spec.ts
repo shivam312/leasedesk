@@ -1,0 +1,58 @@
+import { expect, test } from "@playwright/test";
+import { join } from "node:path";
+import { addGstin, hasTables, signUpNewOwner } from "./helpers";
+
+const fixture = (name: string) =>
+  join(process.cwd(), "tests/fixtures/bank/synthetic", name);
+
+test("an owner imports a bank statement; the columns are remembered", async ({
+  page,
+}) => {
+  test.skip(
+    !(await hasTables("bank_accounts", "bank_statement_lines")),
+    "Bank tables aren't migrated yet: run pnpm db:migrate",
+  );
+  await signUpNewOwner(page);
+  await addGstin(page);
+  await page.goto("/billing/payments");
+  await page.getByRole("link", { name: "Import bank statement" }).click();
+
+  await page.getByLabel("Whose account").selectOption({ index: 0 });
+  await page.getByLabel("Bank").fill("HDFC Bank");
+  await page.getByLabel("Last 4 digits of the account number").fill("1234");
+  await page.getByRole("button", { name: "Add bank account" }).click();
+  await expect(page.getByLabel("Bank account")).toBeVisible();
+  await page.waitForLoadState("networkidle");
+
+  await page
+    .getByLabel("Statement file")
+    .setInputFiles(fixture("hdfc-like.csv"));
+  await expect(page.getByLabel("Transaction date")).toHaveValue("Date");
+  await expect(
+    page.getByLabel("Money received (credit or deposit) (optional)"),
+  ).toHaveValue("Deposit Amt.");
+  await expect(
+    page.getByText("3 credits from 01-11-2026 to 05-11-2026", { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Import 3 credits" }).click();
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Statement, 01-11-2026 to 05-11-2026",
+  );
+  await expect(
+    page.getByText("Imported 3 credits.", { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByText("Not matched yet").first()).toBeVisible();
+
+  // The same file again: the saved columns are used and nothing is new.
+  await page.goto("/billing/bank");
+  await page.waitForLoadState("networkidle");
+  await page
+    .getByLabel("Statement file")
+    .setInputFiles(fixture("hdfc-like.csv"));
+  await expect(
+    page.getByText(/Using this account's saved columns/),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Import 3 credits" }).click();
+  await expect(page.getByText("Nothing new in this statement.")).toBeVisible();
+});

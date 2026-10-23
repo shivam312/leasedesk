@@ -213,3 +213,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - The form fills in TDS and the invoices from the engine as the user types, and the server checks the same rules under a row lock on the tenant's invoices (`recordPayment`).
 - Every change to a tenant's money (payment, apply credit, reversal, credit note) first takes a transaction-scoped advisory lock for that tenant (`lockTenantMoney`), so a reversal can't miss credit applied from the same payment at the same moment. An advisory lock rather than `SELECT … FOR UPDATE` on the tenant row, because accounts may not be allowed to update tenants one day and the lock shouldn't depend on it.
 - A credit note can't take off money a payment has settled (D-019 meanwhile), so allocations never sit on a cancelled invoice.
+
+## D30. Bank statements are read in the browser as CSV and only their credits are kept (2026-10-23)
+
+**Why:** the user has to check which column is which before anything is saved, and Indian banks' exports differ. Reading the file in the browser shows the guessed columns and a preview at once; sending the rows (not the file) to a server action keeps it one step. Installing a CSV or Excel library was refused in the unattended run, and CSV quoting is simple enough to handle in 80 lines.
+**Consequences:**
+- `src/lib/bank/csv.ts` reads CSV (quotes, separators, BOM). `src/lib/bank/statement.ts` guesses the columns from their header words, finds the header row by its text (statements put a different number of lines above the table), reads Indian dates (day first, always) and amounts, and keeps credit lines only. The server reads the rows again with the same code before saving; nothing the browser worked out is trusted.
+- The mapping is saved by header text on the bank account, so the next statement imports in one step; if its headers differ, the user is asked again.
+- The file isn't stored, only the lines read from it (less personal data kept). Server action bodies may be up to 4 MB (`next.config.ts`) to fit a long statement's rows.
+- Excel (.xlsx) files are refused with a message to save as CSV until SheetJS can be installed (Human task).
+- One activity entry per import, with its counts, rather than one per line.

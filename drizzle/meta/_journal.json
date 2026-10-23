@@ -113,6 +113,20 @@
       "when": 1792757971391,
       "tag": "0015_payments_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792759247449,
+      "tag": "0016_bank",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792759248014,
+      "tag": "0017_bank_rules",
+      "breakpoints": true
     }
   ]
 }

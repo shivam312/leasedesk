@@ -42,12 +42,21 @@ async function Payments() {
   return (
     <div className="flex flex-col gap-6">
       {canBill && (
-        <div>
+        <div className="flex flex-wrap gap-2">
           <Link
             href="/billing/payments/new"
             className={buttonVariants({ className: "h-11 md:h-9" })}
           >
             Record payment
+          </Link>
+          <Link
+            href="/billing/bank"
+            className={buttonVariants({
+              variant: "outline",
+              className: "h-11 md:h-9",
+            })}
+          >
+            Import bank statement
           </Link>
         </div>
       )}

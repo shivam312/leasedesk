@@ -150,7 +150,7 @@ From the audit of 2026-10-24 (`docs/audit/SUMMARY.md`, rulings in `docs/audit/RU
 
 Demo blockers (what a landlord would see go wrong in the 10-minute demo):
 
-- [ ] Hide the Next.js dev overlay badge in demos: reproduce the "Could not validate `instant`" warning against `node_modules/next/dist/docs/`, fix it if cheap, and note in `docs/DEMO_SCRIPT.md` that the demo runs on `pnpm build && pnpm start`
+- [x] Hide the Next.js dev overlay badge in demos: reproduce the "Could not validate `instant`" warning against `node_modules/next/dist/docs/`, fix it if cheap, and note in `docs/DEMO_SCRIPT.md` that the demo runs on `pnpm build && pnpm start`
 - [ ] Fixed demo clock: `pnpm db:seed:demo` seeds the current month as sent (with some collections) when run after the 1st, so Today never opens with "Billed ₹0"; the walkthrough and demo script make next month's invoices instead
 - [ ] "Overdue" comes from the due date and balance, not the stored status: one shared helper for the invoice list, invoice page, tenant page and ledger (nothing sets `overdue` today, so a 46-day-late invoice reads "Sent")
 - [ ] Today shows the 5 oldest unpaid tenants with a total and "See all N", and rent increases due on the same day share one card

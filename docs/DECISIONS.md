@@ -383,3 +383,9 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Decision:** `vitest.config.ts` has two projects: `unit` (every `*.test.ts` except database tests, run in parallel) and `db` (`*.db.test.ts`, `fileParallelism: false`).
 **Why:** Database tests share one local Postgres, and each holds an uncommitted transaction. Some rows are unique across the whole database, not per organization: `auth.users.email` has a unique index, and every `seedOrg(tx, "A")` makes `A-owner@example.test`. With files running side by side, the transactions waited on each other's locks until `invoices.db.test.ts` timed out at 5 seconds now and then. Making the emails unique would have broken tests that check exact addresses (invites, digest recipients), and the same trap would come back with the next global unique key.
 **Consequences:** `pnpm test` takes about 20 seconds instead of 10. Don't turn file parallelism back on for database tests unless each file gets its own database.
+
+## D47. Instant-navigation validation only where a segment opts in (2026-10-24)
+
+**Decision:** `next.config.ts` sets `experimental.instantInsights.validationLevel: "manual-warning"`, so Next 16 validates instant navigation only for segments that export `instant`.
+**Why:** Every signed-in page reads the session, so Next's default (validate every page, in dev) failed on every route with "Could not validate `instant`" and put a red issue badge on every screen, including the demo. Putting `instant = false` on `(app)/layout.tsx` only moved the error down to each page.
+**Consequences:** No route is validated today. If a page is made instant later, add `export const instant = true` to it and its errors will show again. The demo runs on `pnpm build && pnpm start` anyway (`docs/DEMO_SCRIPT.md`).

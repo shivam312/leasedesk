@@ -22,15 +22,16 @@
     "db:reset": "supabase db reset && pnpm db:migrate && pnpm db:seed"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.5.0",
     "class-variance-authority": "^0.7.1",
-    "cn": "^0.5.0",
+    "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.61.0",
     "next": "16.4.2",
     "postgres": "^3.4.9",
-    "radix-ui": "^1.8.1",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

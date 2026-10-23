@@ -17,6 +17,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-005 | Rounding of negative amounts on credit notes | ca | no | open |
 | D-006 | Product name | product | no | open |
 | D-007 | Final bill for a quarterly arrears charge that ends before the lease | pilot | no | open |
+| D-008 | Approve shadcn's `cn` and `radix-ui` packages? | package | no | open |
 
 ## Human tasks
 
@@ -122,6 +123,18 @@ Things only a person can do. Tick them when done.
   - B) Bill it in the run after the charge ends (December), the same as when the lease ends
 - Recommendation: B, because it treats a charge ending the same way as a lease ending and settles the tenant's account sooner. A is built meanwhile because it never bills early.
 - Done meanwhile: A built (`billingRun` in `src/lib/billing/schedule.ts` uses the earlier of the quarter end and the lease end, not the charge end).
+- Answer:
+
+### D-008: Approve shadcn's `cn` and `radix-ui` packages?
+- Status: open
+- Type: package
+- Blocking: no
+- Context: The current shadcn/ui setup tool installs two packages that aren't on the approved list: `cn` (shadcn's own class-name merger, MIT, from github.com/shadcn-ui/cn) and `radix-ui` (Radix's single all-in-one package, MIT). They came in during M0 setup. The M0 review swapped them for approved packages that do the same job: `clsx` + `tailwind-merge`, and `@radix-ui/react-slot`. Each new shadcn component we add may import the unapproved names again, and we'd have to change those imports by hand each time.
+- Options:
+  - A) Approve `cn` and `radix-ui` (add both to `.claude/approved-packages.txt`). New shadcn components then work as generated.
+  - B) Keep the approved equivalents. Every shadcn component we add has its imports changed to `@/lib/utils` and `@radix-ui/react-*`.
+- Recommendation: A, because both are official packages from the same authors as libraries already approved, and it removes a manual step from every new screen. Nothing changes for landlords either way.
+- Done meanwhile: B. `src/lib/utils.ts` builds `cn` from `clsx` + `tailwind-merge`, and `src/components/ui/button.tsx` imports `Slot` from `@radix-ui/react-slot`. If you pick A, the switch back is a few lines.
 - Answer:
 
 ## Applied

@@ -6,6 +6,7 @@ import { formatINR, formatMonth } from "../../src/lib/format";
 import { makeGstin } from "../../src/lib/india/identifiers";
 import { todayInIndia } from "../../src/lib/today";
 import { expectedDemoInvoices } from "../../src/lib/demo/expected";
+import { demoBillingMonth } from "../../src/lib/demo/plan";
 import {
   walkthroughPage,
   type WalkthroughFacts,
@@ -44,7 +45,11 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   );
   test.setTimeout(10 * 60_000);
   const today = todayInIndia();
-  const month = formatMonth(today);
+  // The month the walkthrough bills: next month, as the seed has already
+  // sent this month's (this month only when seeded on the 1st).
+  const runMonth = demoBillingMonth(today);
+  const month = formatMonth(runMonth);
+  const billsThisMonth = runMonth === monthOf(today);
   const demo = await resetDemo(today);
   if (RECORD) {
     rmSync(join(OUT, "screens"), { recursive: true, force: true });
@@ -75,9 +80,18 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await shot(page, "1", "log-in");
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).toHaveURL("/today");
-  await expect(
-    page.getByRole("heading", { name: `${month} invoices aren't made yet` }),
-  ).toBeVisible();
+  if (billsThisMonth)
+    await expect(
+      page.getByRole("heading", { name: `${month} invoices aren't made yet` }),
+    ).toBeVisible();
+  else
+    // The seed sent this month's invoices, so Today doesn't open on ₹0.
+    await expect(
+      page
+        .getByRole("region", { name: "This month" })
+        .locator("p", { hasText: /^₹/ })
+        .first(),
+    ).not.toHaveText("₹0");
   await shot(page, "1", "today");
   // The demo's spotlight tenants haven't sent a certificate that's past its
   // due date, so Today counts them and links to the tracker's missing list.
@@ -172,31 +186,33 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await expect(visible(page, "Rent schedule")).toBeVisible();
   await shot(page, "3", "new-lease-saved");
 
-  // 4. This month's billing: make, check one, explain an amount, send all.
+  // 4. The month's billing: make, check one, explain an amount, send all.
   // Every amount is checked against the billing engine's own answer for
   // the demo leases (expectedDemoInvoices), worked out from the plan rather
-  // than from what was saved.
-  const expected = expectedDemoInvoices(today, monthOf(today));
-  const expectedTotal = [...expected.values()].reduce(
-    (s, i) => s + i.totals.grandTotal,
-    0,
-  );
-  const sendAll = `Send ${expected.size} invoices`;
-  await page.goto("/billing");
+  // than from what was saved. Next month's invoices also bill the new lease
+  // from step 3, which isn't in the plan.
+  const expected = expectedDemoInvoices(today, runMonth);
+  const madeCount = expected.size + (billsThisMonth ? 0 : 1);
+  const sendAll = `Send ${madeCount} invoices`;
+  await page.goto(`/billing?month=${runMonth}`);
   await page.getByRole("button", { name: `Make ${month} invoices` }).click();
   await expect(
-    visible(page, new RegExp(`^Made ${expected.size} invoices`)),
+    visible(page, new RegExp(`^Made ${madeCount} invoices`)),
   ).toBeVisible({ timeout: 60_000 });
   for (const [tenant, invoice] of expected)
     await expect(
       page.getByRole("row").filter({ hasText: tenant }),
     ).toContainText(formatINR(invoice.totals.grandTotal));
-  const thisMonth = startOfMonth(monthOf(today));
+  if (!billsThisMonth)
+    await expect(
+      page.getByRole("row").filter({ hasText: "Lakshya Ventures Pvt Ltd" }),
+    ).toHaveCount(1);
+  const runStart = startOfMonth(runMonth);
   const billed = await readDemo(demo.organizationId, async (q) => ({
-    made: await q.monthTotal(thisMonth),
+    made: await q.monthTotal(runStart),
     kalinga: {
       lease: await q.lease("Kalinga Infotech Pvt Ltd"),
-      invoice: await q.invoice("Kalinga Infotech Pvt Ltd", thisMonth),
+      invoice: await q.invoice("Kalinga Infotech Pvt Ltd", runStart),
     },
     newLease: await q.lease("Lakshya Ventures Pvt Ltd"),
   }));
@@ -248,21 +264,34 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     for (const text of [working.rule, ...working.steps])
       await expect(explain).toContainText(text);
   await shot(page, "4", "explain");
-  await page.goto("/billing");
-  await page.getByRole("button", { name: sendAll }).click();
-  await expect(
-    visible(
-      page,
-      `Send ${expected.size} ${month} invoices for ${formatINR(expectedTotal)} in all?`,
-    ),
-  ).toBeVisible();
-  await shot(page, "4", "send-check");
-  await page.getByRole("button", { name: sendAll }).click();
-  await expect(page.getByRole("button", { name: sendAll })).toHaveCount(0, {
-    timeout: 120_000,
-  });
-  await expect(page.getByRole("cell", { name: "Draft" })).toHaveCount(0);
-  await shot(page, "4", "sent");
+  await page.goto(`/billing?month=${runMonth}`);
+  if (billsThisMonth) {
+    const expectedTotal = [...expected.values()].reduce(
+      (s, i) => s + i.totals.grandTotal,
+      0,
+    );
+    await page.getByRole("button", { name: sendAll }).click();
+    await expect(
+      visible(
+        page,
+        `Send ${expected.size} ${month} invoices for ${formatINR(expectedTotal)} in all?`,
+      ),
+    ).toBeVisible();
+    await shot(page, "4", "send-check");
+    await page.getByRole("button", { name: sendAll }).click();
+    await expect(page.getByRole("button", { name: sendAll })).toHaveCount(0, {
+      timeout: 120_000,
+    });
+    await expect(page.getByRole("cell", { name: "Draft" })).toHaveCount(0);
+    await shot(page, "4", "sent");
+  } else {
+    // Dated the 1st of next month, so they can't be sent before then.
+    await expect(
+      visible(page, /can be sent from that day, not before\.$/),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: sendAll })).toHaveCount(0);
+    await shot(page, "4", "wait-to-send");
+  }
 
   // 5. Rangoli Media Labs pays its two oldest invoices, less 10% TDS.
   const rangoli = await readDemo(demo.organizationId, async (q) => ({

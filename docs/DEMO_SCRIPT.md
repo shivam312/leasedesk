@@ -1,6 +1,6 @@
 # Demo script: a month at Sharma Estates (10 minutes)
 
-A spoken script for showing LeaseDesk to a landlord, on the demo data. **Say** is what you say; **Click** is exactly what to tap. Amounts depend on the day you seed (the demo's history always runs up to last month), so read them off the screen; the examples in brackets are from 24 October 2026.
+A spoken script for showing LeaseDesk to a landlord, on the demo data. **Say** is what you say; **Click** is exactly what to tap. Amounts depend on the day you seed (the demo's history runs up to this month: this month's invoices went out on the 1st, and the payments that have come in so far are recorded), so read them off the screen; the examples in brackets are from 24 October 2026.
 
 The pictures for every step are in `docs/walkthrough/index.html` (made by `pnpm walkthrough`). Look through them once before the meeting.
 
@@ -9,6 +9,7 @@ The pictures for every step are in `docs/walkthrough/index.html` (made by `pnpm 
 1. Start the app on a production build: `supabase start`, then `pnpm build && pnpm start`. Don't demo on `pnpm dev`: it is slower on the first visit to each page, and Next.js's development badge can appear in a corner of the screen.
 2. Reset the demo: `pnpm db:seed:demo`. It prints:
    - the login (`demo@sharma-estates.example`) and a new password: write it down;
+   - the month to make invoices for in part 5 (next month, e.g. "Nov 2026"; this month only if you seed on the 1st);
    - the payment to record in part 5 (e.g. "Rangoli Media Labs Pvt Ltd pays SCT/26-27/0049 (₹4,94,159): type ₹4,52,281 received, TDS ₹41,878 fills in"): write it down;
    - the bank statement for part 6: `.local-demo/hdfc-statement.csv`. Copy it to the desktop.
 3. Open http://localhost:3000/login in a full-screen browser window. Log in once and log out, so the first pages are already loaded.
@@ -29,7 +30,7 @@ Running the seed again at any time puts the demo back exactly as it was, so you 
 
 **Point at**, in order:
 - "Rangoli Media Labs hasn't paid ₹…: three invoices, the oldest more than three months late. One tap sends them a WhatsApp reminder."
-- "October invoices aren't made yet": "we'll do that in a minute."
+- The boxes at the top: "October's invoices went out on the 1st; this is what's come in so far."
 - "3 TDS certificates missing": "tenants who kept back TDS but haven't sent their Form 16A for the last quarter whose certificates are due (April–June, due 15 August, when seeded in late October). You lose that credit if you don't chase it."
 - "Rent increase in … days" cards: "LeaseDesk knows every increase in every lease."
 - "Lease ends in 60 days, Ojas Wellness": "and the notice date has already passed, so you know to call them."
@@ -69,11 +70,11 @@ Lease starts on: the 1st of next month; Last day of the lease: nine years later.
 
 **Say:** "Done. From next month it's on the invoices, increases and all, without anyone touching it again."
 
-## 5. This month's invoices (2 minutes)
+## 5. Next month's invoices (2 minutes)
 
-**Click:** Billing → **Make Oct 2026 invoices** (your month).
+**Click:** Billing → **Nov 2026** (the month the seed printed) → **Make Nov 2026 invoices**.
 
-**Say:** "That worked out all 45 invoices for the month. Nothing has gone to tenants yet."
+**Say:** "That worked out all 46 invoices for next month, including Lakshya's lease we just added. Nothing has gone to tenants yet."
 
 **Click:** **Kalinga Infotech Pvt Ltd** in the list.
 
@@ -83,9 +84,11 @@ Lease starts on: the 1st of next month; Last day of the lease: nine years later.
 
 **Say:** "Tap any line and it shows how it was worked out: 2,718 sq ft × ₹18. Your accountant can check every rupee against the lease."
 
-**Click:** **← Oct 2026 invoices**, then **Send 45 invoices**.
+**Click:** **← Nov 2026 invoices**.
 
-**Say:** "It asks once, with the total." **Click:** **Send 45 invoices**. "Each invoice gets its number now, in an unbroken series per building and financial year as GST requires, and is emailed with its PDF to the tenant's accounts contact. A sent invoice can't be edited; a correction is a credit note."
+**Say:** "These are dated the 1st, so they wait here as drafts until then. On the 1st, one tap on **Send 46 invoices** asks once, with the total, then gives each invoice its number, in an unbroken series per building and financial year as GST requires, and emails it with its PDF to the tenant's accounts contact. A sent invoice can't be edited; a correction is a credit note."
+
+(If you seeded on the 1st, the month is this month: make them, then **Send 45 invoices** for real.)
 
 ## 6. Payments: by hand and from the bank (2 minutes)
 

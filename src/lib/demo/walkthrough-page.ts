@@ -68,7 +68,7 @@ export const STEP_TITLES: Record<string, string> = {
   phone: "The same screens on a phone (375px wide)",
   "2": "2. Open a tenant and their lease",
   "3": "3. Add a new lease and see its rent schedule",
-  "4": "4. Make this month's invoices, check one, send them all",
+  "4": "4. Make the month's invoices, check one, send them all",
   "5": "5. Record a payment with TDS",
   "6": "6. Import a bank statement and confirm the matches",
   "7": "7. The reports",
@@ -83,9 +83,9 @@ const rentLine = (f: WalkthroughFacts) =>
 /** Each screenshot's caption, by its name in the walkthrough test. */
 export const CAPTIONS: Record<string, (f: WalkthroughFacts) => string> = {
   "log-in": (f) =>
-    `The owner of Sharma Estates logs in with the demo login (${f.email}; <code>pnpm db:seed:demo</code> prints a new password each time). The demo has two buildings, the 8-floor Sharma Corporate Tower in Gurugram and Sharma Arcade in Bengaluru (shops below, offices above), with ${DEMO_TENANTS.length} tenants and invoices and payments up to last month.`,
+    `The owner of Sharma Estates logs in with the demo login (${f.email}; <code>pnpm db:seed:demo</code> prints a new password each time). The demo has two buildings, the 8-floor Sharma Corporate Tower in Gurugram and Sharma Arcade in Bengaluru (shops below, offices above), with ${DEMO_TENANTS.length} tenants and invoices and payments up to this month.`,
   today: (f) =>
-    `Today is the first screen after logging in: what's billed, collected and unpaid this month, then what needs doing. Notice the three tenants who haven't paid (${Object.keys(SPOTLIGHT.unpaid).join(", ")}), the reminder that ${f.month} invoices aren't made yet, the ${SPOTLIGHT.missingCertificates.length} TDS certificates past their due date (Q${demoTdsQuarters(f.today).overdue.quarter}'s were due ${formatDate(demoTdsQuarters(f.today).overdue.due)}), coming rent increases, and ${SPOTLIGHT.expiringSoon}'s lease ending in 60 days. "Overdue" counts from each invoice's due date: 7 days after the invoice date in the tower and 10 in the arcade (setting <code>invoice.dueDays</code>, set on the arcade building).`,
+    `Today is the first screen after logging in: what's billed, collected and unpaid this month, then what needs doing. This month's invoices went out on the 1st, so the boxes show what's billed and collected so far. Notice the three tenants who haven't paid (${Object.keys(SPOTLIGHT.unpaid).join(", ")}), the ${SPOTLIGHT.missingCertificates.length} TDS certificates past their due date (Q${demoTdsQuarters(f.today).overdue.quarter}'s were due ${formatDate(demoTdsQuarters(f.today).overdue.due)}), coming rent increases, and ${SPOTLIGHT.expiringSoon}'s lease ending in 60 days. "Overdue" counts from each invoice's due date: 7 days after the invoice date in the tower and 10 in the arcade (setting <code>invoice.dueDays</code>, set on the arcade building).`,
   "phone-today": () =>
     `The same Today screen on a phone, as an owner would check it. The cards stack in one column and every button is big enough to tap.`,
   "phone-leases": () =>
@@ -104,7 +104,7 @@ export const CAPTIONS: Record<string, (f: WalkthroughFacts) => string> = {
   "new-lease-units": (f) =>
     `The lease form, step 1: the tenant, the building and the units, here the empty office ${f.newLease.unit} on the 7th floor. A unit already leased on the new lease's dates is refused when saving.`,
   "new-lease-dates": (f) =>
-    `Step 2: the lease runs nine years from ${formatDate(f.newLease.startDate)}, the 1st of next month, so it doesn't change this month's invoices.`,
+    `Step 2: the lease runs nine years from ${formatDate(f.newLease.startDate)}, the 1st of next month, so it's on next month's invoices and not on this month's, which are already sent.`,
   "new-lease-charges": (f) =>
     `Step 3: rent of ${formatINR(f.newLease.ratePaise)} per sq ft a month. GST (18%), the SAC code (997212) and billing in advance aren't typed: they come from the building's defaults.`,
   "new-lease-check": (f) =>
@@ -121,6 +121,8 @@ export const CAPTIONS: Record<string, (f: WalkthroughFacts) => string> = {
     `Tapping a line explains the amount: the area times the rate per sq ft, whether it's a full or part month, and how the tax was split. This is what the accountant checks against the lease, line by line.`,
   "send-check": (f) =>
     `"Send ${f.made.count} invoices" asks once more, with the count and the total. Each invoice is checked against its lease again before it gets a number, so an invoice whose lease changed after it was made isn't sent.`,
+  "wait-to-send": (f) =>
+    `${f.month}'s invoices are dated the 1st, so they wait as drafts until then: "Send ${f.made.count} invoices" appears on that day. Checking them early leaves time to fix a lease before anything reaches a tenant.`,
   sent: (f) =>
     `Sent: each invoice now has its number: the building's prefix (SCT for the tower, SA for the arcade), the financial year (${financialYear(f.today).short}) and a running number with no gaps, carrying on from last month's (setting <code>invoice.numberFormat</code>, rules section 9). Tenants with an email address get the invoice by email.`,
   payment: (f) =>

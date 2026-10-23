@@ -720,25 +720,40 @@ export function demoTdsQuarters(today: PlainDate): {
  * The months with invoices and payments: the last three months, reaching
  * back further if needed so they include the latest quarter whose TDS
  * certificates are already due (for the missing certificates to show).
+ * After the 1st, this month too, sent on its 1st with the payments that have
+ * come in by today, so Today never opens with "Billed ₹0" late in a month.
  */
 export function historyMonths(today: PlainDate): YearMonth[] {
   const current = monthOf(today);
   let first = addMonthsToMonth(current, -3);
   const lastMonth = monthOf(latestOverdueTdsQuarter(today).end);
   if (lastMonth < first) first = lastMonth;
+  const last = demoBillingMonth(today);
   const months: YearMonth[] = [];
-  for (let m = first; m < current; m = addMonthsToMonth(m, 1)) months.push(m);
+  for (let m = first; m < last; m = addMonthsToMonth(m, 1)) months.push(m);
   return months;
 }
 
-/** The day a tenant pays a month's invoice: a few days after it's dated, never after today. */
+/**
+ * The month the walkthrough and the demo meeting make invoices for: this
+ * month when seeded on the 1st, otherwise next month (this month's are
+ * already sent by the seed).
+ */
+export function demoBillingMonth(today: PlainDate): YearMonth {
+  const current = monthOf(today);
+  return today === startOfMonth(current)
+    ? current
+    : addMonthsToMonth(current, 1);
+}
+
+/** The day a tenant pays a month's invoice: a few days after it's dated, or null if that's after today (not paid yet). */
 export function paymentDate(
   invoiceDate: PlainDate,
   tenantIndex: number,
   today: PlainDate,
-): PlainDate {
+): PlainDate | null {
   const day = addDays(invoiceDate, 3 + ((tenantIndex * 3) % 9));
-  return compareDates(day, today) > 0 ? today : day;
+  return compareDates(day, today) > 0 ? null : day;
 }
 
 const MODES = ["neft", "neft", "rtgs", "neft", "cheque", "imps"] as const;

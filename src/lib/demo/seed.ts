@@ -225,9 +225,12 @@ export async function seedDemo(
     await db.transaction((tx) => markUnitLeased(tx, organizationId, unit.id));
   }
 
-  // Each past month: the billing run makes the drafts, the owner sends them
-  // on the 1st, and tenants pay a few days later, less their TDS.
+  // Each month so far: the billing run makes the drafts, the owner sends them
+  // on the 1st, and tenants pay a few days later, less their TDS. This
+  // month's payments are only those already made by today.
   const months = historyMonths(today);
+  const thisMonth = monthOf(today);
+  const pastMonths = months.filter((m) => m < thisMonth).length;
   let invoiceCount = 0;
   let paymentCount = 0;
   for (const [m, month] of months.entries()) {
@@ -250,21 +253,27 @@ export async function seedDemo(
       await asUser((s) => issueInvoice(s, d.id, sentAt));
       invoiceCount++;
     }
-    const monthsLeft = months.length - m;
+    const monthsLeft = pastMonths - m;
     for (const [i, t] of DEMO_TENANTS.entries()) {
-      // Unpaid: the spotlight tenants' last one, two or three months.
-      if ((SPOTLIGHT.unpaid[t.name] ?? 0) >= monthsLeft) continue;
+      // Unpaid: the spotlight tenants' last one, two or three past months,
+      // and this month's.
+      const unpaidMonths = SPOTLIGHT.unpaid[t.name] ?? 0;
+      if (unpaidMonths && (month === thisMonth || unpaidMonths >= monthsLeft))
+        continue;
       const tenantId = tenantIds.get(t.name)!;
       const paid = await asUser(async (s) => {
         const settings = await paymentSettings(s, tenantId);
         const open = await unpaidInvoices(s, tenantId, settings);
         const invoice = open.find((o) => monthOf(o.periodStart) === month);
-        if (!invoice) return false;
+        const receivedDate = invoice
+          ? paymentDate(invoice.invoiceDate, i, today)
+          : null;
+        if (!invoice || !receivedDate) return false;
         await recordPayment(
           s,
           {
             tenantId,
-            receivedDate: paymentDate(invoice.invoiceDate, i, today),
+            receivedDate,
             amountReceivedPaise:
               invoice.outstandingPaise - invoice.expectedTdsPaise,
             tdsPaise: invoice.expectedTdsPaise,
@@ -344,7 +353,8 @@ export async function seedDemo(
     const open = await asUser(async (s) =>
       unpaidInvoices(s, tenantId, await paymentSettings(s, tenantId)),
     );
-    for (const i of open)
+    // Their overdue invoices, not this month's.
+    for (const i of open.filter((o) => monthOf(o.periodStart) < thisMonth))
       credits.push({
         tenant: name,
         invoiceNumber: i.number,

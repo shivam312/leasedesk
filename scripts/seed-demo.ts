@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "../src/lib/db/schema";
 import type { Transactional } from "../src/lib/db/scoped";
+import { demoBillingMonth } from "../src/lib/demo/plan";
 import { seedDemo } from "../src/lib/demo/seed";
 import { formatINR, formatMonth } from "../src/lib/format";
 import { todayInIndia } from "../src/lib/today";
@@ -18,7 +19,8 @@ async function main() {
     );
   const db = drizzle(sql, { schema, casing: "snake_case" });
   try {
-    const r = await seedDemo(db as unknown as Transactional, todayInIndia());
+    const today = todayInIndia();
+    const r = await seedDemo(db as unknown as Transactional, today);
     const months = r.months.map(formatMonth);
     // For the demo meeting's "import a bank statement" step (docs/DEMO_SCRIPT.md).
     mkdirSync(".local-demo", { recursive: true });
@@ -28,6 +30,7 @@ async function main() {
         `Seeded Sharma Estates into the ${where}:`,
         `  ${r.invoices} invoices sent for ${months[0]} to ${months.at(-1)}, ${r.payments} payments recorded`,
         `  ${r.unpaid} invoices unpaid, ${r.certificatesMissing} TDS certificates missing`,
+        `  Invoices to make in the demo: ${formatMonth(demoBillingMonth(today))}`,
         `  Bank statement to import: .local-demo/hdfc-statement.csv`,
         `  Payment to record: ${r.oldestUnpaid.tenant} pays ${r.oldestUnpaid.number} (${formatINR(r.oldestUnpaid.totalPaise)}): type ${formatINR(r.oldestUnpaid.totalPaise - r.oldestUnpaid.tdsPaise)} received, TDS ${formatINR(r.oldestUnpaid.tdsPaise)} fills in`,
         "",

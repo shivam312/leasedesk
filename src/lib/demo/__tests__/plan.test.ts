@@ -15,6 +15,7 @@ import {
   demoLeases,
   demoStatementCsv,
   demoTdsQuarters,
+  demoBillingMonth,
   historyMonths,
   paymentDate,
 } from "../plan";
@@ -134,18 +135,21 @@ describe("demo leases", () => {
 });
 
 describe("historyMonths", () => {
-  it("goes back to June on 24 Oct 2026, so Q1's overdue certificates show", () => {
+  it("goes back to June on 24 Oct 2026, so Q1's overdue certificates show, and includes October", () => {
     // Q2 (Jul–Sep) certificates are due 15 Nov, Q1's were due 15 Aug.
+    // After the 1st, this month is billed too, so Today doesn't read "Billed ₹0".
     expect(historyMonths(TODAY)).toEqual([
       "2026-06",
       "2026-07",
       "2026-08",
       "2026-09",
+      "2026-10",
     ]);
   });
 
-  it("is the last three months when they already hold an overdue quarter", () => {
+  it("is the last three months, not this one, on the 1st", () => {
     // 1 Dec 2026: Q2's certificates were due 15 Nov; September is in it.
+    // December's invoices are made in the demo itself.
     expect(historyMonths("2026-12-01")).toEqual([
       "2026-09",
       "2026-10",
@@ -161,7 +165,16 @@ describe("historyMonths", () => {
       "2026-05",
       "2026-06",
       "2026-07",
+      "2026-08",
     ]);
+  });
+});
+
+describe("demoBillingMonth", () => {
+  it("is this month on the 1st, and next month after it", () => {
+    expect(demoBillingMonth("2026-12-01")).toBe("2026-12");
+    expect(demoBillingMonth("2026-12-02")).toBe("2027-01");
+    expect(demoBillingMonth(TODAY)).toBe("2026-11");
   });
 });
 
@@ -206,10 +219,10 @@ describe("demoTdsQuarters", () => {
 });
 
 describe("paymentDate", () => {
-  it("is a few days after the invoice, but never after today", () => {
+  it("is a few days after the invoice, or null if that's after today", () => {
     expect(paymentDate("2026-09-01", 0, TODAY)).toBe("2026-09-04");
     expect(paymentDate("2026-09-01", 2, TODAY)).toBe("2026-09-10");
-    expect(paymentDate("2026-10-01", 2, "2026-10-05")).toBe("2026-10-05");
+    expect(paymentDate("2026-10-01", 2, "2026-10-05")).toBeNull();
   });
 });
 

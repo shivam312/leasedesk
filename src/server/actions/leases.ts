@@ -12,33 +12,20 @@ import { PermissionError, requirePermission } from "@/lib/auth/roles";
 import { compareDates, parseDate } from "@/lib/billing/dates";
 import { updateLogged } from "@/lib/db/activity-log";
 import { criticalDates, leaseCharges, leases } from "@/lib/db/schema";
-import { runScoped, type Scoped } from "@/lib/db/scoped";
+import { runScoped } from "@/lib/db/scoped";
 import { formatDate } from "@/lib/format";
+import type { GeneratedCriticalDate } from "@/lib/leases/critical-dates";
+import { checkLease } from "@/lib/leases/build";
 import {
-  criticalDatesFor,
-  type GeneratedCriticalDate,
-} from "@/lib/leases/critical-dates";
-import {
-  leaseInputFor,
   parseLeaseForm,
-  type BuiltLease,
-  type LeaseDraft,
   type LeaseFormErrors,
   type LeaseFormInput,
   type LeaseFormStep,
 } from "@/lib/leases/draft";
-import { unitClashes } from "@/lib/leases/forms";
-import {
-  buildingUnits,
-  createLease,
-  getLease,
-  markRenewed,
-  unitBookings,
-} from "@/lib/leases/queries";
+import { createLease, getLease, markRenewed } from "@/lib/leases/queries";
 import { renewalRefusal, renewalStartProblem } from "@/lib/leases/renewal";
 import { reviewRows, type ReviewRow } from "@/lib/leases/review";
 import { terminationPlan } from "@/lib/leases/termination";
-import { loadSettings } from "@/lib/settings/store";
 import { todayInIndia } from "@/lib/today";
 
 export type LeaseFormResult =
@@ -74,72 +61,6 @@ async function memberWhoMayEdit(): Promise<Member | string> {
   return member;
 }
 
-/** Check the form against the database and build the engine's lease. */
-async function build(
-  s: Scoped,
-  draft: LeaseDraft,
-  replacesLeaseId: string | null,
-  ids: { leaseId: string; chargeIds?: string[] },
-): Promise<
-  | { ok: true; built: BuiltLease; dates: GeneratedCriticalDate[] }
-  | Extract<LeaseFormResult, { ok: false }>
-> {
-  const { parties } = draft;
-  const units = await buildingUnits(s, parties.buildingId);
-  if (!parties.unitIds.every((id) => units.some((u) => u.id === id)))
-    return {
-      ok: false,
-      step: "parties",
-      errors: { unitIds: "Choose units in this building." },
-    };
-  const clashes = unitClashes(
-    {
-      id: ids.leaseId,
-      replacesLeaseId,
-      unitIds: parties.unitIds,
-      startDate: draft.dates.startDate,
-      endDate: draft.dates.endDate,
-    },
-    await unitBookings(s, parties.unitIds),
-  );
-  if (clashes.length > 0) {
-    const c = clashes[0]!;
-    const code = units.find((u) => u.id === c.unitId)?.code ?? "A unit";
-    return {
-      ok: false,
-      step: "parties",
-      errors: {
-        unitIds: `Unit ${code} is already leased from ${formatDate(c.startDate)} to ${formatDate(c.endDate)}. Choose other units or change the dates.`,
-      },
-    };
-  }
-  const settings = await loadSettings(s, {
-    buildingId: parties.buildingId,
-    tenantId: parties.tenantId,
-    leaseSettings: draft.settings,
-  });
-  try {
-    const built = leaseInputFor(draft, {
-      id: ids.leaseId,
-      units,
-      settings,
-      chargeIds: ids.chargeIds,
-    });
-    const dates = criticalDatesFor(built.lease, built.billing, settings);
-    return { ok: true, built, dates };
-  } catch (error) {
-    return {
-      ok: false,
-      step: "charges",
-      errors: {},
-      message:
-        error instanceof Error
-          ? `These terms can't be billed: ${error.message}`
-          : "These terms can't be billed. Check the charges and rent increases.",
-    };
-  }
-}
-
 function parsed(input: LeaseFormInput) {
   const result = parseLeaseForm(input);
   return result.ok ? result : { ...result, ok: false as const };
@@ -155,7 +76,7 @@ export async function previewLease(
   const form = parsed(input);
   if (!form.ok) return form;
   return runScoped(appDb, member, async (s) => {
-    const result = await build(s, form.draft, replacesLeaseId, {
+    const result = await checkLease(s, form.draft, replacesLeaseId, {
       leaseId: "preview",
     });
     if (!result.ok) return result;
@@ -216,7 +137,7 @@ export async function saveLease(
         };
       version = old.lease.version + 1;
     }
-    const result = await build(s, draft, replacesLeaseId, {
+    const result = await checkLease(s, draft, replacesLeaseId, {
       leaseId,
       chargeIds: draft.charges.map(() => randomUUID()),
     });

@@ -37,6 +37,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-025 | Codex review of M6: unresolved items | product | no | open |
 | D-026 | Which month an invoice or credit note counts in on the GST summary | ca | no | open |
 | D-027 | How payments, TDS and reversals go into Tally | ca | no | open |
+| D-028 | Bringing in what tenants already owe when a landlord starts | product | no | open |
 
 ## Human tasks
 
@@ -405,6 +406,19 @@ Things only a person can do. Tick them when done.
   - C) Something else your accountant prefers (describe it)
 - Recommendation: A, because a Journal is how most accountants undo a receipt in Tally, and it keeps the original receipt untouched, like our payments.
 - Done meanwhile: built A (`src/lib/exports/tally.ts`). The format still needs checking against a real TallyPrime export (the human task to save one in `tests/fixtures/tally/`).
+- Answer:
+
+### D-028: Bringing in what tenants already owe when a landlord starts
+- Status: open
+- Type: product
+- Blocking: no
+- Context: The Excel import brings in buildings, units, tenants and leases, so billing starts correctly from the next month. It doesn't bring in rent a tenant still owes from before (invoices made in the old Excel or Tally), so Today, reminders and the unpaid report don't know about it, and the tenant ledger starts at zero.
+- Options:
+  - A) An opening balance per tenant (amount owed and the date, imported or typed once), shown first on the tenant ledger and in unpaid and ageing, and settled by payments like an invoice, but never numbered or sent as a GST invoice
+  - B) Import each old unpaid invoice with its old number and date, as a record only (not sent again)
+  - C) Leave old dues in the old system until they are paid
+- Recommendation: A, because it is one number per tenant that the accountant already has, it can't clash with GST invoice numbering, and payments and reminders then work from day one.
+- Done meanwhile: nothing; the import covers buildings, units, tenants and leases. The tenant ledger says there is no opening balance yet.
 - Answer:
 
 ## Applied

@@ -99,3 +99,73 @@ test("an owner imports buildings and units from Excel, fixing a bad row first", 
     page.getByText("101").filter({ visible: true }).first(),
   ).toBeVisible();
 });
+
+test("an owner imports tenants and leases from Excel after the units", async ({
+  page,
+}) => {
+  await signUpNewOwner(page);
+  await addGstin(page);
+  await page.goto("/leases/import");
+  const file = page.getByLabel("Excel file (.xlsx)");
+  await file.first().setInputFiles(
+    workbook({
+      Buildings: [
+        BUILDINGS,
+        ["Lotus Park", "MG Road, Pune", "Pune", "27", "LP", "", ""],
+      ],
+      Units: [UNITS, ["Lotus Park", "", "G1", "1000", ""]],
+    }),
+  );
+  await page
+    .getByRole("button", { name: "Import buildings and units" })
+    .click();
+  await expect(page.getByText("Imported 1 building and 1 unit.")).toBeVisible();
+
+  await file.nth(1).setInputFiles(
+    workbook({
+      Tenants: [
+        [
+          "Tenant name",
+          "GSTIN",
+          "Billing address",
+          "Contact name",
+          "Contact email",
+        ],
+        [
+          "Beta Foods LLP",
+          "27AABCA1234B1ZH",
+          "Lower Parel, Mumbai",
+          "Ravi",
+          "ravi@beta.example",
+        ],
+      ],
+      Leases: [
+        [
+          "Tenant name",
+          "Building name",
+          "Units",
+          "Lease starts",
+          "Last day",
+          "Rent (₹)",
+        ],
+        [
+          "Beta Foods LLP",
+          "Lotus Park",
+          "G1",
+          "01-04-2026",
+          "31-03-2029",
+          "100",
+        ],
+      ],
+    }),
+  );
+  await page.getByRole("button", { name: "Import tenants and leases" }).click();
+  await expect(
+    page.getByText(/^Imported 1 tenant and 1 lease\./),
+  ).toBeVisible();
+
+  await page.goto("/leases");
+  await expect(
+    page.getByText("Beta Foods LLP").filter({ visible: true }).first(),
+  ).toBeVisible();
+});

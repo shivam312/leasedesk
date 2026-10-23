@@ -12,6 +12,8 @@ import { parseWorkbookSheets } from "@/lib/bank/xlsx";
 import { runScoped } from "@/lib/db/scoped";
 import { planPropertyImport } from "@/lib/imports/property";
 import { existingProperty, saveProperty } from "@/lib/imports/save-property";
+import { ImportRefused, importTenancy } from "@/lib/imports/save-tenancy";
+import { todayInIndia } from "@/lib/today";
 import type { RowError, Sheet } from "@/lib/imports/sheets";
 import { guardedForm } from "./guard";
 
@@ -69,5 +71,34 @@ export async function importProperty(
         message: `Imported ${n.buildings} ${n.buildings === 1 ? "building" : "buildings"} and ${n.units} ${n.units === 1 ? "unit" : "units"}${n.floors > 0 ? `, with ${n.floors} new ${n.floors === 1 ? "floor" : "floors"}` : ""}.`,
       };
     });
+  });
+}
+
+/** Tenants and leases: the lease checks need the units' buildings saved first. */
+export async function importTenantsAndLeases(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  return guardedForm("manage_leases", z.unknown(), form, async (member) => {
+    const read = await readFile(form);
+    if ("message" in read) return { message: read.message };
+    try {
+      const n = await runScoped(appDb, member, (s) =>
+        importTenancy(s, read.sheets, todayInIndia()),
+      );
+      revalidatePath("/leases", "layout");
+      revalidatePath("/tenants", "layout");
+      revalidatePath("/today");
+      return {
+        tone: "success",
+        message: `Imported ${n.tenants} ${n.tenants === 1 ? "tenant" : "tenants"} and ${n.leases} ${n.leases === 1 ? "lease" : "leases"}. Check one lease's rent schedule before making this month's invoices.`,
+      };
+    } catch (error) {
+      if (!(error instanceof ImportRefused)) throw error;
+      return {
+        message: `Nothing was imported. Fix ${error.errors.length === 1 ? "this row" : `these ${error.errors.length} rows`} in the file, then import it again.`,
+        problems: problemLines(error.errors),
+      };
+    }
   });
 }

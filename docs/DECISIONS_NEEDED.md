@@ -39,6 +39,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-027 | How payments, TDS and reversals go into Tally | ca | no | open |
 | D-028 | Bringing in what tenants already owe when a landlord starts | product | no | open |
 | D-029 | How users reach LeaseDesk support | product | no | open |
+| D-030 | Codex review of M8: unresolved items | product | no | open |
 
 ## Human tasks
 
@@ -434,6 +435,22 @@ Things only a person can do. Tick them when done.
   - C) Both: WhatsApp for owners, email for accountants
 - Recommendation: B for the pilot, because owners already report problems on WhatsApp and it needs no new account; add email when there are paying customers.
 - Done meanwhile: nothing; the error pages still say "contact support" / "tell us" with no link. Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
+- Answer:
+
+### D-030: Codex review of M8: unresolved items
+- Status: open
+- Type: product
+- Blocking: no
+- Context: Codex (the independent reviewer) failed M8 again after two review rounds (`.pipeline/reviews/M8-codex-review-2.md`), on one item. It is about how much of the app has had a simplicity (UX) review, not about money: Codex recalculated the journey test's invoices, GST and TDS by hand and they are right. Round 1's must-fix (error reports could be lost when a server function stopped) was fixed with `after()`.
+  - **Item 1: the UX review didn't cover every screen** (`docs/ROADMAP.md`, M8).
+    - Codex says: the roadmap ticked "UX review of every screen", but the review's own notes list screens it never looked at (Today, the lease page, tenants list / new / edit, Excel import, units and stacking plan, the payment screens, bank import detail, Reports, Settings → Billing rules and business entities, Welcome, Sign up). Either review them and record a screen-by-screen result, or narrow the ticked task and leave the rest open.
+    - Claude says: agreed, and the second option is done. The ticked task now names only the screens actually reviewed, and a new unticked M8 task lists the missed screens and asks for a coverage table (screen, ok / fixed / backlogged, backlog row) in `docs/milestones/M8.md`. Codex's point stands until that task is done, so M8 isn't finished yet. Nothing here needs you to decide how the app behaves; the open question is only whether the pilot waits for it.
+- Options:
+  - A) The next pipeline run does the remaining UX review and fixes or backlogs what it finds, before any pilot landlord gets access
+  - B) Start the pilot now and review the remaining screens alongside it
+  - C) Review the remaining screens yourself on a phone instead of the agent
+- Recommendation: A, because several of the missed screens (Today, payments, Excel import) are the ones a pilot landlord uses on day one, the review needs no accounts or money, and it can run while the human M8 tasks (Sentry and Supabase cloud accounts, staging, backups) are still open, so it doesn't delay the pilot.
+- Done meanwhile: the roadmap task was narrowed and the missed screens became an open M8 task (commit 915c072); the matching backlog row was removed. No code changed.
 - Answer:
 
 ## Applied

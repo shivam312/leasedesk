@@ -38,7 +38,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [x] Schema: tenants (TDS per charge type) and tenant contacts
 - [x] Row-level security policies and org-scoped query helpers, with tests that one org can't read another's data
 - [x] Activity log helper
-- [ ] Settings system: Zod schema in `src/lib/settings/schema.ts` with every key and default in `docs/SETTINGS.md`
+- [x] Settings system: Zod schema in `src/lib/settings/schema.ts` with every key and default in `docs/SETTINGS.md`
 - [ ] Settings system: jsonb storage on organizations, billing entities, buildings, tenants and leases, and the resolution order in `src/lib/settings/resolve.ts` (lease → tenant → building → organization → default), with tests
 - [ ] Billing engine takes a resolved `BillingSettings` object in place of its separate `roundEscalatedRentToRupee`, `roundInvoiceTotal` and `dueDays` inputs; golden tests unchanged
 - [ ] Billing settings, a test for each option: `billing.partPeriodMethod`, `billing.monthEndRule`

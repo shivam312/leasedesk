@@ -8,7 +8,7 @@ Every behaviour that can differ between landlords is a setting with a safe defau
 
 When a setting is built, tick it and note where it lives in code.
 
-**Status (end of M0; M1 is also done):** M0 added no settings. The settings system (`src/lib/settings/`, jsonb columns, Settings → Billing rules) doesn't exist yet; it's an M2 task. A tick here means the billing engine already takes the option as an input, so only storage, resolution and UI are missing. "Fixed" means the engine hard-codes the default and the other options still need building. Paths are under `src/lib/billing/`.
+**Status (M2, in progress):** every key below is defined, with its options, default, scopes and visibility, in `src/lib/settings/schema.ts` (stored as flat keys such as `"invoice.dueDays"` in the `settings` jsonb columns; a test checks the file against this table). Settings that are columns instead of jsonb keys (`tds.rateBp`, `tds.appliesTo`, `invoice.prefix`, `billing.waivedDuringRentFree`) are listed in `COLUMN_SETTINGS` there. Resolution and the Settings → Billing rules page are still to come. A tick here means the billing engine already takes the option as an input, so only storage, resolution and UI are missing. "Fixed" means the engine hard-codes the default and the other options still need building. Paths are under `src/lib/billing/`.
 
 ## Billing
 
@@ -50,7 +50,7 @@ TDS is set per charge type on the tenant: `rent`, `cam`, `parking` and `other` (
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [x] | `invoice.prefix` | building | text, ≤5 chars | building initials | basic | Each building often has its own series | `prefix` input of `invoiceNumber` in `invoice-number.ts` (moves to `src/lib/invoices/` in M4, D9). No default yet |
 | [ ] | `invoice.numberFormat` | billing entity | template | `{prefix}/{fy}/{seq}` | advanced | Existing numbering must continue when they switch to us | Fixed to the default: `invoiceNumber` in `invoice-number.ts` |
-| [ ] | `invoice.startingNumber` | billing entity, per FY | integer | `1` | basic (onboarding) | Customers join mid-year with numbers already used | |
+| [ ] | `invoice.startingNumber` | billing entity, per FY | first number per financial year, e.g. `{"2026-27": 412}` | `{}` (start at 1 every year) | basic (onboarding) | Customers join mid-year with numbers already used | |
 | [x] | `invoice.dueDays` | building, tenant | days | `7` | basic | Payment terms vary by lease | `dueDays` option of `invoiceForRun` in `invoice-lines.ts` |
 | [ ] | `invoice.runDay` | organization | day of month | `1` | basic | Some landlords bill on the 25th for the next month | Fixed to the 1st: `invoiceForRun` in `invoice-lines.ts` |
 

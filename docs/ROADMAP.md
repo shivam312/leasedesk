@@ -4,7 +4,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 Each task is one commit. Tasks tagged `(human)` need a person and are listed in `docs/DECISIONS_NEEDED.md` under Human tasks; the pipeline skips them. Tasks tagged `(blocked: D-xxx)` wait for that decision. See `PIPELINE.md`.
 
-**Current milestone:** M8 (pilot readiness). Every pipeline task is done; only `(human)` tasks are left, in M4, M5 and M8, and M8 stays open until they are.
+**Current milestone:** M9 (audit findings). M8's pipeline tasks are done; its `(human)` tasks (and those in M4 and M5) stay open alongside M9. M9 comes from the 2026-10-24 audit (`docs/audit/SUMMARY.md`); its three opening-balance tasks wait on D-028.
 
 ## M0. Project setup (week 3)
 
@@ -143,6 +143,65 @@ Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: the lease import'
 - [ ] (human) Chartered accountant reviews `docs/BILLING_RULES.md` and the `ca` entries in `docs/DECISIONS_NEEDED.md`
 
 Reviewed by the billing and UX reviewers on 2026-10-24. Fixed: error reports to Sentry no longer carry an error's text (a failed query lists the names, GSTINs and amounts it tried to save), breadcrumbs or query strings; a reset link's `next` can't send someone to another site with a tab or newline; a reset page saved after the session ended explains that the link expired; plainer reset and invite pages; the journey test checks Today's collected money. The rest is in `docs/BACKLOG.md`; D-029 (how users reach support) is open. Codex reviewed it twice: error reports are now sent before a server function stops; its remaining point (the UX review didn't cover every screen) was the second UX review task above, now done (D-030). Reviewed again by the billing and UX reviewers on 2026-10-24: Next.js's request path no longer carries a tenant search into Sentry, and the error pages no longer promise a support contact that doesn't exist yet; the rest is in `docs/BACKLOG.md`, no new decisions. Codex's third round: reset links take their address from `APP_URL` only, never from request headers. Wrapped up again on 2026-10-24 (report: `docs/milestones/M8.md`); 951 unit and database tests and 50 browser tests pass; no new migrations or settings. M8 stays open until the human tasks are done.
+
+## M9. Audit findings
+
+From the audit of 2026-10-24 (`docs/audit/SUMMARY.md`, rulings in `docs/audit/RULINGS.md`). Ordered: demo blockers, then pilot blockers, then the rest. Backlog rows that moved here were deleted from `docs/BACKLOG.md`.
+
+Demo blockers (what a landlord would see go wrong in the 10-minute demo):
+
+- [ ] Hide the Next.js dev overlay badge in demos: reproduce the "Could not validate `instant`" warning against `node_modules/next/dist/docs/`, fix it if cheap, and note in `docs/DEMO_SCRIPT.md` that the demo runs on `pnpm build && pnpm start`
+- [ ] Fixed demo clock: `pnpm db:seed:demo` seeds the current month as sent (with some collections) when run after the 1st, so Today never opens with "Billed ₹0"; the walkthrough and demo script make next month's invoices instead
+- [ ] "Overdue" comes from the due date and balance, not the stored status: one shared helper for the invoice list, invoice page, tenant page and ledger (nothing sets `overdue` today, so a 46-day-late invoice reads "Sent")
+- [ ] Today shows the 5 oldest unpaid tenants with a total and "See all N", and rent increases due on the same day share one card
+- [ ] Today's "hasn't paid ₹X" says it is the amount to pay after expected TDS; the "Unpaid now" box and Unpaid and ageing share one gross label, so the two screens agree
+- [ ] Demo script part 4 adds a 5% yearly increase and ends the lease on 31-10-2035; the lease form's dates step suggests the day before the anniversary as the last day
+- [ ] Dates read DD-MM-YYYY beside or instead of the native date picker on the lease form, payment form, reports' "As on" and the Tally page (was backlog rows on native date inputs)
+- [ ] After every invoice of a month is sent, "Make … invoices" is no longer the filled button; "Make missing … invoices" shows only when a lease has no draft
+- [ ] The lease page folds the rent schedule on phones: the next 12 months, then "Show all N months"
+- [ ] Invoice lines in one fixed order, rent first, the same on screen and on the PDF
+- [ ] The tenant page's address doesn't repeat the state
+- [ ] Building cards count vacant units from active leases, not `units.status`, show occupancy %, and show fit-out units separately so the card and the Vacancy report agree (was backlog row on `units.status`)
+
+Pilot blockers (what a real landlord's first month would hit):
+
+- [ ] Credit note lines start at ₹0, with the total shown before "Issue credit note" (a sent credit note can't be undone)
+- [ ] Email fails closed in production: without `RESEND_API_KEY`, sending refuses with "Email isn't set up yet" and Settings → Business shows the same; the console driver runs only outside production or with `EMAIL_DRIVER=console`
+- [ ] Tenant contacts: edit and remove a contact and choose who receives invoices, keeping at least one usable email; "Add a contact" collapses behind a secondary button (was backlog row, must-fix before pilot)
+- [ ] Team: remove a member and cancel a pending invite, owner-only, with confirmation and activity log (was backlog rows)
+- [ ] (blocked: D-028) Opening balance per tenant: schema and ledger row, shown first on the tenant ledger and in Unpaid and ageing and Today, never numbered or sent as an invoice
+- [ ] (blocked: D-028) Opening balance entry: typed on the tenant page and an "Opening balance (₹)" column with "as on" date in the tenants and leases import
+- [ ] (blocked: D-028) Opening balances settle like invoices: payment allocation, bank matching and reminders include them
+- [ ] Tally export writes the party ledger masters (and the TDS Receivable and bank ledgers it posts to) ahead of the vouchers, and saves each tenant's Tally name at first export so a rename doesn't split postings
+- [ ] Tally export page gets a business (GSTIN) filter, one file per Tally company (was backlog row)
+- [ ] Job health: record each daily run; Today and Settings warn "The daily run hasn't happened since …" with "Run now" when it is more than a day late
+- [ ] `docs/DEPLOY.md` runbook: first deploy and rollback, migrations against the cloud database (`ALLOW_REMOTE_DB`), Vercel environment variables, Inngest sync, Storage bucket policies, backup restore drill
+- [ ] CI: `.github/workflows/ci.yml` running typecheck, lint, unit and database tests (Supabase CLI) and the browser tests; runs once the repository is on GitHub (D-032)
+- [ ] Organization isolation on job paths: audit every `runAsSystem` and bare `db` call (`monthly-billing.ts`, `reminders/run.ts`, `digest-run.ts`, `demo/seed.ts`, `scoped.ts`) and add tests that two organizations' jobs never cross
+- [ ] Invoice list: search by tenant or building, status chips, row selection and "Send selected"; phone cards show the invoice number (was backlog rows)
+- [ ] "Remind all" on Today: one action sends the reminder email to every overdue tenant with an address and lists who has none (was backlog rows)
+- [ ] Tenant statement PDF from the ledger, financial-year filter, "Record payment" on the ledger
+- [ ] Tenant page lists the tenant's invoices with status and a link to each (was backlog rows)
+- [ ] Settings → Billing rules shows a preview of the reminder email and its timing before reminders are turned on
+- [ ] Store the sent invoice PDF at send time (`pdf_path`) and serve it for later downloads; existing invoices keep rendering from frozen copies (was backlog row; do before the first change to the PDF layout)
+
+The rest (v1 promises not yet kept, and smaller fixes):
+
+- [ ] Documents on a lease: step 6 of the lease form uploads the signed agreement to the `documents` table and bucket; the lease page lists and opens them
+- [ ] Documents on a tenant, and uploads go direct to Storage so `MAX_UPLOAD_BYTES` can rise from 3 MB to 25 MB with a clear size error
+- [ ] Activity section on the tenant, lease, invoice and payment pages: who changed what and when, from `activity_log`
+- [ ] Custom critical dates on a lease, and "In discussion" on a lease-end alert so Today stops repeating it
+- [ ] "Request from tenant" on a missing TDS certificate: one tap emails the billing contact and records when it was asked
+- [ ] Search and a month filter on the Payments list and the TDS tracker, and a search on Match payments (was backlog row)
+- [ ] Global search in the header: tenant, unit, invoice number
+- [ ] Deposit ledger: receipt, adjustments, refund or forfeit per lease, replacing the single `depositAmount` (D-033)
+- [ ] Deposit settlement statement on tenant exit: dues less deposit, PDF (D-033)
+- [ ] "Log in with Google" button shown only when the Supabase Google provider is configured (the OAuth client is a human task)
+- [ ] Paste units from Excel on the building page (rows of unit code, floor, area)
+- [ ] TDS gets its own entry under Billing with a back link to Billing; rent roll gets a phone card layout with the unit as anchor
+- [ ] SAC moves to a quiet detail line on screen (stays on the PDF); "Round off", "Billed area" and "Charged as" get plain-language help text
+- [ ] The invoice page says when the QR has no amount (over ₹1,00,000) or is left off (paid, part-paid), and `docs/DEMO_SCRIPT.md` says the same
+- [ ] Delete `vitest.config.mts` (Vitest loads `vitest.config.ts`, which has the unit and database projects) and tidy `PIPELINE OLD.md`, `INSTALL_CODEX.md`, `INSTALL_PROMPT.md` into `docs/archive/`
 
 ## Later (v2, in order)
 

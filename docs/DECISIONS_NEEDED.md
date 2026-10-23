@@ -37,10 +37,12 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-025 | Codex review of M6: unresolved items | product | no | open |
 | D-026 | Which month an invoice or credit note counts in on the GST summary | ca | no | open |
 | D-027 | How payments, TDS and reversals go into Tally | ca | no | open |
-| D-028 | Bringing in what tenants already owe when a landlord starts | product | no | open |
+| D-028 | Bringing in what tenants already owe when a landlord starts | product | M9 | open |
 | D-029 | How users reach LeaseDesk support | product | no | open |
 | D-030 | Codex review of M8: unresolved items | product | no | open |
 | D-031 | Codex review of M5A: unresolved items | product | no | open |
+| D-032 | Run the test suites on GitHub Actions (CI)? | spend | no | open |
+| D-033 | Which unkept v1 promises wait until after the pilot? | product | no | open |
 
 ## Human tasks
 
@@ -58,6 +60,7 @@ Things only a person can do. Tick them when done.
 - [ ] Get a sample Tally XML export from a pilot accountant's TallyPrime and save it in `tests/fixtures/tally/` (M7)
 - [ ] Create Sentry, Supabase cloud (Mumbai), Vercel and Inngest accounts and put the keys in `.env.local` (M8). For Sentry: pick the EU data region (no India region; reports carry ids only, D41), then set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (the same DSN), and optionally `SENTRY_ENVIRONMENT` / `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (e.g. `staging`), in `.env.local` and the hosting settings, and add them to `.env.example`, which unattended runs can't open. To get readable browser stack traces, also create a Sentry auth token and ask for `next.config.ts` to be wrapped in `withSentryConfig`.
 - [ ] Set up the staging environment and turn on database backups (M8)
+- [ ] Create a private GitHub repository for LeaseDesk and push `main` to it, so the CI workflow in M9 runs (D-032). There is no git remote today.
 - [ ] In the Supabase cloud project (Auth → URL configuration), set the Site URL to the app's address and add `<APP_URL>/auth/confirm` to the redirect URLs, so password reset links work (D42). Set up custom SMTP (e.g. Resend) for Auth emails too: the built-in sender is limited to a few emails an hour.
 - [ ] Load a pilot landlord's real data and compare one month's invoices with their Excel (M8)
 - [ ] Usability test with an accountant who hasn't seen the app (M8)
@@ -213,6 +216,7 @@ Things only a person can do. Tick them when done.
   - B) Add e-invoicing through a GST Suvidha Provider before launch (needs a vendor, an account and an API key)
 - Recommendation: A for the pilot, if the pilot landlords are under ₹5 crore; ask your CA, and plan B before selling to larger landlords.
 - Done meanwhile: A. Invoices print without an IRN; recorded as **[CA]** in `docs/BILLING_RULES.md` section 9.
+- Audit note (2026-10-24): answer this one first among the `ca` entries. It decides which landlords can pilot at all: one with 100 tenants at ₹1 lakh a month is over ₹5 crore, and can't issue valid B2B invoices from LeaseDesk until B is built.
 - Answer:
 
 ### D-013: Signature and "Original for recipient" on emailed invoices
@@ -415,7 +419,7 @@ Things only a person can do. Tick them when done.
 ### D-028: Bringing in what tenants already owe when a landlord starts
 - Status: open
 - Type: product
-- Blocking: no
+- Blocking: M9 (three opening-balance tasks). Both audit reviewers ranked this the #1 pilot gap on 2026-10-24: without it, a tenant who is behind on day one is wrong on Today, in the ageing report, in reminders and in bank matching, and the "invoices match Excel" gate can't be met.
 - Context: The Excel import brings in buildings, units, tenants and leases, so billing starts correctly from the next month. It doesn't bring in rent a tenant still owes from before (invoices made in the old Excel or Tally), so Today, reminders and the unpaid report don't know about it, and the tenant ledger starts at zero.
 - Options:
   - A) An opening balance per tenant (amount owed and the date, imported or typed once), shown first on the tenant ledger and in unpaid and ageing, and settled by payments like an invoice, but never numbered or sent as a GST invoice
@@ -435,6 +439,7 @@ Things only a person can do. Tick them when done.
   - B) A WhatsApp number, as a wa.me link (most owners are on their phones)
   - C) Both: WhatsApp for owners, email for accountants
 - Recommendation: B for the pilot, because owners already report problems on WhatsApp and it needs no new account; add email when there are paying customers.
+- Audit note (2026-10-24): needed before any landlord outside the team uses the app; not a code gap until answered.
 - Done meanwhile: the error pages no longer promise a support contact; they say to try again, then go to Today (a page error) or ask the person who set up LeaseDesk (the whole app failed) (UX review M8, 2026-10-24). Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
 - Answer:
 
@@ -472,3 +477,29 @@ Things only a person can do. Tick them when done.
 ## Applied
 
 (Applied entries move here, newest first.)
+
+### D-032: Run the test suites on GitHub Actions (CI)?
+- Status: open
+- Type: spend
+- Blocking: no
+- Context: The 1,004 unit and database tests and 50 browser tests only run when someone remembers to run them. Nothing stops a broken commit from reaching the pilot. Both audit reviewers listed "no CI" as a gap. The repository has no git remote today, so CI needs a GitHub repository first (human task above). A private repository gets 2,000 free Actions minutes a month; a run of both suites is roughly 15 minutes, so a few runs a day stay free, and more costs about ₹0.70 a minute.
+- Options:
+  - A) GitHub Actions on a private repository, running on every push to `main`; stay within the free minutes
+  - B) Run the tests only on the laptop before pushing (no CI); the deploy runbook lists the commands
+  - C) Another CI service (needs a new account and vendor)
+- Recommendation: A, because it costs nothing at this pace, needs no new vendor, and the pipeline already assumes git.
+- Done meanwhile: the M9 task writes `.github/workflows/ci.yml`; it runs as soon as the repository is pushed to GitHub.
+- Answer:
+
+### D-033: Which unkept v1 promises wait until after the pilot?
+- Status: open
+- Type: product
+- Blocking: no
+- Context: The audit found v1 features promised in `docs/PRODUCT_PLAN.md` that aren't built: uploading the signed lease and other documents, the activity log on each record, global search, custom critical dates, "Request from tenant" for TDS certificates, the deposit as a ledger with a settlement statement on exit, Google login, and pasting units from Excel. None of them changes an invoice amount. They sit at the end of M9 ("The rest") and will be built in that order after the demo and pilot blockers, unless you drop some.
+- Options:
+  - A) Build them all in the M9 order (about two weeks of pipeline work after the blockers)
+  - B) Build documents, activity and custom dates only; move the deposit ledger, Google login, paste-from-Excel and global search to v2
+  - C) Move all of them to v2 and start the pilot on the blockers alone
+- Recommendation: B, because the pilot accountant will ask for the signed agreement and the change history in the first week, while the deposit ledger matters only at a tenant's exit, Google login is a convenience over email and password, and the Excel import already covers bulk units.
+- Done meanwhile: nothing is dropped; the pipeline reaches these tasks only after every blocker is done, so there is time to answer.
+- Answer:

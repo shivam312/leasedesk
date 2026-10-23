@@ -1,0 +1,30 @@
+import { describe, expect, it } from "vitest";
+import { billingSettings } from "../billing";
+import { resolveSettings } from "../resolve";
+
+describe("billingSettings", () => {
+  it("gives the engine the documented defaults when nothing is stored", () => {
+    // docs/BILLING_RULES.md section 2 and 7: rupee, rupee, 7 days.
+    expect(billingSettings(resolveSettings({}))).toEqual({
+      roundIncreasedRent: "rupee",
+      roundInvoiceTotal: "rupee",
+      dueDays: 7,
+    });
+  });
+
+  it("passes on values resolved from each level", () => {
+    expect(
+      billingSettings(
+        resolveSettings({
+          organization: { "billing.roundInvoiceTotal": "none" },
+          building: { "invoice.dueDays": 10 },
+          lease: { "billing.roundIncreasedRent": "none" },
+        }),
+      ),
+    ).toEqual({
+      roundIncreasedRent: "none",
+      roundInvoiceTotal: "none",
+      dueDays: 10,
+    });
+  });
+});

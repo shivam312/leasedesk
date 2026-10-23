@@ -3,8 +3,8 @@ import type { PlainDate, YearMonth } from "./dates";
 import { formatDate, formatMonth } from "@/lib/format";
 import type { BasisPoints, Paise } from "./money";
 import { chargePeriods } from "./schedule";
-import type { BillingSettings, ChargePeriod, LeaseInput } from "./schedule";
-import type { Charge, ChargeType, Explanation } from "./types";
+import type { ChargePeriod, LeaseInput } from "./schedule";
+import type { BillingSettings, Charge, ChargeType, Explanation } from "./types";
 
 export type InvoiceLine = {
   chargeId: string;
@@ -42,7 +42,7 @@ const NOUNS: Record<ChargeType, string> = {
 export function invoiceForRun(
   lease: LeaseInput,
   runMonth: YearMonth,
-  settings: BillingSettings & { dueDays: number },
+  settings: BillingSettings,
 ): { invoiceDate: PlainDate; dueDate: PlainDate; lines: InvoiceLine[] } | null {
   if (!Number.isSafeInteger(settings.dueDays) || settings.dueDays < 0) {
     throw new RangeError(

@@ -1,7 +1,7 @@
 import { percent, rupees } from "./explain";
 import { mulDiv, percentOf, roundOffToRupee, sumPaise } from "./money";
 import type { BasisPoints, Paise } from "./money";
-import type { Explanation } from "./types";
+import type { BillingSettings, Explanation } from "./types";
 
 /**
  * GST on rent (docs/BILLING_RULES.md, section 8) [CA].
@@ -89,7 +89,7 @@ export function invoiceTotals(
     sgst: Paise;
     igst: Paise;
   }[],
-  { roundInvoiceTotal }: { roundInvoiceTotal: boolean },
+  settings: Pick<BillingSettings, "roundInvoiceTotal">,
 ): {
   taxable: Paise;
   cgst: Paise;
@@ -104,8 +104,9 @@ export function invoiceTotals(
   const sgst = sumPaise(lines.map((l) => l.sgst));
   const igst = sumPaise(lines.map((l) => l.igst));
   const subtotal = sumPaise([taxable, cgst, sgst, igst]);
-  const { rounded, roundOff } = roundInvoiceTotal
-    ? roundOffToRupee(subtotal)
-    : { rounded: subtotal, roundOff: 0 };
+  const { rounded, roundOff } =
+    settings.roundInvoiceTotal === "rupee"
+      ? roundOffToRupee(subtotal)
+      : { rounded: subtotal, roundOff: 0 };
   return { taxable, cgst, sgst, igst, subtotal, roundOff, grandTotal: rounded };
 }

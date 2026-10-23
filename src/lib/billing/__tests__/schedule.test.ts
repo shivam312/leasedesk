@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "./billing-settings";
 import { rentSchedule } from "../schedule";
 import type { Charge } from "../types";
 
-const settings = { roundEscalatedRentToRupee: true };
+const settings = DEFAULT_SETTINGS;
 
 const rent: Charge = {
   id: "rent",

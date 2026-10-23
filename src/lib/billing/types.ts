@@ -80,3 +80,17 @@ export type AmountStep = {
   amount: Paise;
   explanation: Explanation;
 };
+
+/**
+ * The resolved settings that change amounts or dates (docs/SETTINGS.md).
+ * Built from the organization, building, tenant and lease settings by
+ * src/lib/settings/billing.ts; the engine never loads settings itself.
+ */
+export type BillingSettings = {
+  /** billing.roundIncreasedRent: round rent after an increase to the rupee (section 2). */
+  roundIncreasedRent: "none" | "rupee";
+  /** billing.roundInvoiceTotal: round the invoice total with a round-off line (section 2). */
+  roundInvoiceTotal: "none" | "rupee";
+  /** invoice.dueDays: due date = invoice date + this many days (section 7). */
+  dueDays: number;
+};

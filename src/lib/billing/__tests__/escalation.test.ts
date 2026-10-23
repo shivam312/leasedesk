@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS, withSettings } from "./billing-settings";
 import { amountSteps } from "../escalation";
 import type { Charge, EscalationRule, LeaseTerms } from "../types";
 
@@ -24,7 +25,7 @@ const fivePercentYearly: EscalationRule = {
   anchor: "lease_start",
 };
 
-const rounding = { roundEscalatedRentToRupee: true };
+const rounding = { settings: DEFAULT_SETTINGS };
 
 function amounts(steps: { from: string; amount: number }[]) {
   return steps.map(({ from, amount }) => [from, amount]);
@@ -83,7 +84,7 @@ describe("compounding", () => {
       charge: rent,
       lease,
       rules: [fivePercentYearly],
-      roundEscalatedRentToRupee: false,
+      settings: withSettings({ roundIncreasedRent: "none" }),
     });
     // Year 4: 1,10,250 × 1.05 = ₹1,15,762.50
     // Year 5: 1,15,762.50 × 1.05 = 1,21,550.625 → ₹1,21,550.63

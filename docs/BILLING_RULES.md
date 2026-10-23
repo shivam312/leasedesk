@@ -16,9 +16,9 @@ This is the specification for the billing engine in `src/lib/billing/`. If code 
 
 - Round half up to the nearest paisa after every multiplication or division.
 - Negative amounts (credit notes, round-off) round half away from zero: −₹0.005 becomes −₹0.01, so a credit note mirrors its invoice exactly.
-- Monthly rent after an escalation is rounded to the nearest whole rupee by default (organization setting `roundEscalatedRentToRupee`, default `true`). **[Pilot]** Each step is rounded once, straight to the rupee (not to the paisa first): ₹90,015.71 + 5% = ₹94,516.4955 → ₹94,516.
+- Monthly rent after an escalation is rounded to the nearest whole rupee by default (setting `billing.roundIncreasedRent`, default `rupee`). **[Pilot]** Each step is rounded once, straight to the rupee (not to the paisa first): ₹90,015.71 + 5% = ₹94,516.4955 → ₹94,516.
 - Each tax line (CGST, SGST, IGST) is rounded to the nearest paisa separately.
-- Invoice total is rounded to the nearest rupee with a separate "Round off" line (setting `roundInvoiceTotal`, default `true`). **[CA]**
+- Invoice total is rounded to the nearest rupee with a separate "Round off" line (setting `billing.roundInvoiceTotal`, default `rupee`). **[CA]**
 
 ## 3. Charges
 
@@ -71,7 +71,7 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 - Quarterly charges are billed for April–June, July–September, October–December, January–March. A part quarter (a charge starting or ending mid-quarter, or a quarter split by an increase) is billed month by month: monthly equivalent = quarterly amount ÷ 3; full months at that amount; part months by actual days in that month. Each month is rounded to the paisa once: quarterly × days ÷ (3 × days in month). **[Pilot]**
 - `advance`: the invoice for a period is generated in that period's monthly run (dated the 1st). `arrears`: in the run after the period ends. When the lease ends mid-period, an arrears charge's final bill is in the first monthly run after the lease ends (lease ends 20 Nov → the December run, not January for an Oct–Dec quarter).
 - An invoice line's period is the dates actually billed: it never starts before the lease, the charge or rent commencement (for waived charges), and never ends after the lease or charge ends.
-- Invoice due date = invoice date + `dueDays` (building setting, default 7).
+- Invoice due date = invoice date + `invoice.dueDays` (building or tenant setting, default 7).
 - Lines that come to ₹0 (a waived charge, a ₹0 amount) are left off the invoice. If every line is ₹0, no invoice is created for that lease and month.
 
 ## 8. GST **[CA]**

@@ -3,6 +3,7 @@
  * all times. Add one for every billing bug found.
  */
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "./billing-settings";
 import { chargeBaseAmount } from "../charges";
 import { amountSteps } from "../escalation";
 import { invoiceTotals, lineTax } from "../gst";
@@ -18,7 +19,7 @@ import {
 } from "../tds";
 import type { Charge } from "../types";
 
-const settings = { roundEscalatedRentToRupee: true, dueDays: 7 };
+const settings = DEFAULT_SETTINGS;
 
 const rent: Charge = {
   id: "rent",
@@ -138,7 +139,7 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
           compounding: false,
         },
       ],
-      roundEscalatedRentToRupee: true,
+      settings,
     });
     // 1,00,000 × 1.15 = 1,15,000; 1,00,000 × 1.30 = 1,30,000
     expect(steps.map((s) => [s.from, s.amount])).toEqual([
@@ -150,9 +151,10 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
 
   it("7. GST same state: ₹1,00,000 → CGST ₹9,000, SGST ₹9,000, total ₹1,18,000", () => {
     const tax = lineTax(10_000_000, 1800, "intra_state");
-    const totals = invoiceTotals([{ taxablePaise: 10_000_000, ...tax }], {
-      roundInvoiceTotal: true,
-    });
+    const totals = invoiceTotals(
+      [{ taxablePaise: 10_000_000, ...tax }],
+      DEFAULT_SETTINGS,
+    );
     expect(totals).toMatchObject({
       cgst: 900_000,
       sgst: 900_000,
@@ -175,9 +177,7 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
     // 9% × 1,06,917.75 = 9,622.5975 → 9,622.60; subtotal 1,26,162.95
     // → grand total 1,26,163.00 with round off +0.05
     expect(
-      invoiceTotals([{ taxablePaise: 10_691_775, ...tax }], {
-        roundInvoiceTotal: true,
-      }),
+      invoiceTotals([{ taxablePaise: 10_691_775, ...tax }], DEFAULT_SETTINGS),
     ).toEqual({
       taxable: 10_691_775,
       cgst: 962_260,
@@ -283,7 +283,7 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
       charge: { ...rent, startDate: "2028-02-29" },
       lease: { id: "G14", startDate: "2028-02-29", endDate: "2031-02-28" },
       rules: [{ percentBp: 500, everyMonths: 12, anchor: "lease_start" }],
-      roundEscalatedRentToRupee: true,
+      settings,
     });
     // 29 Feb 2028 + 12 months: no 29 Feb 2029 → 1 Mar 2029
     // 29 Feb 2028 + 24 months: no 29 Feb 2030 → 1 Mar 2030
@@ -316,7 +316,7 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
       charge: { ...rent, amountPaise: 9_001_571 },
       lease: { id: "G16", startDate: "2026-04-01", endDate: "2029-03-31" },
       rules: [{ percentBp: 500, everyMonths: 12, anchor: "lease_start" }],
-      roundEscalatedRentToRupee: true,
+      settings,
     });
     // 90,015.71 × 1.05 = 94,516.4955 → ₹94,516
     // (paisa first: 94,516.50 → ₹94,517 — the bug this guards against)

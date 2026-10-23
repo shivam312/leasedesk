@@ -86,7 +86,7 @@ Things only a person can do. Tick them when done.
   - B) Round tax once on the total; round-off line
   - C) No rounding of the total
 - Recommendation: A, pending your CA.
-- Done meanwhile: A built (`lineTax` and `invoiceTotals` in `src/lib/billing/gst.ts`). The round-off line can already be turned off in the engine (`roundInvoiceTotal` option, setting `billing.roundInvoiceTotal`), which covers C. B isn't built yet; it's planned for M2 as setting `gst.rounding`, default per line.
+- Done meanwhile: A built (`lineTax` and `invoiceTotals` in `src/lib/billing/gst.ts`). The round-off line can already be turned off in the engine (`BillingSettings.roundInvoiceTotal`, setting `billing.roundInvoiceTotal`), which covers C. B isn't built yet; it's planned for M2 as setting `gst.rounding`, default per line.
 - Answer:
 
 ### D-005: Rounding negative amounts

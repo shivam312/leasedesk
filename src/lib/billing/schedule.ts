@@ -17,6 +17,7 @@ import { segmentsForPeriod } from "./proration";
 import type { Segment } from "./proration";
 import { chargeBillingWindow, rentCommencement } from "./rent-free";
 import type {
+  BillingSettings,
   Charge,
   CustomEscalation,
   EscalationRule,
@@ -29,9 +30,6 @@ export type LeaseInput = LeaseTerms & {
   escalationRules?: EscalationRule[];
   customEscalations?: CustomEscalation[];
 };
-
-/** Organization settings that change amounts (docs/BILLING_RULES.md, section 2). */
-export type BillingSettings = { roundEscalatedRentToRupee: boolean };
 
 export type Period = { start: PlainDate; end: PlainDate };
 
@@ -62,7 +60,7 @@ export function chargePeriods(
     lease,
     rules: lease.escalationRules,
     custom: lease.customEscalations,
-    roundEscalatedRentToRupee: settings.roundEscalatedRentToRupee,
+    settings,
   });
   const periods =
     (charge.frequency ?? "monthly") === "quarterly"

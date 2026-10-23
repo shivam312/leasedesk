@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS, withSettings } from "./billing-settings";
 import { gstinStateCode, invoiceTotals, lineTax, supplyType } from "../gst";
 
 describe("place of supply", () => {
@@ -73,9 +74,7 @@ describe("invoiceTotals", () => {
     const tax = lineTax(10_691_775, 1800, "intra_state");
     // 1,06,917.75 + 9,622.60 + 9,622.60 = 1,26,162.95 → ₹1,26,163, round off +₹0.05
     expect(
-      invoiceTotals([{ taxablePaise: 10_691_775, ...tax }], {
-        roundInvoiceTotal: true,
-      }),
+      invoiceTotals([{ taxablePaise: 10_691_775, ...tax }], DEFAULT_SETTINGS),
     ).toEqual({
       taxable: 10_691_775,
       cgst: 962_260,
@@ -95,7 +94,7 @@ describe("invoiceTotals", () => {
       taxablePaise,
       ...lineTax(taxablePaise, 1800, "intra_state"),
     }));
-    expect(invoiceTotals(lines, { roundInvoiceTotal: true })).toEqual({
+    expect(invoiceTotals(lines, DEFAULT_SETTINGS)).toEqual({
       taxable: 8_219_355,
       cgst: 739_742,
       sgst: 739_742,
@@ -109,9 +108,10 @@ describe("invoiceTotals", () => {
   it("has no round-off when the setting is off", () => {
     const tax = lineTax(10_691_775, 1800, "intra_state");
     expect(
-      invoiceTotals([{ taxablePaise: 10_691_775, ...tax }], {
-        roundInvoiceTotal: false,
-      }),
+      invoiceTotals(
+        [{ taxablePaise: 10_691_775, ...tax }],
+        withSettings({ roundInvoiceTotal: "none" }),
+      ),
     ).toMatchObject({ roundOff: 0, grandTotal: 12_616_295 });
   });
 });

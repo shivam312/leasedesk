@@ -7,6 +7,7 @@ import { increaseByPercent, increaseByPercentToRupee } from "./money";
 import { rentCommencement } from "./rent-free";
 import type {
   AmountStep,
+  BillingSettings,
   Charge,
   CustomEscalation,
   EscalationRule,
@@ -26,14 +27,13 @@ export function amountSteps({
   lease,
   rules = [],
   custom = [],
-  roundEscalatedRentToRupee,
+  settings,
 }: {
   charge: Charge;
   lease: LeaseTerms;
   rules?: EscalationRule[];
   custom?: CustomEscalation[];
-  /** Organization setting, section 2 (default `true` at the call site). */
-  roundEscalatedRentToRupee: boolean;
+  settings: Pick<BillingSettings, "roundIncreasedRent">;
 }): AmountStep[] {
   const base = chargeBaseAmount(charge);
   const noun =
@@ -95,7 +95,8 @@ export function amountSteps({
   ];
   // Escalated rent is rounded to the rupee (section 2); everything else to
   // the paisa. Either way each step is rounded exactly once.
-  const toRupee = charge.type === "rent" && roundEscalatedRentToRupee;
+  const toRupee =
+    charge.type === "rent" && settings.roundIncreasedRent === "rupee";
   const raise = (amount: number, bp: number) =>
     toRupee
       ? increaseByPercentToRupee(amount, bp)

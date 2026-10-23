@@ -173,6 +173,7 @@ export const SETTINGS = {
   ),
   "alerts.increaseDays": define(days, [30, 7], ["organization"], "advanced"),
   "alerts.lockInDays": define(days, [60], ["organization"], "advanced"),
+  "alerts.dailyDigest": define(z.boolean(), true, ["organization"], "basic"),
 } as const;
 
 /**

@@ -46,6 +46,7 @@ Things only a person can do. Tick them when done.
 - [ ] Create a Resend account, verify the sending domain and put `RESEND_API_KEY` and `EMAIL_FROM` (the verified sender, e.g. `Invoices <invoices@yourdomain.in>`) in `.env.local` (M4; until then emails go to `.local-outbox/`). Also add `EMAIL_FROM`, `INNGEST_SIGNING_KEY` and `INNGEST_EVENT_KEY` to `.env.example`, which unattended runs can't open.
 - [x] Install SheetJS for Excel bank statements (M5): done 2026-10-23 (0.20.3 from cdn.sheetjs.com). Excel statements import (D30).
 - [x] Apply the reminders migrations locally (M5): done 2026-10-23 (`pnpm db:migrate` applied `drizzle/0021`–`0022`); the reminder database tests now fail rather than skip if the table is missing, and `pnpm test:e2e` passes.
+- [ ] Put `APP_URL` (the app's address, e.g. `https://app.yourdomain.in`) in `.env.local` and the hosting settings, and add it to `.env.example` (M6). The daily digest email links to Today with it; without it the email says "Open LeaseDesk and go to Today" instead. Unattended runs can't open `.env` files.
 - [ ] Get one real bank statement export (CSV or Excel) per major bank your pilots use, with personal details removed, in `tests/fixtures/bank/` (M5)
 - [ ] Get a sample Tally XML export from a pilot accountant's TallyPrime and save it in `tests/fixtures/tally/` (M7)
 - [ ] Create Sentry, Supabase cloud (Mumbai), Vercel and Inngest accounts and put the keys in `.env.local` (M8)

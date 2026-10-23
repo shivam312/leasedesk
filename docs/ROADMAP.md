@@ -109,7 +109,7 @@ Wrapped up on 2026-10-23 (report: `docs/milestones/M5.md`); D-024 (the open Code
 ## M6. Today screen and alerts (week 8)
 
 - [x] Today screen: billed, collected, outstanding; needs-attention list with inline actions (include "N bank lines to match" and "N TDS certificates missing", which are otherwise only reachable from Billing → Payments)
-- [ ] Daily email digest per user
+- [x] Daily email digest per user
 
 ## M7. Reports, exports and import (week 9)
 

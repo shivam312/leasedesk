@@ -162,6 +162,20 @@
       "when": 1792766201437,
       "tag": "0022_reminders_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792772482102,
+      "tag": "0023_digests",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792772486916,
+      "tag": "0024_digests_rules",
+      "breakpoints": true
     }
   ]
 }

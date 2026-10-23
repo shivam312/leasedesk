@@ -271,3 +271,14 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Order: by date (the overdue due date, the 1st of the month, today for bank lines and certificates, the lease date), then money before lease dates. Choosing and ordering are pure (`src/lib/alerts/attention.ts`).
 - After an inline action the item goes away, so its success message moves to a notice above the list (`components/today/Notices.tsx`).
 - Changing the `alerts.*` settings updates the reminder days of every lease date not yet done (`applyReminderDays`), so a change isn't limited to leases saved afterwards.
+
+## D36. The daily digest: who gets what, and once a day (2026-10-23)
+
+**Why:** "Daily email digest to each user for their items" (docs/PRODUCT_PLAN.md, Alerts). The email must be useful every morning, never empty, never doubled, and never sent to someone who can't act on it.
+**Consequences:**
+- The items come from the same needs-attention list as Today (D35), so the email and the screen never disagree.
+- Who gets what follows the roles (`PERMISSIONS`). Money items (unpaid tenants, invoices to make or send, bank lines, TDS certificates) go to owners and accounts. A lease date goes to the person it is assigned to while they are on the team, otherwise to owners and property managers. Viewers get no digest. Nobody gets an empty email.
+- Money items are in every morning's email while they are open. A lease date is emailed only on each of its reminder days, on the day itself and on the day a snooze ends; between those it stays on Today. A reminder day the job missed isn't caught up, and the date is still on Today.
+- The job (`dailyDigest`, 08:00 India time, after the 06:00 billing run) claims each person's digest in `digest_sends` (unique per organization, person and day) before emailing, as the reminders do (D33). A retry or a second run sends nothing more, and a send that never finished isn't retried.
+- It is on by default and can be turned off for the organization (`alerts.dailyDigest`). There is no per-person opt-out yet (backlog).
+- The email links to Today when `APP_URL` is set (a human task); otherwise it says where to go.

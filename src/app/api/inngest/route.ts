@@ -1,11 +1,12 @@
 // Inngest calls this route to run background jobs (src/lib/jobs/).
 
 import { serve } from "inngest/next";
+import { dailyDigest } from "@/lib/jobs/digest";
 import { inngest } from "@/lib/jobs/inngest";
 import { monthlyBilling } from "@/lib/jobs/monthly-billing";
 import { dailyReminders } from "@/lib/jobs/reminders";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [monthlyBilling, dailyReminders],
+  functions: [monthlyBilling, dailyReminders, dailyDigest],
 });

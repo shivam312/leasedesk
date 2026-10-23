@@ -140,6 +140,15 @@ export const SETTING_LABELS: Partial<Record<SettingKey, SettingLabel>> = {
     help: "Days after the due date, separated by commas, until it's paid. 1, 7, 15 means an invoice due 8 May gets reminders on 9, 15 and 23 May. Leave blank for none.",
     input: { kind: "dayList" },
   },
+  "alerts.dailyDigest": {
+    label: "Daily email to the team",
+    help: "Each morning, everyone on the team gets an email with their items from Today: owners and accounts the money, owners and property managers the lease dates. Nobody gets an empty one.",
+    input: {
+      kind: "boolean",
+      yes: "Send each morning",
+      no: "Don't send",
+    },
+  },
   "alerts.expiryDays": {
     label: "Remind before a lease ends",
     help: "Days before the lease's last day, separated by commas. 180, 90, 30 means it shows on Today from 180 days before, and in the daily email on each of those days. Leave blank for none.",

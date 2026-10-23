@@ -111,6 +111,20 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
           canBill && (
             <EmailAgainForm invoiceId={invoice.id} action={emailInvoiceAgain} />
           )}
+        {(invoice.status === "sent" ||
+          invoice.status === "part_paid" ||
+          invoice.status === "overdue") &&
+          canBill && (
+            <Link
+              href={`/billing/payments/new?tenant=${invoice.tenantId}`}
+              className={buttonVariants({
+                variant: "outline",
+                className: "h-11 self-start md:h-9",
+              })}
+            >
+              Record payment
+            </Link>
+          )}
         <a
           href={`/billing/invoices/${invoice.id}/pdf`}
           target="_blank"

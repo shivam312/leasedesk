@@ -3,17 +3,27 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { SimpleForm } from "@/components/forms/SimpleForm";
+import { ApplyCreditForm } from "@/components/payments/ApplyCreditForm";
+import { PaymentList } from "@/components/payments/PaymentList";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { contactFields } from "@/components/tenants/fields";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge, Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
+import { formatINR } from "@/lib/format";
 import { GST_STATES } from "@/lib/india/identifiers";
+import {
+  paymentSettings,
+  paymentsFor,
+  paymentsWithCredit,
+  unpaidInvoices,
+} from "@/lib/payments/payments";
 import { toFieldValue } from "@/lib/settings/rules-form";
 import { CONTACT_ROLE_LABELS } from "@/lib/tenants/forms";
 import { getTenant } from "@/lib/tenants/queries";
+import { applyCreditAction } from "@/server/actions/payments";
 import { addContact } from "@/server/actions/tenants";
 
 export const metadata: Metadata = { title: "Tenant" };
@@ -40,10 +50,23 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const member = await requireMember();
-  const data = await runScoped(appDb, member, (s) => getTenant(s, id));
+  const data = await runScoped(appDb, member, async (s) => {
+    const found = await getTenant(s, id);
+    if (!found) return null;
+    const settings = await paymentSettings(s, id);
+    const [payments, credits, unpaid] = await Promise.all([
+      paymentsFor(s, id),
+      paymentsWithCredit(s, id),
+      unpaidInvoices(s, id, settings),
+    ]);
+    return { ...found, payments, credits, unpaid };
+  });
   if (!data) notFound();
-  const { tenant: t, contacts } = data;
+  const { tenant: t, contacts, payments, credits, unpaid } = data;
   const editable = can(member.role, "manage_tenants");
+  const canBill = can(member.role, "manage_billing");
+  const credit = credits.reduce((sum, c) => sum + c.creditPaise, 0);
+  const owed = unpaid.reduce((sum, i) => sum + i.outstandingPaise, 0);
   const tds = [
     tdsLine(t.deductsTdsRent, t.tdsRateBpRent, "rent"),
     tdsLine(t.deductsTdsCam, t.tdsRateBpCam, "maintenance (CAM)"),
@@ -58,11 +81,21 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
           title={t.companyName}
           description={`${t.billingAddress}, ${GST_STATES[t.stateCode] ?? t.stateCode}`}
         />
-        {editable && (
-          <div className="-mt-3">
-            <Button asChild variant="outline">
-              <Link href={`/tenants/${t.id}/edit`}>Edit tenant</Link>
-            </Button>
+        {(editable || canBill) && (
+          <div className="-mt-3 flex flex-wrap gap-2">
+            {canBill && (
+              <Link
+                href={`/billing/payments/new?tenant=${t.id}`}
+                className={buttonVariants({ className: "h-11 md:h-9" })}
+              >
+                Record payment
+              </Link>
+            )}
+            {editable && (
+              <Button asChild variant="outline" className="h-11 md:h-9">
+                <Link href={`/tenants/${t.id}/edit`}>Edit tenant</Link>
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -97,6 +130,41 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
             No leases yet. Leases and unpaid invoices will show here.
           </p>
         </Card>
+      </section>
+
+      <section aria-labelledby="payments-heading" className="max-w-2xl">
+        <h2 id="payments-heading" className="mb-2 text-lg font-semibold">
+          Payments
+        </h2>
+        <p className="mb-3 text-sm">
+          {owed > 0
+            ? `${formatINR(owed)} unpaid on ${unpaid.length} ${unpaid.length === 1 ? "invoice" : "invoices"}.`
+            : "Nothing unpaid."}
+        </p>
+        {credit > 0 && (
+          <Card className="mb-3 flex flex-col gap-2">
+            <p className="text-sm">
+              {formatINR(credit)} paid in advance is kept as credit.
+              {unpaid.length > 0 && canBill
+                ? " Apply it to their unpaid invoices, oldest first."
+                : ""}
+            </p>
+            {unpaid.length > 0 && canBill && (
+              <ApplyCreditForm
+                tenantId={t.id}
+                label={`Apply ${formatINR(Math.min(credit, owed))} credit`}
+                action={applyCreditAction}
+              />
+            )}
+          </Card>
+        )}
+        {payments.length === 0 ? (
+          <Card>
+            <p className="text-sm">No payments recorded yet.</p>
+          </Card>
+        ) : (
+          <PaymentList payments={payments} />
+        )}
       </section>
 
       <section aria-labelledby="contacts-heading" className="max-w-2xl">

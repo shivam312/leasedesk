@@ -70,3 +70,11 @@ Improvements found during reviews that weren't urgent enough to fix in the miles
 | 2026-10-23 | invoices | `src/app/(app)/billing/invoices/[id]/page.tsx` | "TDS the tenant may deduct" doesn't open its working: the engine's TDS explanation isn't saved with the invoice. | Add an `expected_tds_explanation` jsonb to invoices (a migration, applied with the others), save it in `runBilling`, and show it like the line workings. |
 | 2026-10-23 | invoices | `tests/e2e/` | No Playwright test for issuing a credit note (needs the invoice migrations applied). | Add it with the send test: send an invoice, credit part of it, check the outbox and the invoice page. |
 | 2026-10-23 | invoices | `src/components/invoices/CreditNoteForm.tsx` | The credit note is dated by the server when issued; a page left open past midnight shows yesterday's date in the confirmation. | Send the shown date with the form and refuse it on the server if it isn't today. |
+
+## From M5 (payments)
+
+- Seed data has no sent invoices or payments, so the demo's payment screens start empty. Add a sent month and a few payments (one with TDS, one part-paid, one overpaid) to `scripts/seed.ts`.
+- A credit note on an already paid invoice (D-019) leaves it over-settled; move the extra onto the tenant's next invoice (a reversal-style negative allocation plus a new one) once D-019 is answered.
+- Playwright: record a payment against a real sent invoice (needs a lease and a sent invoice set up through the screens or a fixture).
+- UX review of the payment screens (should-fix): whole table row clickable in the payments list; "showing the latest 100" note or paging; search and filters on Billing → Payments; Apply credit button on the payment page itself; "Note" field behind "More options"; a reason shown when "Record payment" is disabled; amounts on payment screens tappable for their working; a friendlier not-found page for a payment.
+- Payment review (should-fix): reversing a payment on a past-due invoice sets it back to "Sent", not "Overdue", because nothing sets overdue yet (M6 Today screen should work it out from the due date); `suggestTds` stops looking once the gap can't close, which can miss a rare match after an invoice with almost nothing left but its TDS.

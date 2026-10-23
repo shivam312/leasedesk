@@ -16,10 +16,12 @@ import {
   creditNotes,
   invoiceLines,
   invoices,
+  paymentAllocations,
   type creditNoteReason,
 } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatINR } from "@/lib/format";
+import { lockTenantMoney } from "@/lib/payments/payments";
 import { loadSettings } from "@/lib/settings/store";
 import { takeNumber } from "./numbering";
 import { SendError } from "./send";
@@ -110,6 +112,13 @@ export type IssueCreditNote = {
  * the same amount.
  */
 export async function issueCreditNote(s: Scoped, input: IssueCreditNote) {
+  // The tenant's money lock first (as payments take it), then the invoice.
+  const [found] = await s.tx
+    .select({ tenantId: invoices.tenantId })
+    .from(invoices)
+    .where(s.where(invoices, eq(invoices.id, input.invoiceId)));
+  if (!found) throw new SendError("That invoice couldn't be found.");
+  await lockTenantMoney(s, found.tenantId);
   const [locked] = await s.tx
     .select({ id: invoices.id })
     .from(invoices)
@@ -135,6 +144,30 @@ export async function issueCreditNote(s: Scoped, input: IssueCreditNote) {
     throw new SendError(
       error instanceof Error ? `${error.message}.` : String(error),
     );
+  }
+
+  // Until D-019 is answered, a credit note never takes off money a payment
+  // has already settled, so no payment is left stranded on the invoice.
+  const [paid] = await s.tx
+    .select({ total: sum(paymentAllocations.amountSettled).mapWith(Number) })
+    .from(paymentAllocations)
+    .where(
+      s.where(paymentAllocations, eq(paymentAllocations.invoiceId, invoice.id)),
+    );
+  const [creditedSoFar] = await s.tx
+    .select({ total: sum(creditNotes.total).mapWith(Number) })
+    .from(creditNotes)
+    .where(s.where(creditNotes, eq(creditNotes.invoiceId, invoice.id)));
+  const paidPaise = paid?.total ?? 0;
+  if (paidPaise > 0) {
+    const unpaid = Math.max(
+      0,
+      invoice.grandTotal - (creditedSoFar?.total ?? 0) - paidPaise,
+    );
+    if (amounts.totals.total > unpaid)
+      throw new SendError(
+        `${formatINR(paidPaise)} of this invoice is already paid, so a credit note can take off at most ${formatINR(unpaid)} (what is still unpaid). To credit more, reverse the payment first, issue the credit note, then record the payment again: anything extra stays as credit for the tenant's next invoice.`,
+      );
   }
 
   const [building] = await s.tx

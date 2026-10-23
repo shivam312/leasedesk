@@ -202,3 +202,14 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Why:** UX principle 7 says every amount explains itself. In a list of 40 invoices an explanation per total is noise; the invoice page explains every line and the total.
 **Consequences:** list rows link to the invoice page, where each amount has "How is this worked out?". Search, status filters and row selection on the list are deferred (BACKLOG), not dropped.
 
+
+## D29. A payment is reversed by a reversal entry, not edited (2026-10-23)
+
+**Why:** CLAUDE.md rule 5 says recorded payments are never edited or deleted, but a payment typed against the wrong tenant must be undone. The ledger (M5) also needs to show when the mistake was corrected.
+**Consequences:**
+- `payments.kind` is `payment` or `reversal`. A reversal row has negative amounts, `reverses_payment_id`, and negative allocations mirroring every allocation of the payment it undoes (including credit applied later), so the amount applied to each invoice is always the plain sum of its allocations.
+- The original is marked `reversed` with `reversed_by_payment_id`; a trigger allows that as the only change, and only when the reversal entry exists. Its TDS records stay (they can't be deleted) but stop counting, because every TDS query joins on an active payment. A reversal is never itself reversed: record the payment again.
+- Payment credit left over is applied with new allocation rows (`applyCredit`), never by changing old ones.
+- The form fills in TDS and the invoices from the engine as the user types, and the server checks the same rules under a row lock on the tenant's invoices (`recordPayment`).
+- Every change to a tenant's money (payment, apply credit, reversal, credit note) first takes a transaction-scoped advisory lock for that tenant (`lockTenantMoney`), so a reversal can't miss credit applied from the same payment at the same moment. An advisory lock rather than `SELECT … FOR UPDATE` on the tenant row, because accounts may not be allowed to update tenants one day and the lock shouldn't depend on it.
+- A credit note can't take off money a payment has settled (D-019 meanwhile), so allocations never sit on a cancelled invoice.

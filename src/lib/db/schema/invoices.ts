@@ -142,6 +142,8 @@ export const invoices = pgTable(
     index().on(t.leaseId),
     unique().on(t.organizationId, t.id),
     unique().on(t.organizationId, t.leaseId, t.id),
+    // Payments reference an invoice together with its tenant.
+    unique().on(t.organizationId, t.tenantId, t.id),
     unique().on(t.seriesId, t.number),
     uniqueIndex("invoices_one_per_lease_per_run")
       .on(t.leaseId, t.runMonth)

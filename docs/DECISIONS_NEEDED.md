@@ -29,6 +29,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-017 | Expected TDS after a credit note | ca | no | open |
 | D-018 | Billing a month again after its invoice was credited in full | product | no | open |
 | D-019 | Credit notes against an invoice that's already paid | product | no | open |
+| D-020 | TDS on a payment reversed in a later quarter | ca | no | open |
 
 ## Human tasks
 
@@ -36,7 +37,7 @@ Things only a person can do. Tick them when done.
 
 - [x] Install Docker Desktop and the Supabase CLI (M0; the pipeline stops until they're installed)
 - [x] Apply the local lease migrations (M3). Done 2026-10-23: ran `pnpm db:migrate` by hand (unattended runs were refused permission five times); `pnpm test` passes. To let future unattended runs apply local migrations themselves, allow `pnpm db:migrate` in Claude Code's permissions (it already refuses non-local databases).
-- [ ] Apply the local invoice migrations (M4): run `pnpm db:migrate` (unattended runs are refused permission). Until then the invoice database tests are skipped (their titles say "skipped until pnpm db:migrate") and the invoice screens can't save.
+- [x] Apply the local invoice migrations (M4). Done 2026-10-23 by the M5 pipeline run, which was allowed to run `pnpm db:migrate`; it also applied the payment migrations (`drizzle/0014`–`0015`). Was: run `pnpm db:migrate` (unattended runs were refused permission). Until then the invoice database tests are skipped (their titles say "skipped until pnpm db:migrate") and the invoice screens can't save.
 - [ ] Create a Google OAuth client (Google Cloud console) and turn on Google login in Supabase Auth, for "Log in with Google" (M2; email and password login works without it)
 - [ ] Create a Resend account, verify the sending domain and put `RESEND_API_KEY` and `EMAIL_FROM` (the verified sender, e.g. `Invoices <invoices@yourdomain.in>`) in `.env.local` (M4; until then emails go to `.local-outbox/`). Also add `EMAIL_FROM`, `INNGEST_SIGNING_KEY` and `INNGEST_EVENT_KEY` to `.env.example`, which unattended runs can't open.
 - [ ] Get one real bank statement export (CSV or Excel) per major bank your pilots use, with personal details removed, in `tests/fixtures/bank/` (M5)
@@ -259,7 +260,7 @@ Things only a person can do. Tick them when done.
   - A) Work out expected TDS again on the taxable value left after credit notes, and ask for that balance
   - B) Keep the invoice's expected TDS and let the accountant adjust when the payment comes in
 - Recommendation: A, because it matches what the tenant will actually pay, so M5 can match the payment automatically.
-- Done meanwhile: an invoice with any credit note prints no amount to pay and no amount in its UPI QR (like a part-paid invoice), so the tenant is never asked for too much. Payments (M5) will need the answer.
+- Done meanwhile: an invoice with any credit note prints no amount to pay and no amount in its UPI QR (like a part-paid invoice), so the tenant is never asked for too much. From M5, payments use A: the TDS still expected on a credited invoice is worked out again per charge type on the taxable value left, with the tenant's TDS settings and `tds.rounding` (`expectedTdsAfterCredits` in `src/lib/billing/allocation.ts`), so a payment of what the tenant will really pay is recognised as paid with TDS. It only affects matching and the TDS suggestion, never an amount billed.
 - Answer:
 
 ### D-018: Billing a month again after its invoice was credited in full
@@ -284,7 +285,19 @@ Things only a person can do. Tick them when done.
   - B) Allow it; from M5 the extra is shown as a refund to pay
   - C) Refuse credit notes on paid invoices
 - Recommendation: A, because most landlords adjust against next month's rent instead of paying refunds.
-- Done meanwhile: allowed (A), with no advance shown until M5.
+- Done meanwhile: until M5 it was allowed. Now that payments exist, a credit note can take off at most what is still unpaid on the invoice, so a payment is never left stranded on a credited invoice. To credit a paid invoice, reverse the payment, issue the credit note and record the payment again: the extra is kept as credit and "Apply credit" on the tenant page uses it on their next invoice. That is option A done by hand; answering A lets us do it in one step.
+- Answer:
+
+### D-020: TDS on a payment reversed in a later quarter
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: A payment recorded by mistake (say, against the wrong tenant) is reversed, never deleted. Its TDS then stops counting. If the payment was in April–June and it's reversed in October, the April–June TDS total changes after the fact, and nothing shows in October.
+- Options:
+  - A) Drop the reversed payment's TDS from its original quarter (it was never really deducted for this tenant)
+  - B) Keep it in the original quarter and add a negative TDS entry in the quarter of the reversal
+- Recommendation: A, because a reversal is for a payment entered by mistake, so the TDS never belonged to that quarter; the TDS tracker will show the change so the accountant can check any return already filed.
+- Done meanwhile: A (`settledBy` and the TDS queries count only active payments' TDS records; D29).
 - Answer:
 
 ## Applied

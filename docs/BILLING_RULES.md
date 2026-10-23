@@ -107,14 +107,20 @@ Tenants usually deduct TDS before paying rent. Section numbers and thresholds ch
 - Expected TDS is calculated on the taxable value only (excluding GST), when GST is shown separately on the invoice, and rounded once to the nearest rupee (half up). **[CA]** Setting `tds.rounding` (organization or tenant): `rupee` (default) or `paisa` (rounded once on the sum, the same rounding as section 2: ₹10,691.775 → ₹10,691.78).
 - A payment settles: amount received + TDS deducted = amount settled against invoices.
 - A payment that is short by roughly the expected TDS (within `tds.tolerancePaise`, default ₹1 per invoice, inclusive: exactly ₹1 off still counts) is treated as "paid with TDS", not "part-paid". **[CA]**
+- When a payment is recorded, the TDS field is filled in from the amount received: if it equals the oldest k unpaid invoices' amount left less the TDS still expected on them (within `tds.tolerancePaise` per invoice, so ₹2 for two invoices), TDS = the amount left − the amount received; the smallest such k wins. A payment of the oldest invoices in full, or anything else, suggests no TDS, and the user types it. `suggestTds` in `allocation.ts`. **[CA]**
+- TDS still expected on an invoice = its expected TDS less TDS already recorded against it by active payments, never more than is left to pay. After a credit note, expected TDS is worked out again (as above, with the tenant's TDS per charge type now) on what is left of each line after credit notes: ₹1,00,000 rent at 10% with ₹50,000 credited → ₹5,000; rent ₹1,00,000 at 10% plus utilities ₹20,000 with no TDS, utilities credited in full → still ₹10,000. With no credit note, the expected TDS stored on the invoice is used. **[CA]** (D-017) `expectedTdsAfterCredits` and `remainingExpectedTds`.
+- A payment's TDS is split across the invoices it is applied to, oldest first: each takes up to its TDS still expected (never more than applied to it); anything over goes on the last invoice that can take it. TDS can't be more than the amount applied to invoices. `splitTds`. **[CA]** (which invoice, and so which quarter under `tds.quarterBasis` = `invoice_date`, a TDS amount is filed under). The payment form warns, without blocking, when TDS is more than the invoices it pays expect.
 - Each TDS amount creates a TDS record per tenant per quarter (Apr–Jun, Jul–Sep, Oct–Dec, Jan–Mar) of the payment date, or of the invoice date with setting `tds.quarterBasis` = `invoice_date`, **[CA]** (D-003) with `certificateReceived = false` until the accountant uploads the certificate.
 
 ## 11. Payments and allocation
 
 - One payment can settle several invoices; one invoice can be settled by several payments.
-- Auto-allocation: oldest unpaid invoice first (by due date, then invoice number). The user can change it before saving.
-- Overpayments stay as an unallocated credit on the tenant ledger and are applied to the next invoice.
-- Payments are never edited. A wrong payment is reversed with a reversal entry and recorded again.
+- Auto-allocation: oldest unpaid invoice first (by due date, then invoice number). The user can change it before saving. `allocatePayment` in `allocation.ts`.
+- Amount left on an invoice = grand total − credit notes − payments applied (with their TDS), never below 0. Paid when nothing is left; part paid when something is applied but not all; otherwise sent (an overdue invoice stays overdue). A fully credited invoice keeps "Credit note issued". `invoiceSettlement`.
+- Each amount applied ≤ what is left on that invoice, and the total applied ≤ received + TDS (`checkAllocation`). The rest is credit.
+- Overpayments stay as an unallocated credit on the tenant ledger and are applied to the next invoice: "Apply credit" on the tenant page applies each payment's unapplied part, oldest payment and oldest invoice first, with no further TDS. A credit note on a paid invoice (D-019) leaves that invoice over-settled; it shows on the ledger, but isn't yet moved to other invoices (backlog).
+- Payments are never edited. A wrong payment is reversed with a reversal entry and recorded again. The reversal is dated the day it is made, carries the negative amounts, and takes off each invoice exactly what the payment had applied to it; the payment is marked reversed and its TDS records stop counting in every quarter, including the quarter of the original payment (D29). **[CA]** (D-020)
+- Payments, applying credit, reversals and credit notes for one tenant are serialised (a transaction lock per tenant), so they never interleave.
 
 ## 12. Credit notes
 
@@ -127,6 +133,7 @@ Tenants usually deduct TDS before paying rent. Section numbers and thresholds ch
 - A credit note is dated the day it is issued, never before its invoice, and only until 30 November after the end of the invoice's financial year (CGST Act section 34(2)): later, GST can't be reduced, so it is refused and the user is told to ask their accountant. **[CA]** (D-014)
 - Credit notes are numbered when issued, in the credit-note series of the invoice's billing GSTIN (section 9), with the building's credit note prefix. There are no draft credit notes.
 - When nothing is left on the invoice, its status becomes `cancelled` ("Credit note issued").
+- Until D-019 is answered, a credit note on an invoice with payments applied can take off at most what is still unpaid (grand total − earlier credit notes − payments). To credit more, reverse the payment, issue the credit note, and record the payment again; anything extra is kept as credit. So a cancelled invoice never has payments on it.
 
 ## 13. Golden test cases
 

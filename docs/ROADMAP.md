@@ -86,7 +86,7 @@ Built on branch `m3-leases-schema` (report: `docs/milestones/M4.md`). The invoic
 
 ## M5. Payments and TDS (week 8)
 
-- [ ] Record a payment with TDS and allocation (auto oldest-first)
+- [x] Record a payment with TDS and allocation (auto oldest-first)
 - [ ] Bank statement import with column mapping saved per account
 - [ ] Matching suggestions and bulk confirm
 - [ ] TDS tracker by tenant and quarter, certificate upload

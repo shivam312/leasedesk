@@ -6,6 +6,7 @@ import { InvoiceList } from "@/components/invoices/InvoiceList";
 import { RunBillingForm } from "@/components/invoices/RunBillingForm";
 import { SendAllForm } from "@/components/invoices/SendForms";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { buttonVariants } from "@/components/ui/button";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
@@ -32,6 +33,17 @@ export default function BillingPage({ searchParams }: PageProps<"/billing">) {
         title="Billing"
         description="Make each month's invoices and check them before sending."
       />
+      <p className="-mt-3 mb-6 text-sm">
+        <Link
+          href="/billing/payments"
+          className={buttonVariants({
+            variant: "outline",
+            className: "h-11 md:h-9",
+          })}
+        >
+          Payments
+        </Link>
+      </p>
       <Suspense
         fallback={
           <p className="text-sm text-muted-foreground">Loading invoices…</p>

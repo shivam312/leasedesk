@@ -1,0 +1,74 @@
+# Packages Claude may install without asking. One per line; a trailing * matches by prefix.
+# To approve a new package, add it here yourself (Claude can't edit this file).
+
+# Framework
+next
+react
+react-dom
+typescript
+@types/*
+create-next-app
+
+# Styling and UI (shadcn/ui and its dependencies)
+tailwindcss
+@tailwindcss/*
+postcss
+autoprefixer
+shadcn
+class-variance-authority
+clsx
+tailwind-merge
+tw-animate-css
+lucide-react
+@radix-ui/*
+sonner
+cmdk
+vaul
+react-day-picker
+react-hook-form
+@hookform/resolvers
+
+# Data
+drizzle-orm
+drizzle-kit
+postgres
+@supabase/supabase-js
+@supabase/ssr
+supabase
+zod
+
+# Features
+inngest
+inngest-cli
+@react-pdf/renderer
+resend
+@react-email/*
+qrcode
+@types/qrcode
+xmlbuilder2
+papaparse
+@types/papaparse
+# SheetJS: the npm "xlsx" package is outdated; install from the official tarball
+https://cdn.sheetjs.com/*
+xlsx
+@sentry/nextjs
+
+# Testing and tooling
+vitest
+@vitest/*
+@testing-library/*
+jsdom
+happy-dom
+@playwright/test
+playwright
+eslint
+eslint-*
+@eslint/*
+@next/eslint-plugin-next
+typescript-eslint
+prettier
+prettier-plugin-*
+tsx
+dotenv
+dotenv-cli
+cross-env

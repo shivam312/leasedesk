@@ -11,28 +11,57 @@
       "Bash(pnpm build)",
       "Bash(pnpm test:e2e)",
       "Bash(pnpm test:e2e *)",
+      "Bash(pnpm install)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm dlx shadcn@latest *)",
       "Bash(pnpm db:generate)",
+      "Bash(pnpm db:migrate)",
       "Bash(pnpm db:seed)",
+      "Bash(supabase start)",
+      "Bash(supabase status)",
+      "Bash(supabase stop)",
+      "Bash(supabase db reset)",
       "Bash(git status)",
       "Bash(git diff *)",
       "Bash(git log *)",
+      "Bash(git show *)",
       "Bash(git add *)",
       "Bash(git commit *)"
     ],
     "ask": [
-      "Bash(pnpm add *)",
-      "Bash(pnpm install *)",
       "Bash(pnpm db:migrate *)",
+      "Bash(supabase db push *)",
+      "Bash(supabase link *)",
       "Bash(git push *)",
-      "Bash(supabase db push *)"
+      "Bash(vercel *)"
     ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./.env.local)",
+      "Edit(/.claude/settings.json)",
+      "Edit(/.claude/approved-packages.txt)",
+      "Edit(/.claude/hooks/**)",
+      "Edit(/scripts/pipeline.mjs)",
       "Bash(rm -rf *)",
       "Bash(git push --force *)",
-      "Bash(git reset --hard *)"
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(git tag -d *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/check-packages.mjs"]
+          }
+        ]
+      }
     ]
   }
 }

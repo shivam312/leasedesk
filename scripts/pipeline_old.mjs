@@ -71,7 +71,10 @@ function main() {
     if (!m) break;
 
     if (needsDatabase(m) && !databaseReady()) {
-      finish("stopped", `${m.id} needs the local database. Install and start Docker Desktop, install the Supabase CLI, then run the pipeline again.`);
+      finish(
+        "stopped",
+        `${m.id} needs the local database. Install and start Docker Desktop, install the Supabase CLI, then run the pipeline again.`,
+      );
     }
 
     state.milestones[m.id] ??= { startSha: gitHead(), status: "running" };
@@ -83,29 +86,53 @@ function main() {
     for (let round = 1; round <= cfg.buildRounds; round++) {
       const left = remaining(findMilestone(m.id));
       if (left.length === 0) break;
-      log(`- ${left.length} task(s) left: ${left.map((t) => short(t.text, 60)).join(" | ")}`);
+      log(
+        `- ${left.length} task(s) left: ${left.map((t) => short(t.text, 60)).join(" | ")}`,
+      );
       const r = runClaude(`build-${round}`, m, buildPrompt(m), cfg.buildModel);
-      if (!r.ok) finish("failed", `Build stage for ${m.id} failed: ${short(r.result, 300)}`);
+      if (!r.ok)
+        finish(
+          "failed",
+          `Build stage for ${m.id} failed: ${short(r.result, 300)}`,
+        );
       if (cfg.dryRun) break;
     }
     const left = remaining(findMilestone(m.id));
     if (left.length > 0 && !cfg.dryRun) {
-      finish("stopped", `${m.id} still has ${left.length} unfinished task(s) after ${cfg.buildRounds} build rounds: ${left.map((t) => t.text).join("; ")}. Check the latest build log, then run again.`);
+      finish(
+        "stopped",
+        `${m.id} still has ${left.length} unfinished task(s) after ${cfg.buildRounds} build rounds: ${left.map((t) => t.text).join("; ")}. Check the latest build log, then run again.`,
+      );
     }
 
     // 2. Checks, with fix loop.
-    if (!checksWithFixes(m, "after build")) finish("failed", `Checks still failing for ${m.id} after ${cfg.fixAttempts} fix attempts. See the last fix log.`);
+    if (!checksWithFixes(m, "after build"))
+      finish(
+        "failed",
+        `Checks still failing for ${m.id} after ${cfg.fixAttempts} fix attempts. See the last fix log.`,
+      );
 
     // 3. Review and decision sweep.
     if (!cfg.noReview) {
-      const r = runClaude("review", m, reviewPrompt(m, state.milestones[m.id].startSha), cfg.reviewModel);
-      if (!r.ok) finish("failed", `Review stage for ${m.id} failed: ${short(r.result, 300)}`);
-      if (!checksWithFixes(m, "after review")) finish("failed", `Checks failing for ${m.id} after review fixes.`);
+      const r = runClaude(
+        "review",
+        m,
+        reviewPrompt(m, state.milestones[m.id].startSha),
+        cfg.reviewModel,
+      );
+      if (!r.ok)
+        finish(
+          "failed",
+          `Review stage for ${m.id} failed: ${short(r.result, 300)}`,
+        );
+      if (!checksWithFixes(m, "after review"))
+        finish("failed", `Checks failing for ${m.id} after review fixes.`);
     }
 
     // 4. Wrap up.
     const w = runClaude("wrap", m, wrapPrompt(m), cfg.reviewModel);
-    if (!w.ok) finish("failed", `Wrap-up for ${m.id} failed: ${short(w.result, 300)}`);
+    if (!w.ok)
+      finish("failed", `Wrap-up for ${m.id} failed: ${short(w.result, 300)}`);
     commitLeftovers(m);
     tagMilestone(m);
 
@@ -193,11 +220,21 @@ Finish by running pnpm typecheck and pnpm test.`;
 
 function applyAnswers(state) {
   if (!fs.existsSync(DECISIONS)) return;
-  const answered = (fs.readFileSync(DECISIONS, "utf8").match(/^\s*-\s*\*{0,2}Status:?\*{0,2}:?\s*answered\b/gim) || []).length;
+  const answered = (
+    fs
+      .readFileSync(DECISIONS, "utf8")
+      .match(/^\s*-\s*\*{0,2}Status:?\*{0,2}:?\s*answered\b/gim) || []
+  ).length;
   if (answered === 0) return;
   log(`\n## Applying ${answered} answered decision(s)\n`);
-  const r = runClaude("answers", { id: "D", title: "decisions" }, answersPrompt(), cfg.fixModel);
-  if (!r.ok) finish("failed", `Applying answers failed: ${short(r.result, 300)}`);
+  const r = runClaude(
+    "answers",
+    { id: "D", title: "decisions" },
+    answersPrompt(),
+    cfg.fixModel,
+  );
+  if (!r.ok)
+    finish("failed", `Applying answers failed: ${short(r.result, 300)}`);
   commitLeftovers({ id: "decisions" });
 }
 
@@ -224,10 +261,15 @@ function runChecks(label) {
   try {
     scripts = JSON.parse(fs.readFileSync("package.json", "utf8")).scripts || {};
   } catch (e) {
-    return { ok: false, check: "install", output: `package.json isn't valid JSON: ${e.message}` };
+    return {
+      ok: false,
+      check: "install",
+      output: `package.json isn't valid JSON: ${e.message}`,
+    };
   }
   const checks = ["typecheck", "lint", "test", "build"];
-  if (!cfg.skipE2e && scripts["test:e2e"] && fs.existsSync("tests/e2e")) checks.push("test:e2e");
+  if (!cfg.skipE2e && scripts["test:e2e"] && fs.existsSync("tests/e2e"))
+    checks.push("test:e2e");
   for (const check of checks) {
     if (!scripts[check]) continue;
     const r = spawnSync("pnpm", [check], {
@@ -239,7 +281,14 @@ function runChecks(label) {
       env: { ...process.env, CI: "1" },
     });
     if (r.status !== 0) {
-      return { ok: false, check, output: tail(`${r.stdout || ""}\n${r.stderr || ""}${r.error ? `\n${r.error.message}` : ""}`, 150) };
+      return {
+        ok: false,
+        check,
+        output: tail(
+          `${r.stdout || ""}\n${r.stderr || ""}${r.error ? `\n${r.error.message}` : ""}`,
+          150,
+        ),
+      };
     }
   }
   log(`- ✓ checks passed ${label}`);
@@ -249,7 +298,16 @@ function runChecks(label) {
 // ---------- running Claude ----------
 
 function runClaude(stage, m, prompt, model) {
-  const cliArgs = ["-p", prompt, "--output-format", "json", "--permission-mode", "auto", "--permission-prompts", "none"];
+  const cliArgs = [
+    "-p",
+    prompt,
+    "--output-format",
+    "json",
+    "--permission-mode",
+    "auto",
+    "--permission-prompts",
+    "none",
+  ];
   if (model) cliArgs.push("--model", model);
   let limitWaits = 0;
   let retried = false;
@@ -258,7 +316,9 @@ function runClaude(stage, m, prompt, model) {
     const started = Date.now();
     log(`- ▶ ${m.id} ${stage} started ${time()}`);
     if (cfg.dryRun) {
-      log(`  (dry run) claude -p <${prompt.length} character prompt>${model ? ` --model ${model}` : ""}`);
+      log(
+        `  (dry run) claude -p <${prompt.length} character prompt>${model ? ` --model ${model}` : ""}`,
+      );
       return { ok: true, result: "dry run" };
     }
     const r = spawnSync(cfg.claudeBin, cliArgs, {
@@ -269,28 +329,55 @@ function runClaude(stage, m, prompt, model) {
       stdio: ["ignore", "pipe", "pipe"],
     });
     const logFile = path.join(LOGS, `${stamp()}-${m.id}-${stage}.log`);
-    fs.writeFileSync(logFile, `${r.stdout || ""}\n\n--- stderr ---\n${r.stderr || ""}\n${r.error ? r.error.message : ""}`);
+    fs.writeFileSync(
+      logFile,
+      `${r.stdout || ""}\n\n--- stderr ---\n${r.stderr || ""}\n${r.error ? r.error.message : ""}`,
+    );
     const out = parseResult(r.stdout);
-    const text = (out && out.result) || r.stderr || (r.error && r.error.message) || `exit code ${r.status}`;
+    const text =
+      (out && out.result) ||
+      r.stderr ||
+      (r.error && r.error.message) ||
+      `exit code ${r.status}`;
     const mins = ((Date.now() - started) / 60000).toFixed(0);
-    const failed = r.status !== 0 || !out || out.is_error === true || (out.subtype && out.subtype.startsWith("error") && out.subtype !== "error_max_turns");
+    const failed =
+      r.status !== 0 ||
+      !out ||
+      out.is_error === true ||
+      (out.subtype &&
+        out.subtype.startsWith("error") &&
+        out.subtype !== "error_max_turns");
 
     if (!failed) {
-      log(`  ✔ done in ${mins} min${out.num_turns ? `, ${out.num_turns} turns` : ""}. ${short(oneLine(out.result || ""), 400)}`);
+      log(
+        `  ✔ done in ${mins} min${out.num_turns ? `, ${out.num_turns} turns` : ""}. ${short(oneLine(out.result || ""), 400)}`,
+      );
       return { ok: true, result: out.result || "" };
     }
     if (r.error && r.error.code === "ENOENT") {
-      finish("failed", `Couldn't run "${cfg.claudeBin}". Is Claude Code installed and on your PATH? (On Windows you may need CLAUDE_BIN=claude.exe.)`);
+      finish(
+        "failed",
+        `Couldn't run "${cfg.claudeBin}". Is Claude Code installed and on your PATH? (On Windows you may need CLAUDE_BIN=claude.exe.)`,
+      );
     }
-    if (/usage limit|session limit|weekly limit|rate.?limit|limit.{0,20}reset|too many requests|overloaded|\b429\b|\b529\b/i.test(text) && limitWaits < cfg.limitWaits) {
+    if (
+      /usage limit|session limit|weekly limit|rate.?limit|limit.{0,20}reset|too many requests|overloaded|\b429\b|\b529\b/i.test(
+        text,
+      ) &&
+      limitWaits < cfg.limitWaits
+    ) {
       limitWaits++;
-      log(`  ⏸ usage or rate limit reached; waiting ${cfg.limitWaitMin} min (${limitWaits}/${cfg.limitWaits}).`);
+      log(
+        `  ⏸ usage or rate limit reached; waiting ${cfg.limitWaitMin} min (${limitWaits}/${cfg.limitWaits}).`,
+      );
       sleepMinutes(cfg.limitWaitMin);
       continue;
     }
     if (!retried) {
       retried = true;
-      log(`  ⚠ failed after ${mins} min (${short(oneLine(text), 200)}); retrying once in ${cfg.retryWaitMin} min. Log: ${logFile}`);
+      log(
+        `  ⚠ failed after ${mins} min (${short(oneLine(text), 200)}); retrying once in ${cfg.retryWaitMin} min. Log: ${logFile}`,
+      );
       sleepMinutes(cfg.retryWaitMin);
       continue;
     }
@@ -320,7 +407,11 @@ function parseResult(stdout) {
 // ---------- roadmap ----------
 
 function readRoadmap() {
-  if (!fs.existsSync(ROADMAP)) finish("failed", `Can't find ${ROADMAP}. Run the pipeline from the project root.`);
+  if (!fs.existsSync(ROADMAP))
+    finish(
+      "failed",
+      `Can't find ${ROADMAP}. Run the pipeline from the project root.`,
+    );
   const ms = [];
   let cur = null;
   for (const line of fs.readFileSync(ROADMAP, "utf8").split(/\r?\n/)) {
@@ -374,41 +465,71 @@ function nextMilestone(ms, state) {
 
 function needsDatabase(m) {
   if (mNum(m.id) >= 2) return true;
-  return remaining(m).some((t) => /supabase|drizzle|database|migrat|db:/i.test(t.text));
+  return remaining(m).some((t) =>
+    /supabase|drizzle|database|migrat|db:/i.test(t.text),
+  );
 }
 
 // ---------- environment ----------
 
 function preflight() {
-  if (!fs.existsSync(".git")) finish("failed", "This folder isn't a git repository. Run the pipeline from the project root.");
+  if (!fs.existsSync(".git"))
+    finish(
+      "failed",
+      "This folder isn't a git repository. Run the pipeline from the project root.",
+    );
   if (cfg.dryRun) return;
   const v = spawnSync(cfg.claudeBin, ["--version"], { encoding: "utf8" });
-  if (v.status !== 0) finish("failed", `Couldn't run "${cfg.claudeBin} --version". Is Claude Code installed?`);
+  if (v.status !== 0)
+    finish(
+      "failed",
+      `Couldn't run "${cfg.claudeBin} --version". Is Claude Code installed?`,
+    );
   log(`- Claude Code ${oneLine(v.stdout)}`);
   if (!gitClean()) {
-    log("- ⚠ The working tree has uncommitted changes. The first stage will see them; commit or stash them if they aren't meant for the pipeline.");
+    log(
+      "- ⚠ The working tree has uncommitted changes. The first stage will see them; commit or stash them if they aren't meant for the pipeline.",
+    );
   }
 }
 
 function databaseReady() {
   if (cfg.dryRun) return true;
-  const docker = spawnSync("docker", ["info"], { encoding: "utf8", shell: IS_WIN });
+  const docker = spawnSync("docker", ["info"], {
+    encoding: "utf8",
+    shell: IS_WIN,
+  });
   if (docker.status !== 0) {
     log("- ✗ Docker isn't running (or isn't installed).");
     return false;
   }
-  const supa = spawnSync("supabase", ["--version"], { encoding: "utf8", shell: IS_WIN });
+  const supa = spawnSync("supabase", ["--version"], {
+    encoding: "utf8",
+    shell: IS_WIN,
+  });
   if (supa.status !== 0) {
     log("- ✗ The Supabase CLI isn't installed.");
     return false;
   }
   if (fs.existsSync("supabase/config.toml")) {
-    const status = spawnSync("supabase", ["status"], { encoding: "utf8", shell: IS_WIN });
+    const status = spawnSync("supabase", ["status"], {
+      encoding: "utf8",
+      shell: IS_WIN,
+    });
     if (status.status !== 0) {
-      log("- Starting the local Supabase stack (the first time can take several minutes)...");
-      const start = spawnSync("supabase", ["start"], { encoding: "utf8", shell: IS_WIN, timeout: 30 * 60000, maxBuffer: 64 * 1024 * 1024 });
+      log(
+        "- Starting the local Supabase stack (the first time can take several minutes)...",
+      );
+      const start = spawnSync("supabase", ["start"], {
+        encoding: "utf8",
+        shell: IS_WIN,
+        timeout: 30 * 60000,
+        maxBuffer: 64 * 1024 * 1024,
+      });
       if (start.status !== 0) {
-        log(`- ✗ \`supabase start\` failed: ${short(oneLine(start.stderr || start.stdout || ""), 300)}`);
+        log(
+          `- ✗ \`supabase start\` failed: ${short(oneLine(start.stderr || start.stdout || ""), 300)}`,
+        );
         return false;
       }
     }
@@ -429,14 +550,17 @@ function gitClean() {
 }
 function commitLeftovers(m) {
   if (cfg.dryRun || gitClean()) return;
-  log(`- ⚠ ${m.id} left uncommitted changes; committing them as a wrap-up commit.`);
+  log(
+    `- ⚠ ${m.id} left uncommitted changes; committing them as a wrap-up commit.`,
+  );
   git(["add", "-A"]);
   git(["commit", "-m", `chore: pipeline wrap-up for ${m.id}`]);
 }
 function tagMilestone(m) {
   if (cfg.dryRun) return;
   const tag = `${m.id.toLowerCase()}-done`;
-  const exists = git(["rev-parse", "-q", "--verify", `refs/tags/${tag}`]).status === 0;
+  const exists =
+    git(["rev-parse", "-q", "--verify", `refs/tags/${tag}`]).status === 0;
   git(exists ? ["tag", "-f", tag] : ["tag", tag]);
   log(`- Tagged ${tag}`);
 }
@@ -477,16 +601,23 @@ function finish(kind, message) {
 function decisionCounts() {
   if (!fs.existsSync(DECISIONS)) return null;
   const text = fs.readFileSync(DECISIONS, "utf8");
-  const open = (text.match(/^\s*-\s*\*{0,2}Status:?\*{0,2}:?\s*open\b/gim) || []).length;
-  const blocking = (text.match(/^\s*-\s*\*{0,2}Blocking:?\*{0,2}:?\s*(yes|M\d+)/gim) || []).length;
+  const open = (
+    text.match(/^\s*-\s*\*{0,2}Status:?\*{0,2}:?\s*open\b/gim) || []
+  ).length;
+  const blocking = (
+    text.match(/^\s*-\s*\*{0,2}Blocking:?\*{0,2}:?\s*(yes|M\d+)/gim) || []
+  ).length;
   const humanSection = text.split(/^##\s+Human tasks/im)[1] || "";
-  const human = (humanSection.split(/^##\s/m)[0].match(/^\s*-\s\[ \]/gm) || []).length;
+  const human = (humanSection.split(/^##\s/m)[0].match(/^\s*-\s\[ \]/gm) || [])
+    .length;
   return { open, blocking, human };
 }
 
 function blockedTasks() {
   try {
-    return readRoadmap().flatMap((m) => m.tasks.filter((t) => !t.done && t.blocked));
+    return readRoadmap().flatMap((m) =>
+      m.tasks.filter((t) => !t.done && t.blocked),
+    );
   } catch {
     return [];
   }
@@ -495,7 +626,10 @@ function blockedTasks() {
 function checkStop() {
   if (fs.existsSync(STOP)) {
     fs.rmSync(STOP);
-    finish("stopped", "Stopped because .pipeline/STOP was found. Run the pipeline again to continue where it left off.");
+    finish(
+      "stopped",
+      "Stopped because .pipeline/STOP was found. Run the pipeline again to continue where it left off.",
+    );
   }
 }
 
@@ -544,10 +678,15 @@ function short(s, n) {
   return s.length > n ? `${s.slice(0, n - 1)}…` : s;
 }
 function oneLine(s) {
-  return String(s || "").replace(/\s+/g, " ").trim();
+  return String(s || "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 function time() {
-  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 function stamp() {
   return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);

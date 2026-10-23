@@ -9,6 +9,7 @@ import {
   type TestTx,
 } from "@/lib/db/__tests__/harness";
 import { madeDraft } from "@/lib/invoices/__tests__/db-fixtures";
+import { deleteDraft, runBilling } from "@/lib/invoices/run";
 import { issueInvoice } from "@/lib/invoices/send";
 import { recordPayment } from "@/lib/payments/payments";
 import { needsAttention, unpaidTotals } from "../attention";
@@ -89,6 +90,67 @@ describe.skipIf(skipDbTests)("Today queries", () => {
   it("asks for a month's invoices when a running lease has none", () =>
     inRollback(async (tx) => {
       const { ctx } = await sentInvoice(tx);
+      const input = await runScoped(asDb(tx), ctx, (s) =>
+        attentionInput(s, "2026-12-05"),
+      );
+      expect(input.thisMonthNotMade).toBe("2026-12");
+    }));
+
+  // A month where no lease bills anything (a quarterly lease between its
+  // quarters, a rent-free month with ₹0 invoices skipped) has nothing to
+  // make, so Today mustn't keep asking, nor the daily email every morning.
+  it("doesn't ask for a month in which no lease bills anything", () =>
+    inRollback(async (tx) => {
+      const { a, ctx } = await sentInvoice(tx);
+      // Billed quarterly in advance from April: October–December was
+      // billed in October, so December's run has nothing to bill.
+      await tx
+        .update(schema.leaseCharges)
+        .set({ frequency: "quarterly" })
+        .where(eq(schema.leaseCharges.leaseId, a.lease.id));
+      const result = await runScoped(asDb(tx), ctx, (s) =>
+        runBilling(s, "2026-12"),
+      );
+      expect(result).toMatchObject({ drafted: 0, nothingToBill: 1 });
+      const input = await runScoped(asDb(tx), ctx, (s) =>
+        attentionInput(s, "2026-12-05"),
+      );
+      expect(input.thisMonthNotMade).toBeNull();
+
+      // A change after that run (the charge back to monthly) means December
+      // bills something again, so Today asks for it again.
+      await tx
+        .update(schema.leaseCharges)
+        .set({ frequency: "monthly" })
+        .where(eq(schema.leaseCharges.leaseId, a.lease.id));
+      const after = await runScoped(asDb(tx), ctx, (s) =>
+        attentionInput(s, "2026-12-05"),
+      );
+      expect(after.thisMonthNotMade).toBe("2026-12");
+    }));
+
+  it("asks again when a month's drafts were all deleted", () =>
+    inRollback(async (tx) => {
+      const { ctx, invoice } = await madeDraft(tx);
+      await runScoped(asDb(tx), ctx, (s) => deleteDraft(s, invoice.id));
+      const input = await runScoped(asDb(tx), ctx, (s) =>
+        attentionInput(s, "2026-11-05"),
+      );
+      expect(input.thisMonthNotMade).toBe("2026-11");
+    }));
+
+  it("keeps asking when a lease can't be billed, even after a run", () =>
+    inRollback(async (tx) => {
+      const { a, ctx } = await sentInvoice(tx);
+      // No GSTIN: the run can't bill the lease and says so.
+      await tx
+        .update(schema.billingEntities)
+        .set({ gstin: null })
+        .where(eq(schema.billingEntities.id, a.entity.id));
+      const result = await runScoped(asDb(tx), ctx, (s) =>
+        runBilling(s, "2026-12"),
+      );
+      expect(result.problems).toHaveLength(1);
       const input = await runScoped(asDb(tx), ctx, (s) =>
         attentionInput(s, "2026-12-05"),
       );

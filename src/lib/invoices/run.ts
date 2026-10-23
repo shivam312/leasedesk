@@ -212,6 +212,30 @@ export async function freshDraft(
   return workOutDraft(s, row, await leaseTerms(s, [leaseId]), runMonth);
 }
 
+/**
+ * How many leases would bill something in `runMonth`, or can't be billed
+ * and need looking at, if its run were made now. Worked out exactly as the
+ * run does, and saves nothing. Today uses it for a month with no invoices,
+ * so a month where nothing bills (a quarterly lease between its quarters)
+ * isn't asked for (D35).
+ */
+export async function leasesToBill(
+  s: Scoped,
+  runMonth: YearMonth,
+): Promise<number> {
+  const rows = await billableLeases(s, runMonth);
+  const terms = await leaseTerms(
+    s,
+    rows.map((r) => r.lease.id),
+  );
+  let n = 0;
+  for (const row of rows) {
+    const worked = await workOutDraft(s, row, terms, runMonth);
+    if (worked.kind === "problem" || worked.draft) n++;
+  }
+  return n;
+}
+
 /** Delete one draft invoice and its lines, logged. */
 export async function deleteDraft(s: Scoped, invoiceId: string) {
   const lines = await s.tx

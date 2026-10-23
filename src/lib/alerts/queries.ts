@@ -28,6 +28,7 @@ import {
   tenants,
 } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
+import { leasesToBill } from "@/lib/invoices/run";
 import { unpaidInvoices } from "@/lib/payments/payments";
 import { billingSettings } from "@/lib/settings/billing";
 import { loadSettings } from "@/lib/settings/store";
@@ -144,19 +145,9 @@ export async function attentionInput(
     .select({ n: count() })
     .from(invoices)
     .where(s.where(invoices, eq(invoices.runMonth, first)));
-  const [running] = made?.n
-    ? [{ n: 0 }]
-    : await s.tx
-        .select({ n: count() })
-        .from(leases)
-        .where(
-          s.where(
-            leases,
-            inArray(leases.status, [...RUNNING]),
-            lte(leases.startDate, endOfMonth(month)),
-            gte(leases.endDate, first),
-          ),
-        );
+  // No invoices yet: ask only if some lease bills something this month
+  // (not a quarterly lease between its quarters) or can't be billed.
+  const toBill = made?.n ? 0 : await leasesToBill(s, month);
   return {
     today,
     open: await openInvoiceRows(s),
@@ -165,7 +156,7 @@ export async function attentionInput(
       count: d.count,
       totalPaise: d.total,
     })),
-    thisMonthNotMade: !made?.n && (running?.n ?? 0) > 0 ? month : null,
+    thisMonthNotMade: toBill > 0 ? month : null,
     dates: await upcomingDates(s, today),
     bankLinesToMatch: await countLinesToMatch(s),
     tdsCertificatesMissing: await overdueCertificates(s, today),

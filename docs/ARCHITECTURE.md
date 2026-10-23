@@ -25,6 +25,8 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 
 ## Folder layout
 
+This is the target layout. What exists at the end of M0 (with M1 done): the app shell and the six placeholder pages under `(app)/`, `components/shell/`, `components/ui/button.tsx`, `lib/billing/`, `lib/config/`, `lib/db/` (client and URL guard only, no tables yet), `format.ts`, `utils.ts`, the database scripts and one Playwright test. Everything else arrives with its milestone.
+
 ```
 src/
   app/
@@ -42,18 +44,24 @@ src/
     <feature>/               feature components, e.g. leases/LeaseForm.tsx
   lib/
     billing/                 PURE billing engine (no DB, no network, no clock)
+      types.ts               engine input and output types
       money.ts               paise helpers, rounding
       dates.ts               plain-date helpers, months, days in month, FY
+      charges.ts             monthly amount of a charge (fixed, per sq ft, per slot), charge defaults
+      rent-free.ts           rent-free periods and rent commencement
       escalation.ts          escalation schedule from rules
-      proration.ts           part-month calculations
+      proration.ts           part-month and part-quarter calculations
       schedule.ts            full rent schedule for a lease
       invoice-lines.ts       lease + month -> invoice lines
-      gst.ts                 CGST/SGST/IGST split
+      explain.ts             "Explain this amount" text for a line
+      gst.ts                 CGST/SGST/IGST split, round-off
       tds.ts                 expected TDS on an invoice
+      invoice-number.ts      invoice number formatting (moves to invoices/ in M4, D9)
       __tests__/
     db/
       schema/                one file per table group
-      index.ts               Drizzle client
+      index.ts               Drizzle client (postgres.js, prepare: false, snake_case; D12)
+      url.ts                 which database to use; the local-only guard for scripts
       scoped.ts              org-scoped query helpers
       activity-log.ts        audit logging helper
     config/
@@ -66,14 +74,19 @@ src/
     exports/                 Tally XML, Excel, PDF reports
     alerts/                  critical-date generation and digest building
     format.ts                ₹ and date formatting for the UI
-    utils.ts                 cn() for merging Tailwind classes (shadcn)
+    utils.ts                 cn() for merging Tailwind classes (clsx + tailwind-merge; D-008)
     auth.ts                  current user, organization, role checks
   server/
     actions/                 server actions, one file per feature
   jobs/                      Inngest functions
-drizzle/                     generated SQL migrations (never edit applied ones)
+drizzle/                     generated SQL migrations (never edit applied ones); applied by scripts/migrate.ts
+supabase/                    local stack config for the Supabase CLI (config.toml); no migrations here (D12)
 tests/e2e/                   Playwright tests
-scripts/seed.ts              demo data
+scripts/
+  db-env.ts                  shared setup for db scripts: loads .env.local, refuses remote databases
+  migrate.ts                 pnpm db:migrate
+  seed.ts                    pnpm db:seed, demo data
+  pipeline.mjs               autonomous build pipeline (PIPELINE.md); don't edit
 ```
 
 ## Patterns
@@ -94,7 +107,7 @@ scripts/seed.ts              demo data
 
 ## Environments
 
-- Local: Supabase CLI local stack, seeded demo data
+- Local: Supabase CLI local stack (`supabase start`: API on port 54321, Postgres on 54322, Studio on 54323), seeded demo data. The app uses `DATABASE_URL`, or the local Postgres when it isn't set
 - Staging: separate Supabase project and Vercel preview
 - Production: Supabase project in Mumbai region
 

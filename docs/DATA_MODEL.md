@@ -2,6 +2,8 @@
 
 Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `created_at`, `updated_at`, and row-level security restricting rows to members of the organization. Money columns are `bigint` paise, percentages are `integer` basis points, areas are `integer` hundredths of a sq ft, dates are `date`. Statuses are Postgres enums.
 
+**Status (end of M0):** no tables exist yet; the first arrive in M2. Schema files go in `src/lib/db/schema/` (one file per table group below, re-exported from `index.ts`), migrations in `drizzle/` (D12). Drizzle uses `casing: "snake_case"`, so TypeScript names are camelCase and columns are the snake_case names written here.
+
 **Settings columns:** `organizations`, `billing_entities`, `buildings`, `tenants` and `leases` each have `settings` (jsonb, default `{}`). Keys and defaults are in `docs/SETTINGS.md`; only values that differ from the default are stored. They're validated by `src/lib/settings/schema.ts` and read only through `src/lib/settings/resolve.ts` (lease → tenant → building → organization → default; billing-entity keys apply to that entity's invoice series).
 
 ## Organization and people

@@ -8,7 +8,7 @@ Every behaviour that can differ between landlords is a setting with a safe defau
 
 When a setting is built, tick it and note where it lives in code.
 
-**Status (end of M1):** the settings system (`src/lib/settings/`, jsonb columns, Settings → Billing rules) doesn't exist yet; it's an M2 task. A tick here means the billing engine already takes the option as an input, so only storage, resolution and UI are missing. "Fixed" means the engine hard-codes the default and the other options still need building. Paths are under `src/lib/billing/`.
+**Status (end of M0; M1 is also done):** M0 added no settings. The settings system (`src/lib/settings/`, jsonb columns, Settings → Billing rules) doesn't exist yet; it's an M2 task. A tick here means the billing engine already takes the option as an input, so only storage, resolution and UI are missing. "Fixed" means the engine hard-codes the default and the other options still need building. Paths are under `src/lib/billing/`.
 
 ## Billing
 

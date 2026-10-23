@@ -42,7 +42,7 @@ Database (local Supabase via `supabase start`; needs Docker running):
 
 - `pnpm db:generate`: generate a Drizzle migration in `drizzle/` from schema changes in `src/lib/db/schema/`
 - `pnpm db:migrate`: apply migrations (refuses non-local databases unless `ALLOW_REMOTE_DB=yes`; always ask before using that)
-- `pnpm db:seed`: load demo data (2 buildings, 40 tenants, 45 leases, once the M2/M3 tables exist)
+- `pnpm db:seed`: load demo data (2 buildings, 40 tenants, 45 leases, once the M2/M3 tables exist; same remote-database guard)
 - `pnpm db:reset`: wipe the local database, then migrate and seed
 
 ## Non-negotiable rules

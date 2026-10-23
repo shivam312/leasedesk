@@ -24,3 +24,6 @@ next-env.d.ts
 .pnpm-debug.log*
 /blob-report/
 /playwright/.cache/
+
+# Stray secret files
+supabase.env

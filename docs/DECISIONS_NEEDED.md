@@ -12,9 +12,9 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | --- | --- | --- | --- | --- |
 | D-001 | Part-quarter pro-rating method | pilot | no | open |
 | D-002 | Should automatic increases resume after a custom increase? | pilot | no | open |
-| D-003 | TDS: rounding, which quarter, which charges | ca | no | open |
-| D-004 | GST: rounding per line or per invoice; round-off line | ca | no | open |
-| D-005 | Rounding of negative amounts on credit notes | ca | no | open |
+| D-003 | TDS rounding, quarter and applicable charges | ca | no | open |
+| D-004 | GST rounding and round-off line | ca | no | open |
+| D-005 | Rounding negative amounts | ca | no | open |
 | D-006 | Product name | product | no | open |
 | D-007 | Final bill for a quarterly arrears charge that ends before the lease | pilot | no | open |
 | D-008 | Approve shadcn's `cn` and `radix-ui` packages? | package | no | open |

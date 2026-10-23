@@ -49,7 +49,12 @@ export const newPasswordSchema = z
  * crafted link can't send someone to another site. Anything else is Today.
  */
 export function safeNext(next: string | null | undefined): string {
-  return next && /^\/(?![/\\])/.test(next) ? next : "/today";
+  if (!next || !/^\/(?![/\\])/.test(next)) return "/today";
+  // Browsers drop tabs and newlines when reading a URL ("/\t/x" is "//x"),
+  // so check where it really goes, not just how it starts.
+  const base = "http://leasedesk.invalid";
+  const url = new URL(next, base);
+  return url.origin === base && !/[\x00-\x1f\x7f]/.test(next) ? next : "/today";
 }
 
 /** What a form action returns: a message for the form, and one per field. */

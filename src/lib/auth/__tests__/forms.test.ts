@@ -120,4 +120,12 @@ describe("forgotten password", () => {
     expect(safeNext("/\\evil.example")).toBe("/today");
     expect(safeNext(null)).toBe("/today");
   });
+
+  it("refuses a path that a browser would turn into another site", () => {
+    // URL parsing drops tabs and newlines, so "/\t/evil" becomes "//evil".
+    expect(safeNext("/\t/evil.example")).toBe("/today");
+    expect(safeNext("/\n/evil.example")).toBe("/today");
+    expect(safeNext("/\r\\evil.example")).toBe("/today");
+    expect(safeNext("/ /evil.example")).toBe("/ /evil.example");
+  });
 });

@@ -2,7 +2,7 @@
 
 **Verdict:** pass
 
-M8 adds Sentry reporting, password reset and a browser test for the import-to-reports journey. The three invoice calculations I checked agree with the billing rules: ₹1,00,000 rent produces ₹9,000 each of CGST and SGST, for ₹1,18,000 total; 10% TDS on ₹1,00,000 is ₹10,000, leaving ₹1,08,000 to pay; and ₹50,000 rent produces ₹4,500 each of CGST and SGST, for ₹59,000 total. I found no must-fix issue in the changed code, but I did not run the tests or independently confirm the documented UX review, so please check those sign-off claims before opening the pilot.
+M8 adds password reset, error reporting, a full billing journey test and several UX improvements. I found no wrong money calculation or other must-fix defect in the changed code; the three checked billing examples match the written rules. The code supports the milestone report’s main feature claims, but I could not independently verify that the UX reviews occurred or that the reported test totals passed. The founder should review the listed human tasks and backlog items before treating the product as ready for a pilot.
 
 ## Must fix (0)
 
@@ -14,10 +14,11 @@ None.
 
 ## Verified by hand
 
-- By hand against docs/BILLING_RULES.md: journey.spec.ts uses ₹100 × 1,000 sq ft = ₹1,00,000 rent; at 18% intra-state GST, CGST and SGST are ₹9,000 each, and the ₹1,18,000 invoice total is correct.
-- By hand against docs/BILLING_RULES.md: 10% TDS on ₹1,00,000 taxable rent is ₹10,000; ₹1,18,000 less ₹10,000 gives the test's ₹1,08,000 payment.
-- By hand against docs/BILLING_RULES.md: ₹100 × 500 sq ft = ₹50,000 rent; CGST and SGST are ₹4,500 each, and the ₹59,000 invoice total is correct.
-- Checked that the journey's total billed amount, ₹1,77,000, is the sum of the two invoice totals, and that the Today assertions include the ₹1,08,000 cash payment and ₹10,000 TDS.
-- Checked the password reset path uses Zod schemas, confines `next` to an in-app path, and marks `/auth/confirm` public so emailed links can establish a session.
-- Checked the milestone report against the code for Sentry setup, error scrubbing, password reset, the journey test, and the stated remaining UX and human tasks. The UX review task is still unchecked in the roadmap.
-- Could not independently verify that the documented 945 unit/database tests passed or that the UX reviewer performed the listed review; the report says the new browser tests were not rerun during wrap-up. I did not execute tests.
+- Compared the diff stat and changed files against the specified commit range; reviewed the required specs, roadmap and M8 report.
+- By hand: ₹90,015.71 increased by 5% is ₹94,516 when rounded directly to the rupee; this matches BILLING_RULES.md §2.
+- By hand: ₹30,000 quarterly from 15 May under days_in_period is ₹30,000 × 47 ÷ 91 = ₹15,494.51; this matches BILLING_RULES.md §7.
+- By hand: the journey test’s ₹1,00,000 rent yields ₹9,000 CGST and ₹9,000 SGST at 18%, totaling ₹1,18,000; ₹10,000 TDS leaves ₹1,08,000 payable. The second lease’s ₹50,000 rent yields ₹4,500 each in CGST and SGST, totaling ₹59,000.
+- Confirmed the password reset form validates email and matching passwords, and `safeNext` rejects external redirect targets.
+- Confirmed reset email origins use APP_URL or a loopback host, and the auth confirmation route exchanges the code or verifies the token before redirecting.
+- Confirmed Sentry options are disabled without the relevant DSN and scrub request bodies, cookies, query strings, error text, breadcrumbs and extra data before sending.
+- Confirmed the M8 report’s listed changes for the error pages, import problem limit and Today empty state appear in the changed code. The report also explicitly lists outstanding human setup and pilot tasks.

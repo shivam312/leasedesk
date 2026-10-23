@@ -212,11 +212,20 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     page.locator("details summary").filter({ hasText: /^Total/ }),
   ).toContainText(formatINR(kalinga.totals.grandTotal));
   await shot(page, "4", "draft");
-  await page
-    .locator("details summary")
+  // "Explain this amount": the open line shows the engine's own working
+  // (area × rate per sq ft, the period, then the GST), step by step.
+  const first = kalinga.lines[0]!;
+  const explain = page
+    .locator("details")
     .filter({ visible: true })
-    .first()
-    .click();
+    .filter({
+      has: page.locator("summary").filter({ hasText: first.description }),
+    })
+    .first();
+  await explain.locator("summary").click();
+  for (const working of [first.explanation, first.taxExplanation])
+    for (const text of [working.rule, ...working.steps])
+      await expect(explain).toContainText(text);
   await shot(page, "4", "explain");
   await page.goto("/billing");
   await page.getByRole("button", { name: sendAll }).click();

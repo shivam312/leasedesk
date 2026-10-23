@@ -26,6 +26,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 Things only a person can do. Tick them when done.
 
 - [x] Install Docker Desktop and the Supabase CLI (M0; the pipeline stops until they're installed)
+- [ ] Create a Google OAuth client (Google Cloud console) and turn on Google login in Supabase Auth, for "Log in with Google" (M2; email and password login works without it)
 - [ ] Create a Resend account, verify the sending domain and put `RESEND_API_KEY` in `.env.local` (M4; until then emails go to `.local-outbox/`)
 - [ ] Get one real bank statement export (CSV or Excel) per major bank your pilots use, with personal details removed, in `tests/fixtures/bank/` (M5)
 - [ ] Get a sample Tally XML export from a pilot accountant's TallyPrime and save it in `tests/fixtures/tally/` (M7)

@@ -46,7 +46,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [x] Billing settings, a test for each option: building defaults for `billing.defaultTiming`, `gst.defaultRateBp` and `gst.defaultSac`
 - [x] GST setting, a test for each option: `gst.rounding` (per line or per invoice)
 - [x] TDS settings, a test for each option: `tds.rounding`, `tds.tolerancePaise`, `tds.quarterBasis`
-- [ ] Sign up and log in
+- [x] Sign up and log in
 - [ ] Invite users and accept an invite
 - [ ] Roles (owner, accounts, property manager, viewer), checked in server actions
 - [ ] Settings: organization and billing entities (GSTIN, bank, UPI)

@@ -12,7 +12,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 | UI | Tailwind CSS 4 + shadcn/ui (Radix) | Components copied into `src/components/ui`; icons from lucide-react |
 | Database | Supabase Postgres, Mumbai region | Row-level security on every table |
 | ORM | Drizzle + drizzle-kit | Schema in TypeScript, SQL migrations in `drizzle/` |
-| Auth | Supabase Auth | Email + password, Google login, invites |
+| Auth | Supabase Auth (@supabase/ssr, cookie sessions) | Email + password (built); Google login waits for an OAuth client (human task); invites. `src/proxy.ts` refreshes the session and sends signed-out visitors to `/login`; `requireMember()` in `src/lib/auth.ts` checks again in every page and action |
 | File storage | Supabase Storage | Lease PDFs, invoice PDFs, TDS certificates, imports |
 | Validation | Zod | Every server action validates its input |
 | Background jobs | Inngest | Monthly billing run, reminders, daily digests |

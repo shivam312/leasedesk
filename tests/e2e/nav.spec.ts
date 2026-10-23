@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { signUpNewOwner } from "./helpers";
 
 const SECTIONS = ["Today", "Leases", "Tenants", "Billing", "Reports"];
 
 test("main nav opens every section, and the profile icon opens Settings", async ({
   page,
 }) => {
+  await signUpNewOwner(page);
   await page.goto("/");
   await expect(page).toHaveURL("/today");
 

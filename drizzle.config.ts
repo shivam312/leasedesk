@@ -4,7 +4,7 @@ import { databaseUrl } from "./src/lib/db/url";
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
-// Migrations are generated here and applied by scripts/migrate.ts (D11).
+// Migrations are generated here and applied by scripts/migrate.ts (D12).
 export default defineConfig({
   dialect: "postgresql",
   schema: "./src/lib/db/schema/index.ts",

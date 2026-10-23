@@ -1,4 +1,4 @@
-// pnpm db:migrate: apply the SQL migrations in drizzle/ (D11).
+// pnpm db:migrate: apply the SQL migrations in drizzle/ (D12).
 
 import { existsSync } from "node:fs";
 import { drizzle } from "drizzle-orm/postgres-js";

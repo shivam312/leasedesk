@@ -16,6 +16,7 @@ import {
   type FormState,
 } from "@/lib/auth/forms";
 import { createOrganizationForOwner, findMember } from "@/lib/auth/membership";
+import { emailLinkOrigin } from "@/lib/auth/origin";
 import { db } from "@/lib/db";
 import { reportError } from "@/lib/monitoring";
 import { createSupabase } from "@/lib/supabase/server";
@@ -77,20 +78,6 @@ export async function logIn(
   redirect("/today");
 }
 
-/** The app's address for links in emails: APP_URL, else this request's host. */
-async function appOrigin(): Promise<string> {
-  const configured = process.env.APP_URL?.trim().replace(/\/+$/, "");
-  if (configured) return configured;
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto =
-    h.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") || host.startsWith("127.")
-      ? "http"
-      : "https");
-  return `${proto}://${host}`;
-}
-
 /**
  * Emails a link to choose a new password. The answer is the same whether or
  * not there's an account with this email, so the form can't be used to find
@@ -104,9 +91,26 @@ export async function requestPasswordReset(
   if ("state" in parsed) return parsed.state;
   const { email } = parsed.data;
 
+  const origin = emailLinkOrigin({
+    appUrl: process.env.APP_URL,
+    host: (await headers()).get("host"),
+  });
+  if (!origin) {
+    // Deployed without APP_URL: no address we trust to put in the link.
+    reportError(
+      "Password reset email not sent: APP_URL is not set",
+      new Error("APP_URL missing"),
+    );
+    return {
+      message:
+        "We can't send reset emails yet. Ask the person who set up LeaseDesk for your account to reset your password.",
+      values: { email },
+    };
+  }
+
   const supabase = await createSupabase();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${await appOrigin()}/auth/confirm?next=/reset-password`,
+    redirectTo: `${origin}/auth/confirm?next=/reset-password`,
   });
   if (error?.code === "over_email_send_rate_limit") {
     return {

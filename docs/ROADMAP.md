@@ -96,7 +96,7 @@ Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice 
 - [x] Tenant ledger with running balance
 - [ ] (human) Get one real bank statement export (CSV or Excel) per major bank the pilots use, personal details removed, into `tests/fixtures/bank/`
 
-On `main`. All migrations to `drizzle/0020` are applied locally, and the database tests no longer skip when a table is missing: they fail. Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`).
+On `main`. Migrations to `drizzle/0020` are applied locally, and the database tests no longer skip when a table is missing: they fail. The reminders migrations (`drizzle/0021`–`0022`) are not applied yet (Human task): until `pnpm db:migrate` runs, the invoice page shows an error and the reminder database tests are skipped with a warning (they passed on 2026-10-23 against the migration SQL loaded in a rolled-back transaction). Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`).
 
 ## M5a. Demo data and walkthrough
 

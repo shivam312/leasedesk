@@ -47,6 +47,7 @@ Before a screen is done:
 | Void, cancel invoice | Issue a credit note |
 | Draft invoice | Not sent yet |
 | CAM | Maintenance (CAM) |
+| Form 16A | TDS certificate |
 
 Reports for accountants can use the technical terms, with the plain term shown once in a tooltip.
 

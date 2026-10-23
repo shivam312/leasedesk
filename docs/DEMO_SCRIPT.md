@@ -28,10 +28,10 @@ Running the seed again at any time puts the demo back exactly as it was, so you 
 **Say:** "This is the first thing you see every morning. Top: what you've billed, collected, and what's unpaid. Below: what needs doing, most urgent first."
 
 **Point at**, in order:
-- "Rangoli Media Labs hasn't paid ₹…: three invoices, the oldest over 100 days late. One tap sends them a WhatsApp reminder."
+- "Rangoli Media Labs hasn't paid ₹…: three invoices, the oldest more than three months late. One tap sends them a WhatsApp reminder."
 - "October invoices aren't made yet": "we'll do that in a minute."
-- "3 TDS certificates missing": "tenants who kept back TDS but haven't sent their Form 16A for April–June, due 15 August. You lose that credit if you don't chase it."
-- "Rent increase in 8 days" cards: "LeaseDesk knows every increase in every lease."
+- "3 TDS certificates missing": "tenants who kept back TDS but haven't sent their Form 16A for the last quarter whose certificates are due (April–June, due 15 August, when seeded in late October). You lose that credit if you don't chase it."
+- "Rent increase in … days" cards: "LeaseDesk knows every increase in every lease."
 - "Lease ends in 60 days, Ojas Wellness": "and the notice date has already passed, so you know to call them."
 
 ## 3. A tenant and their lease (1 minute)
@@ -42,7 +42,7 @@ Running the seed again at any time puts the demo back exactly as it was, so you 
 
 **Click:** the lease card **Sharma Corporate Tower**.
 
-**Say:** "Their lease: 2,718 sq ft at ₹90 a sq ft from August 2023, 5% more every year." **Scroll to Rent schedule.** "This is the whole rent schedule to 2032, worked out in advance. Each increase is rounded to the rupee, which is a setting if you do it differently. No more working out the increase on a calculator."
+**Say:** "Their lease: 2,718 sq ft at ₹90 a sq ft (from August 2023 on the example date; the demo starts it 38 months before the month you seed), 5% more every year." **Scroll to Rent schedule.** "This is the whole rent schedule, nine years to the last day of the lease, worked out in advance. Each increase is rounded to the rupee, which is a setting if you do it differently. No more working out the increase on a calculator."
 
 ## 4. Adding a lease (2 minutes)
 

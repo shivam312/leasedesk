@@ -19,6 +19,6 @@ test("an owner runs this month's billing with no leases yet", async ({
   await expect(page.getByText(`No invoices for ${month} yet.`)).toBeVisible();
   await page.getByRole("button", { name: `Make ${month} invoices` }).click();
   await expect(
-    page.getByText(`No invoices to make for ${month}.`),
+    page.getByText(`No leases need an invoice for ${month}.`, { exact: false }),
   ).toBeVisible();
 });

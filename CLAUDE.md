@@ -43,6 +43,7 @@ Database (local Supabase via `supabase start`; needs Docker running):
 - `pnpm db:generate`: generate a Drizzle migration in `drizzle/` from schema changes in `src/lib/db/schema/`
 - `pnpm db:migrate`: apply migrations (refuses non-local databases unless `ALLOW_REMOTE_DB=yes`; always ask before using that)
 - `pnpm db:seed`: load demo data (2 buildings, 40 tenants, 45 leases; same remote-database guard)
+- `pnpm db:seed:demo`: reset and load the "Sharma Estates" demo (2 buildings, 45 tenants, invoice and payment history up to last month) and print the login `demo@sharma-estates.example` with a new password; local database only
 - `pnpm db:reset`: wipe the local database, then migrate and seed
 
 Background jobs: `pnpm jobs:dev` runs Inngest's local dev server against `pnpm dev` (http://localhost:8288), where the daily billing run can be triggered by hand.

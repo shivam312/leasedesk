@@ -347,3 +347,14 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - `/reset-password` sets the new password for the signed-in user (`setNewPassword`, typed twice, at least 8 characters) and goes to Today.
 - Links use `APP_URL` when set (`src/lib/auth/origin.ts`). Without it, only a loopback `Host` (local work, the e2e build) is used; forwarded host and protocol headers are never trusted, since a client can set them (Codex review M8). A deployed app without `APP_URL` doesn't send reset emails: the form says so and the error is reported. Supabase only redirects to allow-listed URLs: locally `supabase/config.toml` lists `localhost:3000` and the e2e build on `3100`, and the local email limit is raised to 100 an hour so the e2e test can follow a real email from Mailpit. The cloud project needs its Site URL and redirect URLs set (human task).
 - Changing a password isn't written to `activity_log`, which records organization data; Supabase Auth keeps its own audit log.
+
+## D43. The demo organization: built from today's date through the app's own code, and reset by removing it (2026-10-24)
+
+**Why:** M5a needs demo data a founder can show a landlord and a walkthrough can test against: realistic, the same every run, and with history up to last month whatever the date.
+**Consequences:**
+- `src/lib/demo/plan.ts` is pure: buildings, tenants and leases worked out from today's date only (leases start a fixed number of months back), so a run on any day shows the same story: one lease ending in 60 days, one in lock-in (it started two months ago, rent-free), six unpaid invoices of three different ages, three missing TDS certificates.
+- `src/lib/demo/seed.ts` saves it through the app's code paths, not raw rows: leases through `parseLeaseForm` and `checkLease`, invoices made by `runBilling` and numbered by `issueInvoice` dated the 1st, payments by `recordPayment` with each tenant's expected TDS, certificates by `attachCertificate` into local Storage as the demo owner. A rule change that breaks one of these breaks the seed, which is what we want.
+- History is the last three months, reaching back to the latest quarter whose TDS certificates are already due (June, on 24 Oct 2026), so "TDS certificates missing" shows on Today.
+- This month is left unbilled, so the walkthrough can make, check and send it.
+- Running it again removes the demo organization first. Sent invoices, payments and the activity log refuse deletes (D4), so `removeDemo` sets `session_replication_role = replica` for its own transaction and deletes every row with the demo organization's id. It's the only code that does this; the script refuses non-local databases even with `ALLOW_REMOTE_DB=yes`. Uploaded certificate files stay in local Storage (harmless; paths have random ids).
+- The login is made through Supabase Auth's sign-up (the local stack doesn't confirm emails), with a new readable password each run, printed by the script.

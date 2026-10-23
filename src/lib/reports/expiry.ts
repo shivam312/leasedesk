@@ -28,7 +28,10 @@ export function expirySchedule(
   leases: readonly RentRollLease[],
   asOf: PlainDate,
 ): Report {
-  const until = addDays(addMonths(asOf, EXPIRY_WINDOW_MONTHS, "last_day"), -1);
+  const until = addDays(
+    addMonths(asOf, EXPIRY_WINDOW_MONTHS, "roll_forward"),
+    -1,
+  );
   const ending = leases
     .filter(
       (l) =>

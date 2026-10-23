@@ -264,3 +264,16 @@ describe("expirySchedule", () => {
     });
   });
 });
+
+describe("expirySchedule window", () => {
+  it("runs to the day before the same date a year on", () => {
+    // From 29-02-2028: + 12 months rolls forward to 01-03-2029, − 1 day =
+    // 28-02-2029, so a lease ending that day is listed
+    const report = expirySchedule(
+      [lease({ startDate: "2025-04-01", endDate: "2029-02-28" })],
+      "2028-02-29",
+    );
+    expect(report.sections[0]!.rows).toHaveLength(1);
+    expect(report.period).toBe("Leases ending 29-02-2028 to 28-02-2029");
+  });
+});

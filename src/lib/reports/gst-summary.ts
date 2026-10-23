@@ -71,6 +71,7 @@ export function gstSummary(
     string,
     {
       gstin: string;
+      type: string;
       rate: number;
       invoiced: Paise[];
       credited: Paise[];
@@ -81,9 +82,11 @@ export function gstSummary(
   >();
   for (const d of docs) {
     for (const r of byRate(d.lines)) {
-      const key = `${d.supplierGstin}|${r.gstRateBp}`;
+      const type = d.recipientGstin ? "B2B" : "B2C";
+      const key = `${d.supplierGstin}|${type}|${r.gstRateBp}`;
       const s = summary.get(key) ?? {
         gstin: d.supplierGstin,
+        type,
         rate: r.gstRateBp,
         invoiced: [],
         credited: [],
@@ -99,7 +102,7 @@ export function gstSummary(
       s.igst.push(sign(r.igst));
       const common = {
         supplierGstin: d.supplierGstin,
-        type: d.recipientGstin ? "B2B" : "B2C",
+        type,
         recipientGstin: d.recipientGstin ?? "",
         recipient: d.recipientName,
         number: d.number,
@@ -122,7 +125,12 @@ export function gstSummary(
     }
   }
   const summaryRows: ReportRow[] = [...summary.values()]
-    .sort((a, b) => a.gstin.localeCompare(b.gstin) || a.rate - b.rate)
+    .sort(
+      (a, b) =>
+        a.gstin.localeCompare(b.gstin) ||
+        a.type.localeCompare(b.type) ||
+        a.rate - b.rate,
+    )
     .map((s) => {
       const invoiced = sumPaise(s.invoiced);
       const credited = sumPaise(s.credited);
@@ -131,6 +139,7 @@ export function gstSummary(
       const igst = sumPaise(s.igst);
       return {
         gstin: s.gstin,
+        type: s.type,
         rate: s.rate,
         invoiced,
         credited,
@@ -145,12 +154,7 @@ export function gstSummary(
     sumPaise(rows.map((r) => Number(r[key] ?? 0)));
   const docColumns = [
     { key: "supplierGstin", label: "Our GSTIN", kind: "text" as const },
-    {
-      key: "type",
-      label: "Type",
-      kind: "text" as const,
-      hint: "B2B: tenant has a GSTIN. B2C: tenant isn't GST-registered",
-    },
+    { key: "type", label: "Type", kind: "text" as const },
     { key: "recipientGstin", label: "Tenant GSTIN", kind: "text" as const },
     { key: "recipient", label: "Tenant", kind: "text" as const },
   ];
@@ -177,11 +181,17 @@ export function gstSummary(
     period: formatMonth(month),
     sections: [
       {
-        title: "Summary by GST rate",
+        title: "Summary by type and GST rate",
         empty:
           "No invoices or credit notes this month. Invoices count in the month of their invoice date.",
         columns: [
           { key: "gstin", label: "Our GSTIN", kind: "text" },
+          {
+            key: "type",
+            label: "Type",
+            kind: "text",
+            hint: "B2B: tenant has a GSTIN. B2C: tenant isn't GST-registered",
+          },
           { key: "rate", label: "GST rate", kind: "percent" },
           { key: "invoiced", label: "Invoiced (taxable)", kind: "money" },
           {

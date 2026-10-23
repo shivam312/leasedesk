@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { billingSettings } from "@/lib/settings/billing";
 import { defaultSettings } from "@/lib/settings/schema";
-import { criticalDatesFor } from "../critical-dates";
+import { criticalDatesFor, noticeDeadline } from "../critical-dates";
 
 const settings = defaultSettings();
 
@@ -56,5 +56,55 @@ describe("criticalDatesFor", () => {
         "alerts.expiryDays": [90],
       }),
     ).toEqual([{ type: "expiry", date: "2029-03-31", remindDays: [90] }]);
+  });
+});
+
+describe("noticeDeadline", () => {
+  it("is the day before the same date the notice period earlier", () => {
+    // Ends 31-12-2028, 3 months: 01-01-2029 − 3 months = 01-10-2028, − 1 day
+    expect(
+      noticeDeadline(
+        {
+          startDate: "2026-01-01",
+          endDate: "2028-12-31",
+          noticePeriodMonths: 3,
+        },
+        "roll_forward",
+      ),
+    ).toBe("2028-09-30");
+  });
+
+  it("counting back to a day the month doesn't have takes its last day", () => {
+    // Ended early on 30-05-2027: 31-05-2027 − 3 months has no 31-02; with
+    // roll_forward it takes 28-02-2027 (the earlier day), − 1 day = 27-02-2027
+    expect(
+      noticeDeadline(
+        {
+          startDate: "2026-01-01",
+          endDate: "2027-05-30",
+          noticePeriodMonths: 3,
+        },
+        "roll_forward",
+      ),
+    ).toBe("2027-02-27");
+  });
+
+  it("none without a notice period, or before the lease starts", () => {
+    expect(
+      noticeDeadline(
+        { startDate: "2026-01-01", endDate: "2026-12-31" },
+        "roll_forward",
+      ),
+    ).toBeNull();
+    expect(
+      noticeDeadline(
+        {
+          startDate: "2026-11-01",
+          endDate: "2026-12-31",
+          noticePeriodMonths: 3,
+        },
+        "roll_forward",
+      ),
+    ).toBeNull();
   });
 });

@@ -86,21 +86,39 @@ describe("gstSummary [CA]", () => {
       "2026-10",
     );
     const [summary, invoices, credits] = report.sections;
-    // Taxable: ₹1,00,000 + ₹50,000 − ₹10,000 = ₹1,40,000
-    // CGST = SGST: ₹9,000 + ₹4,500 − ₹900 = ₹12,600; GST ₹25,200
+    // B2B: ₹1,00,000 − ₹10,000 = ₹90,000 taxable; CGST = SGST ₹9,000 − ₹900 = ₹8,100
+    // B2C: ₹50,000 taxable; CGST = SGST ₹4,500
     expect(summary!.rows).toEqual([
       {
         gstin: OURS,
+        type: "B2B",
         rate: 1800,
-        invoiced: 15_000_000,
+        invoiced: 10_000_000,
         credited: 1_000_000,
-        taxable: 14_000_000,
-        cgst: 1_260_000,
-        sgst: 1_260_000,
+        taxable: 9_000_000,
+        cgst: 810_000,
+        sgst: 810_000,
         igst: 0,
-        tax: 2_520_000,
+        tax: 1_620_000,
+      },
+      {
+        gstin: OURS,
+        type: "B2C",
+        rate: 1800,
+        invoiced: 5_000_000,
+        credited: 0,
+        taxable: 5_000_000,
+        cgst: 450_000,
+        sgst: 450_000,
+        igst: 0,
+        tax: 900_000,
       },
     ]);
+    // Altogether ₹1,40,000 taxable and ₹25,200 GST
+    expect(summary!.totals).toMatchObject({
+      taxable: 14_000_000,
+      tax: 2_520_000,
+    });
     expect(
       invoices!.rows.map((r) => [r.number, r.type, r.placeOfSupply]),
     ).toEqual([

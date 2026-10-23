@@ -34,15 +34,17 @@ export function noticeDeadline(
   monthEndRule: BillingSettings["monthEndRule"],
 ): PlainDate | null {
   if (!lease.noticePeriodMonths) return null;
-  // Notice given on this day ends the lease on its last day.
-  const date = addDays(
-    addMonths(
-      addDays(lease.endDate, 1),
-      -lease.noticePeriodMonths,
-      monthEndRule,
-    ),
-    -1,
-  );
+  // Notice given on this day ends the lease on its last day. Counting back
+  // to a day the month doesn't have (31 May − 3 months) has no roll-forward
+  // answer, so it takes that month's last day: the earlier, safer day.
+  const dayAfter = addDays(lease.endDate, 1);
+  let back: PlainDate;
+  try {
+    back = addMonths(dayAfter, -lease.noticePeriodMonths, monthEndRule);
+  } catch {
+    back = addMonths(dayAfter, -lease.noticePeriodMonths, "last_day");
+  }
+  const date = addDays(back, -1);
   return compareDates(date, lease.startDate) >= 0 ? date : null;
 }
 

@@ -33,7 +33,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 
 ## M2. Data, auth and setup screens (week 5)
 
-- [ ] Schema: organizations, memberships, billing entities (see `docs/DATA_MODEL.md`, including the `settings` jsonb columns)
+- [x] Schema: organizations, memberships, billing entities (see `docs/DATA_MODEL.md`, including the `settings` jsonb columns)
 - [ ] Schema: buildings, floors, units
 - [ ] Schema: tenants (TDS per charge type) and tenant contacts
 - [ ] Row-level security policies and org-scoped query helpers, with tests that one org can't read another's data

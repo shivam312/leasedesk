@@ -2,7 +2,7 @@
 
 Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `created_at`, `updated_at`, and row-level security restricting rows to members of the organization. Money columns are `bigint` paise, percentages are `integer` basis points, areas are `integer` hundredths of a sq ft, dates are `date`. Statuses are Postgres enums.
 
-**Status (end of M0):** no tables exist yet; the first arrive in M2. Schema files go in `src/lib/db/schema/` (one file per table group below, re-exported from `index.ts`), migrations in `drizzle/` (D12). Drizzle uses `casing: "snake_case"`, so TypeScript names are camelCase and columns are the snake_case names written here.
+**Status (M2, in progress):** built so far: `organizations`, `memberships`, `billing_entities` (`src/lib/db/schema/organizations.ts`). Every table is created with row-level security on; until its policies exist (M2 RLS task), signed-in users can't read it at all. Database tests are `*.db.test.ts` and run against the local stack inside a rolled-back transaction (`src/lib/db/__tests__/harness.ts`). Schema files go in `src/lib/db/schema/` (one file per table group below, re-exported from `index.ts`), migrations in `drizzle/` (D12). Drizzle uses `casing: "snake_case"`, so TypeScript names are camelCase and columns are the snake_case names written here.
 
 **Settings columns:** `organizations`, `billing_entities`, `buildings`, `tenants` and `leases` each have `settings` (jsonb, default `{}`). Keys and defaults are in `docs/SETTINGS.md`; only values that differ from the default are stored. They're validated by `src/lib/settings/schema.ts` and read only through `src/lib/settings/resolve.ts` (lease → tenant → building → organization → default; billing-entity keys apply to that entity's invoice series).
 
@@ -10,7 +10,7 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 **organizations**: name, legal_name, pan, logo_path, settings (jsonb).
 
-**memberships**: user_id (Supabase auth user), role (`owner`, `accounts`, `property_manager`, `viewer`), invited_by, status (`invited`, `active`, `removed`).
+**memberships**: user_id (Supabase auth user; null until an invited person accepts), email (lower-case; unique per organization, as is user_id), role (`owner`, `accounts`, `property_manager`, `viewer`), invited_by, status (`invited`, `active`, `removed`).
 
 **billing_entities**: the GSTIN an invoice is issued from. legal_name, gstin, state_code, address, bank_account_name, bank_account_number, ifsc, upi_id, settings (jsonb).
 

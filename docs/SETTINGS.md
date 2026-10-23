@@ -20,7 +20,7 @@ When a setting is built, tick it and note where it lives in code.
 | [x] | `billing.monthEndRule` | organization, lease | `roll_forward` (to the 1st), `last_day` | `roll_forward` | advanced | Dates like 31 Jan + 1 month: never bill a day early by default | `BillingSettings.monthEndRule`, passed to `addMonths` in `dates.ts` by `rentCommencement` (`rent-free.ts`) and `amountSteps` (`escalation.ts`) |
 | [x] | `billing.midMonthIncreaseLines` | organization | `one_line`, `two_lines` | `two_lines` | advanced | Some accountants prefer one combined line | `BillingSettings.midMonthIncreaseLines`, used by `linesFor` in `invoice-lines.ts` |
 | [x] | `billing.afterCustomIncrease` | lease | `stop_rule`, `resume_rule` | `stop_rule` | advanced (lease form) | Whether the automatic increase rule continues after a custom increase [Pilot] (D-002) | `BillingSettings.afterCustomIncrease`, used by `amountSteps` in `escalation.ts`; `resume_rule` restarts the rule from the custom date |
-| [x] | `billing.defaultTiming` | building, charge | `advance`, `arrears` | `advance` | advanced | Rent is usually in advance; utilities often in arrears | Charge level only: `Charge.timing` in `types.ts`, default in `withChargeDefaults` (`charges.ts`). Building default not built |
+| [x] | `billing.defaultTiming` | building, charge | `advance`, `arrears` | `advance` | advanced | Rent is usually in advance; utilities often in arrears | `Charge.timing` in `types.ts`. Building default copied onto a new charge when the lease is saved: `withBuildingDefaults` in `src/lib/settings/charge-defaults.ts` (D16) |
 | [x] | `billing.waivedDuringRentFree` | charge | `true`, `false` | `true` for rent, `false` for other charges | advanced (lease form) | Some leases waive CAM or parking during fit-out too | `Charge.waivedDuringRentFree` in `types.ts`, default in `withChargeDefaults` (`charges.ts`) |
 | [x] | `billing.skipZeroInvoices` | organization | `true`, `false` | `true` | advanced | Avoid using invoice numbers on ₹0 bills | `BillingSettings.skipZeroInvoices`, used by `invoiceForRun` in `invoice-lines.ts` |
 
@@ -28,8 +28,8 @@ When a setting is built, tick it and note where it lives in code.
 
 | Built | Key | Scope | Options | Default | Shown | Why landlords differ | In code |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [x] | `gst.defaultRateBp` | building, charge | basis points | `1800` | basic | Rate for renting commercial property [CA] | Charge level only: `Charge.gstRateBp` (required) in `types.ts`. Building default not built |
-| [x] | `gst.defaultSac` | building, charge | SAC code | `997212` | basic | Service code on invoices [CA] | Charge level only: `Charge.sacCode` (required) in `types.ts`. Building default not built |
+| [x] | `gst.defaultRateBp` | building, charge | basis points | `1800` | basic | Rate for renting commercial property [CA] | `Charge.gstRateBp` (required) in `types.ts`. Building default copied onto a new charge when the lease is saved: `withBuildingDefaults` (`src/lib/settings/charge-defaults.ts`, D16) |
+| [x] | `gst.defaultSac` | building, charge | SAC code | `997212` | basic | Service code on invoices [CA] | `Charge.sacCode` (required) in `types.ts`. Building default copied onto a new charge when the lease is saved: `withBuildingDefaults` (`src/lib/settings/charge-defaults.ts`, D16) |
 | [ ] | `gst.rounding` | organization | `per_line`, `per_invoice` | `per_line` | advanced | Accountants differ on where tax is rounded [CA] (D-004) | Fixed to `per_line`: `lineTax` and `invoiceTotals` in `gst.ts` |
 
 ## TDS

@@ -43,7 +43,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [x] Billing engine takes a resolved `BillingSettings` object in place of its separate `roundEscalatedRentToRupee`, `roundInvoiceTotal` and `dueDays` inputs; golden tests unchanged
 - [x] Billing settings, a test for each option: `billing.partPeriodMethod`, `billing.monthEndRule`
 - [x] Billing settings, a test for each option: `billing.midMonthIncreaseLines`, `billing.afterCustomIncrease`, `billing.skipZeroInvoices`
-- [ ] Billing settings, a test for each option: building defaults for `billing.defaultTiming`, `gst.defaultRateBp` and `gst.defaultSac`
+- [x] Billing settings, a test for each option: building defaults for `billing.defaultTiming`, `gst.defaultRateBp` and `gst.defaultSac`
 - [ ] GST setting, a test for each option: `gst.rounding` (per line or per invoice)
 - [ ] TDS settings, a test for each option: `tds.rounding`, `tds.tolerancePaise`, `tds.quarterBasis`
 - [ ] Sign up and log in

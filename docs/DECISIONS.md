@@ -97,3 +97,10 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 **Why:** `docs/AUTONOMY.md` says only values that differ from the default are stored. Applied at every level, a building couldn't go back to the default when its organization had changed it (organization rounds to `none`, one building needs `rupee`, the default).
 **Consequences:** `saveSettings` (`src/lib/settings/store.ts`) drops default-equal values only at the organization level. At billing-entity, building, tenant and lease level, a key that is present is used as set, and a key that is absent follows the level above. Screens show "Use the organization's setting" as the way to clear one.
+
+## D16. Building defaults are copied onto a charge when the lease is saved (2026-10-23)
+
+**Why:** Applying the building's default timing at billing time would re-time charges already being billed. A building switching from advance to arrears would bill a month twice; switching back would skip one. The same reasoning applies to the GST rate and SAC code: an invoice should follow what the lease says, not a setting changed later.
+**Consequences:**
+- `withBuildingDefaults` (`src/lib/settings/charge-defaults.ts`) fills a new charge's blank timing, GST rate and SAC code from the building's resolved settings. The lease form calls it on save (M3); a charge's own value, including 0%, wins.
+- The billing engine keeps `gstRateBp` and `sacCode` required on `Charge` and never falls back to a building default. Changing a building default affects only charges added afterwards; the settings page says so.

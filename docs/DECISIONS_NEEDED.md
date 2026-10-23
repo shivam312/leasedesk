@@ -19,6 +19,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-007 | Final bill for a quarterly arrears charge that ends before the lease | pilot | no | open |
 | D-008 | Approve shadcn's `cn` and `radix-ui` packages? | package | no | open |
 | D-009 | GST on a month split by a rent increase, shown as one line | ca | no | open |
+| D-010 | Building GST rates other than 18%, and 0% invoices | ca | no | open |
 
 ## Human tasks
 
@@ -148,6 +149,18 @@ Things only a person can do. Tick them when done.
   - B) Always work out GST on the two parts, even when they are shown as one line
 - Recommendation: A. Tax on the lines as printed is what an officer or the tenant's accountant can check on the invoice itself.
 - Done meanwhile: A built (`linesFor` in `src/lib/billing/invoice-lines.ts`, tested in `line-settings.test.ts`). The default is two lines, so nothing changes unless a landlord picks one line.
+- Answer:
+
+### D-010: Building GST rates other than 18%, and 0% invoices
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: Each building has a default GST rate (`gst.defaultRateBp`, 18%) and SAC code (997212) for new charges, and each charge can have its own. The app accepts any rate from 0% to 100%. Renting commercial property is normally 18%. An exempt or nil-rated supply (0%) is usually shown on a bill of supply rather than a tax invoice, which the app doesn't produce yet.
+- Options:
+  - A) Allow any rate; a 0% charge still appears on the normal invoice with ₹0 GST
+  - B) Allow only the standard GST rates, and print a bill of supply when every line is 0%
+- Recommendation: B before the first paying customer, pending your CA. A is built meanwhile because it bills no tax that isn't owed.
+- Done meanwhile: A. Rates are whole basis points 0–10000 (`src/lib/settings/schema.ts`), copied onto charges when a lease is saved (D16).
 - Answer:
 
 ## Applied

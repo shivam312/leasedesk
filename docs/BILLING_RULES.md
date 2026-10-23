@@ -28,8 +28,8 @@ A lease has one or more charges. Each charge has:
 - `basis`: `fixed` (monthly amount), `per_sqft` (rate × area), `per_slot` (rate × count)
 - `startDate`, optional `endDate`
 - `frequency`: `monthly` (default) or `quarterly`
-- `timing`: `advance` (default, billed at the start of the period) or `arrears`
-- `gstRateBp` (default 1800) and `sacCode` (default from building settings)
+- `timing`: `advance` (default, billed at the start of the period) or `arrears`. A new charge left blank takes the building's `billing.defaultTiming` when the lease is saved (D16).
+- `gstRateBp` and `sacCode`: a new charge left blank takes the building's `gst.defaultRateBp` (default 1800) and `gst.defaultSac` (default 997212) when the lease is saved (D16). A charge's own value, including 0%, always wins. **[CA]** (section 8; rates other than 18% and 0% invoices are D-010)
 - `waivedDuringRentFree`: default `true` for rent, `false` for everything else
 
 Monthly amount for `per_sqft` = round(rate × area / 100). Example: ₹85.50 × 1,250.50 sq ft = ₹1,06,917.75.

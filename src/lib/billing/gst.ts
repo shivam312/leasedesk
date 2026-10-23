@@ -110,3 +110,71 @@ export function invoiceTotals(
       : { rounded: subtotal, roundOff: 0 };
   return { taxable, cgst, sgst, igst, subtotal, roundOff, grandTotal: rounded };
 }
+
+type LineTax = ReturnType<typeof lineTax>;
+
+/**
+ * Tax on every line of one invoice (section 8, setting `gst.rounding`) [CA].
+ *
+ * - `per_line` (default): each line's tax rounded on its own (`lineTax`).
+ * - `per_invoice`: for each GST rate, each tax is worked out once on the
+ *   taxable total of the lines at that rate. The lines still carry their own
+ *   tax, so the printed lines add up: the difference between the total and
+ *   the sum of the line-rounded taxes goes on the largest line at that rate
+ *   (the first, if several are equal).
+ */
+export function invoiceTax(
+  lines: readonly { taxablePaise: Paise; gstRateBp: BasisPoints }[],
+  supply: SupplyType,
+  settings: Pick<BillingSettings, "gstRounding">,
+): LineTax[] {
+  const taxes = lines.map((l) => lineTax(l.taxablePaise, l.gstRateBp, supply));
+  if (settings.gstRounding === "per_line") return taxes;
+
+  const rates = [...new Set(lines.map((l) => l.gstRateBp))];
+  for (const rate of rates) {
+    const indexes = lines.flatMap((l, i) => (l.gstRateBp === rate ? [i] : []));
+    const taxable = sumPaise(indexes.map((i) => lines[i]!.taxablePaise));
+    const total = lineTax(taxable, rate, supply);
+    const largest = indexes.reduce((best, i) =>
+      // By size, so a credit note (negative lines) carries the difference on
+      // the same line as its invoice did (section 12).
+      Math.abs(lines[i]!.taxablePaise) > Math.abs(lines[best]!.taxablePaise)
+        ? i
+        : best,
+    );
+    const target = taxes[largest]!;
+    const adjust = (key: "cgst" | "sgst" | "igst") =>
+      total[key] - sumPaise(indexes.map((i) => taxes[i]![key]));
+    const [cgst, sgst, igst] = [adjust("cgst"), adjust("sgst"), adjust("igst")];
+    if (cgst === 0 && sgst === 0 && igst === 0) continue;
+    taxes[largest] = {
+      cgst: target.cgst + cgst,
+      sgst: target.sgst + sgst,
+      igst: target.igst + igst,
+      explanation: {
+        rule: "GST worked out once on the invoice total",
+        steps: [
+          ...target.explanation.steps,
+          ...total.explanation.steps.map(
+            (s) => `All lines at ${percent(rate)}: ${s}`,
+          ),
+          ...(
+            [
+              ["CGST", target.cgst, cgst],
+              ["SGST", target.sgst, sgst],
+              ["IGST", target.igst, igst],
+            ] as const
+          )
+            .filter(([, , diff]) => diff !== 0)
+            .map(
+              ([name, own, diff]) =>
+                `${name} on this line: ${rupees(own)} + rounding difference ${rupees(diff)} = ${rupees(own + diff)}, so the lines add up to the total`,
+            ),
+        ],
+        result: target.cgst + cgst + target.sgst + sgst + target.igst + igst,
+      },
+    };
+  }
+  return taxes;
+}

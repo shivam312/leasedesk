@@ -17,7 +17,7 @@ This is the specification for the billing engine in `src/lib/billing/`. If code 
 - Round half up to the nearest paisa after every multiplication or division.
 - Negative amounts (credit notes, round-off) round half away from zero: −₹0.005 becomes −₹0.01, so a credit note mirrors its invoice exactly.
 - Monthly rent after an escalation is rounded to the nearest whole rupee by default (setting `billing.roundIncreasedRent`, default `rupee`). **[Pilot]** Each step is rounded once, straight to the rupee (not to the paisa first): ₹90,015.71 + 5% = ₹94,516.4955 → ₹94,516.
-- Each tax line (CGST, SGST, IGST) is rounded to the nearest paisa separately.
+- Each tax line (CGST, SGST, IGST) is rounded to the nearest paisa separately (by default; see `gst.rounding`, section 8).
 - Invoice total is rounded to the nearest rupee with a separate "Round off" line (setting `billing.roundInvoiceTotal`, default `rupee`). **[CA]**
 
 ## 3. Charges
@@ -81,6 +81,7 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 - If the billing GSTIN's state = the building's state: CGST = SGST = half the rate each (9% + 9%).
 - If they differ: IGST at the full rate. This is unusual; show a warning in the lease form.
 - The tenant's GSTIN does not change the split. It is printed on the invoice and used in GST reports.
+- Tax is rounded to the paisa on each line by default (setting `gst.rounding` = `per_line`). With `per_invoice`, each tax is worked out once per GST rate on the taxable total of the lines at that rate; the difference from the line-rounded taxes goes on the largest line at that rate, so the printed lines still add up. Three lines of ₹100.05 at 18%: per line CGST ₹9.00 × 3 = ₹27.00; per invoice 9% of ₹300.15 = ₹27.01, shown as ₹9.01 + ₹9.00 + ₹9.00. "Largest" is by size, so a credit note carries the difference on the same line as its invoice. The adjusted line's tax is then a paisa or so away from its rate × its taxable value. **[CA]** (D-004) `invoiceTax` in `gst.ts`.
 - State code = first two digits of a GSTIN.
 - Security deposits are not billed. If a deposit is adjusted against dues at exit, flag it for the accountant: GST may apply on the adjusted amount.
 

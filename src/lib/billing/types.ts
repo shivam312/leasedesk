@@ -101,6 +101,8 @@ export type BillingSettings = {
   afterCustomIncrease: "stop_rule" | "resume_rule";
   /** billing.skipZeroInvoices: no invoice (and no ₹0 lines) when there is nothing to bill (section 7). */
   skipZeroInvoices: boolean;
+  /** gst.rounding: tax rounded on each line, or once per rate on the invoice total (section 8, D-004). */
+  gstRounding: "per_line" | "per_invoice";
   /** invoice.dueDays: due date = invoice date + this many days (section 7). */
   dueDays: number;
 };

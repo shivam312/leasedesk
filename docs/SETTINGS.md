@@ -30,7 +30,7 @@ When a setting is built, tick it and note where it lives in code.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [x] | `gst.defaultRateBp` | building, charge | basis points | `1800` | basic | Rate for renting commercial property [CA] | `Charge.gstRateBp` (required) in `types.ts`. Building default copied onto a new charge when the lease is saved: `withBuildingDefaults` (`src/lib/settings/charge-defaults.ts`, D16) |
 | [x] | `gst.defaultSac` | building, charge | SAC code | `997212` | basic | Service code on invoices [CA] | `Charge.sacCode` (required) in `types.ts`. Building default copied onto a new charge when the lease is saved: `withBuildingDefaults` (`src/lib/settings/charge-defaults.ts`, D16) |
-| [ ] | `gst.rounding` | organization | `per_line`, `per_invoice` | `per_line` | advanced | Accountants differ on where tax is rounded [CA] (D-004) | Fixed to `per_line`: `lineTax` and `invoiceTotals` in `gst.ts` |
+| [x] | `gst.rounding` | organization | `per_line`, `per_invoice` | `per_line` | advanced | Accountants differ on where tax is rounded [CA] (D-004) | `BillingSettings.gstRounding`, used by `invoiceTax` in `gst.ts` (invoices call it from M4) |
 
 ## TDS
 

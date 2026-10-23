@@ -11,6 +11,7 @@ export const DEFAULT_SETTINGS: BillingSettings = {
   midMonthIncreaseLines: "two_lines",
   afterCustomIncrease: "stop_rule",
   skipZeroInvoices: true,
+  gstRounding: "per_line",
   dueDays: 7,
 };
 

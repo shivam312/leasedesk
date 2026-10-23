@@ -87,8 +87,8 @@ Things only a person can do. Tick them when done.
   - A) Round tax per line; round the total to the rupee with a round-off line
   - B) Round tax once on the total; round-off line
   - C) No rounding of the total
-- Recommendation: A, pending your CA.
-- Done meanwhile: A built (`lineTax` and `invoiceTotals` in `src/lib/billing/gst.ts`). The round-off line can already be turned off in the engine (`BillingSettings.roundInvoiceTotal`, setting `billing.roundInvoiceTotal`), which covers C. B isn't built yet; it's planned for M2 as setting `gst.rounding`, default per line.
+- Recommendation: A, pending your CA. Also ask: with option B, one line's tax can differ by a paisa from its rate × its taxable value (the rounding difference is put there so the lines add up). Is that acceptable on a tax invoice and in e-invoice (IRN) line checks?
+- Done meanwhile: A built (`lineTax` and `invoiceTotals` in `src/lib/billing/gst.ts`). The round-off line can already be turned off in the engine (`BillingSettings.roundInvoiceTotal`, setting `billing.roundInvoiceTotal`), which covers C. B is built too, as setting `gst.rounding` (`invoiceTax` in `src/lib/billing/gst.ts`), default per line: tax once per rate on the total, with the rounding difference on the largest line so the printed lines add up.
 - Answer:
 
 ### D-005: Rounding negative amounts

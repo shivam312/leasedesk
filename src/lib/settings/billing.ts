@@ -14,6 +14,7 @@ export function billingSettings(settings: Settings): BillingSettings {
     midMonthIncreaseLines: settings["billing.midMonthIncreaseLines"],
     afterCustomIncrease: settings["billing.afterCustomIncrease"],
     skipZeroInvoices: settings["billing.skipZeroInvoices"],
+    gstRounding: settings["gst.rounding"],
     dueDays: settings["invoice.dueDays"],
   };
 }

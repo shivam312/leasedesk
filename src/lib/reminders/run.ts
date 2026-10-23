@@ -117,6 +117,10 @@ export async function claimDueReminders(
       });
       if (!due) continue;
       to ??= await recipientsFor(s, tenantId);
+      // The email's content before the claim, so a claimed reminder is
+      // never left "sending" with nothing to send.
+      const doc = to.length > 0 ? await getInvoiceDocument(s, inv.id) : null;
+      if (to.length > 0 && !doc) continue;
       const [row] = await s.tx
         .insert(reminders)
         .values(
@@ -150,12 +154,10 @@ export async function claimDueReminders(
         noEmail++;
         continue;
       }
-      const doc = await getInvoiceDocument(s, inv.id);
-      if (!doc) continue;
       claimed.push({
         reminderId: row.id,
         invoiceId: inv.id,
-        email: reminderEmail(doc, {
+        email: reminderEmail(doc!, {
           to,
           kind: due.kind,
           today,

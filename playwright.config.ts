@@ -15,6 +15,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "on-first-retry",
+    // A click on a page that never shows the button fails in 15s, not at the test timeout.
+    actionTimeout: 15_000,
   },
   projects: [
     {

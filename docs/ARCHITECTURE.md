@@ -19,7 +19,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 | PDF | @react-pdf/renderer | Invoice and credit note PDFs (built, with a UPI QR from `qrcode`), report PDFs |
 | Email | Resend | Invoices, credit notes and reminders, through the adapter in `src/lib/email/` (a console driver writes to `.local-outbox/` without `RESEND_API_KEY`). Delivery status is only in the activity log so far (backlog) |
 | Excel | SheetJS | Import templates, report exports, bank statements |
-| Tests | Vitest (unit), Playwright (end-to-end) | Unit tests sit next to code in `__tests__/`. Playwright runs at 375px and 1280px against a production build |
+| Tests | Vitest (unit), Playwright (end-to-end) | Unit tests sit next to code in `__tests__/`. Playwright runs at 375px and 1280px against a production build; `tests/e2e/screens.spec.ts` opens every screen, and `flow.spec.ts` runs lease → invoice → send → payment |
 | Hosting | Vercel + Supabase | Daily database backups |
 | Monitoring | Sentry | Added in Milestone 8 |
 

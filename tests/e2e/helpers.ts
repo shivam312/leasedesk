@@ -37,3 +37,83 @@ export async function addBuilding(page: Page, name = "E2E Tower") {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
   return page.url();
 }
+
+/** Floor "3rd" and unit 301 (1,000 sq ft), on the building page `addBuilding` left open. */
+export async function addUnit(page: Page) {
+  await page.getByLabel("New floor").fill("3rd");
+  await page.getByRole("button", { name: "Add floor" }).click();
+  await expect(page.getByText("Added 3rd.")).toBeVisible();
+  await page.getByRole("link", { name: "Add unit" }).click();
+  await page.getByLabel("Unit number", { exact: true }).fill("301");
+  await page
+    .getByLabel("Floor", { exact: true })
+    .selectOption({ label: "3rd" });
+  await page.getByLabel("Carpet area (sq ft)").fill("1,000");
+  await page.getByRole("button", { name: "Add unit" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("E2E Tower");
+}
+
+/** Acme Software, in Maharashtra with a GSTIN, TDS at 10% and a billing email. */
+export async function addTenant(page: Page) {
+  await page.goto("/tenants/new");
+  await page.getByLabel("Tenant name").fill("Acme Software Pvt Ltd");
+  await page.getByLabel("GSTIN (optional)").fill("27AABCA1234B1ZH");
+  await page.getByLabel("Billing address").fill("Andheri East, Mumbai");
+  await page.getByLabel("State").selectOption("27");
+  await page.getByLabel("Contact name").fill("Priya Shah");
+  await page.getByLabel("Contact email (optional)").fill("priya@acme.example");
+  await page.getByRole("button", { name: "Add tenant" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Acme Software Pvt Ltd",
+  );
+}
+
+/**
+ * Acme's three-year lease of unit 301 from the 1st of this month at ₹100
+ * per sq ft: ₹1,00,000 a month. Leaves the lease page open.
+ */
+export async function addLease(page: Page, today: string) {
+  const start = `${today.slice(0, 7)}-01`;
+  const end = `${Number(today.slice(0, 4)) + 3}-${today.slice(5, 7)}-01`;
+  await page.goto("/leases/new");
+  await page
+    .getByLabel("Tenant")
+    .selectOption({ label: "Acme Software Pvt Ltd" });
+  await page.getByLabel("Building").selectOption({ label: "E2E Tower" });
+  await page.getByRole("checkbox").first().check();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByLabel("Lease starts on").fill(start);
+  await page.getByLabel("Last day of the lease").fill(end);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByLabel("₹ per sq ft a month").fill("100");
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("Check and save")).toBeVisible();
+  await page.getByRole("button", { name: "Save lease" }).click();
+  await expect(page.getByText("₹1,00,000 a month")).toBeVisible();
+}
+
+/** Make `month`'s invoices (e.g. "Oct 2026") and send the one there is. */
+export async function makeAndSendOneInvoice(page: Page, month: string) {
+  await page.goto("/billing");
+  await page.getByRole("button", { name: `Make ${month} invoices` }).click();
+  await expect(
+    page.getByText(`Made 1 invoice for ${month}.`, { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Send 1 invoice" }).click();
+  await expect(page.getByText(`Send 1 ${month} invoice for`)).toBeVisible();
+  await page.getByRole("button", { name: "Send 1 invoice" }).click();
+  await expect(
+    page.getByText("Sent", { exact: true }).filter({ visible: true }).first(),
+  ).toBeVisible();
+}
+
+/** Open the first invoice in the Billing list. */
+export async function openFirstInvoice(page: Page) {
+  await page.goto("/billing");
+  await page
+    .locator('a[href^="/billing/invoices/"]')
+    .filter({ visible: true })
+    .first()
+    .click();
+  await page.waitForURL(/\/billing\/invoices\/[0-9a-f-]{36}$/);
+}

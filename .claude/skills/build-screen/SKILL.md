@@ -18,6 +18,7 @@ Our users are busy building owners and accountants, not software people. Every s
 7. **Build all states:** empty, loading, error, one item, many items (use the seed data with 40 tenants), and a very long tenant name.
 8. **Check both widths:** 375px (phone) and 1280px (laptop). Lists become cards below 768px (`md`), the same breakpoint as the nav.
 9. **Run the screen checklist** in `docs/UX_PRINCIPLES.md` and fix anything that fails.
+10. **Make it reachable.** `tests/e2e/screens.spec.ts` follows every link in the app and fails on any `page.tsx` it can't reach or that doesn't load. Link the new screen from an existing one; if it needs data to appear (like TDS certificate upload), add that data to the test's `setUp`.
 
 ## Patterns to reuse
 

@@ -35,9 +35,12 @@ describe.skipIf(skipDbTests)("organization at sign-up", () => {
         .select()
         .from(schema.activityLog)
         .where(eq(schema.activityLog.organizationId, member.organizationId));
-      expect(log.map((e) => [e.entityType, e.action, e.actorUserId])).toEqual([
-        ["organizations", "create", userId],
+      // Both rows share a timestamp, so compare without relying on order.
+      expect(
+        log.map((e) => [e.entityType, e.action, e.actorUserId]).sort(),
+      ).toEqual([
         ["memberships", "create", userId],
+        ["organizations", "create", userId],
       ]);
     });
   });

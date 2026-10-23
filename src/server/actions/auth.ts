@@ -37,7 +37,9 @@ export async function signUp(
   if (!data.session) {
     // Email confirmation is on for this project: the user confirms, then logs in.
     return {
-      message: `We've sent a link to ${email}. Open it to confirm your account, then log in.`,
+      tone: "success",
+      message: `Check your email. We sent a link to ${email}. Open it to confirm, then log in.`,
+      values: { organizationName, email },
     };
   }
   await createOrganizationForOwner(appDb, {
@@ -60,7 +62,10 @@ export async function logIn(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     return {
-      message: "That email and password don't match. Try again.",
+      message:
+        error.code === "email_not_confirmed"
+          ? "Confirm your email first. We sent you a link when you signed up."
+          : "That email and password don't match. Try again.",
       values: { email },
     };
   }

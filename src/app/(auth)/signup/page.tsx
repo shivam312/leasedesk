@@ -23,7 +23,7 @@ export default function SignUpPage() {
             name: "organizationName",
             label: "Company or building name",
             autoComplete: "organization",
-            hint: "As your tenants know you. You can add the legal name and GSTIN later.",
+            hint: "The name your tenants know you by.",
           },
           {
             name: "email",

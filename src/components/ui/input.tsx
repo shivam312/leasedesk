@@ -8,7 +8,7 @@ function Input({ className, ...props }: React.ComponentProps<"input">) {
   return (
     <input
       data-slot="input"
-      className={cn(fieldBase, "h-10 py-1", className)}
+      className={cn(fieldBase, "h-11 py-1 md:h-10", className)}
       {...props}
     />
   );
@@ -29,7 +29,7 @@ function Select({ className, ...props }: React.ComponentProps<"select">) {
   return (
     <select
       data-slot="select"
-      className={cn(fieldBase, "h-10 py-1 pr-8", className)}
+      className={cn(fieldBase, "h-11 py-1 pr-8 md:h-10", className)}
       {...props}
     />
   );

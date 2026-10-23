@@ -11,17 +11,14 @@ const SECTIONS = [
   {
     href: "/settings/team",
     title: "Team",
-    description: "Invite people and choose what each can do.",
+    description: "See who can use your account, and invite people.",
   },
 ] as const;
 
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader
-        title="Settings"
-        description="Your business details, building defaults (GST, due days, invoice prefix) and team members."
-      />
+      <PageHeader title="Settings" description="Your team and account." />
       <ul className="flex max-w-2xl flex-col divide-y rounded-lg border">
         {SECTIONS.map((s) => (
           <li key={s.href}>

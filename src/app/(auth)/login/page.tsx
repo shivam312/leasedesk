@@ -10,7 +10,7 @@ export default function LoginPage() {
     <>
       <h1 className="mb-1 text-2xl font-semibold tracking-tight">Log in</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Welcome back. Your leases and this month&apos;s bills are waiting.
+        Log in to see what needs doing today.
       </p>
       <AuthForm
         action={logIn}

@@ -27,11 +27,11 @@ async function Invite({ params }: { params: Promise<{ token: string }> }) {
     return (
       <>
         <h1 className="mb-2 text-2xl font-semibold tracking-tight">
-          This invite has expired
+          This invite link doesn&apos;t work any more
         </h1>
         <p className="mb-6 text-sm text-muted-foreground">
-          It has already been used or was cancelled. Ask the person who invited
-          you for a new link.
+          It may have been used already, or the owner cancelled it. Ask the
+          owner for a new link.
         </p>
         <Link href="/login" className="text-sm font-medium underline">
           Log in instead

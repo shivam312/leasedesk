@@ -82,7 +82,7 @@ export async function joinTeam(
   if (!open) {
     return {
       message:
-        "This invite link has already been used or was cancelled. Ask for a new one.",
+        "This invite link doesn't work any more. Ask the owner for a new link.",
     };
   }
 
@@ -99,7 +99,9 @@ export async function joinTeam(
       });
       if (logIn.error || !logIn.data.user) {
         return {
-          message: `There's already a login for ${open.email} with a different password. Enter that password, or ask for help to reset it.`,
+          fieldErrors: {
+            password: `${open.email} already has a login, and that password doesn't match. Enter your current password.`,
+          },
         };
       }
       user = logIn.data.user;

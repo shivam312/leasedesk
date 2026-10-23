@@ -13,7 +13,7 @@ test("an owner invites someone, who joins with the link", async ({
   const invitee = `accounts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@e2e.test`;
   await page.getByLabel("Email").fill(invitee);
   await page.getByLabel("What they can do").selectOption("accounts");
-  await page.getByRole("button", { name: "Invite" }).click();
+  await page.getByRole("button", { name: "Create invite link" }).click();
 
   const link = (await page.locator("code").textContent())?.trim() ?? "";
   expect(link).toMatch(/\/invite\/[\w-]+$/);
@@ -33,7 +33,7 @@ test("an owner invites someone, who joins with the link", async ({
   // The link works once.
   await theirs.goto(link);
   await expect(theirs.getByRole("heading", { level: 1 })).toHaveText(
-    "This invite has expired",
+    "This invite link doesn't work any more",
   );
   await context.close();
 

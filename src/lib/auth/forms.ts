@@ -35,6 +35,8 @@ export const welcomeSchema = z.object({ organizationName });
 /** What a form action returns: a message for the form, and one per field. */
 export interface FormState {
   message?: string;
+  /** How to show `message`; errors by default. */
+  tone?: "error" | "success";
   fieldErrors?: Partial<Record<string, string>>;
   /** What the user typed, so the form keeps it after an error (never the password). */
   values?: Partial<Record<string, string>>;

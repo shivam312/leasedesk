@@ -24,7 +24,9 @@ function Field({
       </label>
       {children}
       {hint && !error && (
-        <p className="text-sm text-muted-foreground">{hint}</p>
+        <p id={`${htmlFor}-hint`} className="text-sm text-muted-foreground">
+          {hint}
+        </p>
       )}
       {error && (
         <p id={`${htmlFor}-error`} className="text-sm text-destructive">
@@ -35,11 +37,10 @@ function Field({
   );
 }
 
-/** Props that link an input to its Field error. */
-function errorProps(id: string, error?: string) {
-  return error
-    ? { "aria-invalid": true, "aria-describedby": `${id}-error` }
-    : {};
+/** Props that link an input to its Field error, or to its hint. */
+function errorProps(id: string, error?: string, hasHint = false) {
+  if (error) return { "aria-invalid": true, "aria-describedby": `${id}-error` };
+  return hasHint ? { "aria-describedby": `${id}-hint` } : {};
 }
 
 /** A message for the whole form, e.g. "Saved." or a server error. */

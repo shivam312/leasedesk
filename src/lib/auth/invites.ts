@@ -129,7 +129,7 @@ export async function acceptInvite(
       .for("update");
     if (!invite) {
       throw new InviteError(
-        "This invite link has already been used or was cancelled. Ask for a new one.",
+        "This invite link doesn't work any more. Ask the owner for a new link.",
       );
     }
     if (invite.email !== input.email.toLowerCase()) {

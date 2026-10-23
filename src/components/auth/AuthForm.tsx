@@ -29,7 +29,7 @@ export function AuthForm({
   const [state, formAction, pending] = useActionState(action, {});
   return (
     <form action={formAction} className="flex flex-col gap-4" noValidate>
-      <FormMessage message={state.message} />
+      <FormMessage message={state.message} tone={state.tone} />
       {fields.map((f, i) => {
         const error = state.fieldErrors?.[f.name];
         return (
@@ -48,7 +48,7 @@ export function AuthForm({
               defaultValue={state.values?.[f.name]}
               autoFocus={i === 0}
               required
-              {...errorProps(f.name, error)}
+              {...errorProps(f.name, error, Boolean(f.hint))}
             />
           </Field>
         );

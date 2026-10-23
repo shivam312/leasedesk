@@ -16,7 +16,7 @@ export default function TeamPage() {
     <>
       <PageHeader
         title="Team"
-        description="Who can use your account, and what each person can do."
+        description="See who can use your account, and invite people."
       />
       <Suspense
         fallback={
@@ -51,7 +51,7 @@ async function Team() {
         </section>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Only an owner can invite people or change what they can do.
+          Ask an owner to invite people.
         </p>
       )}
 

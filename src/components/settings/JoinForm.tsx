@@ -14,12 +14,12 @@ export function JoinForm({ token, email }: { token: string; email: string }) {
       <FormMessage message={state.message} />
       <input type="hidden" name="token" value={token} />
       <Field label="Email" htmlFor="email">
-        <Input id="email" value={email} readOnly disabled />
+        <Input id="email" value={email} readOnly />
       </Field>
       <Field
         label="Password"
         htmlFor="password"
-        hint="Choose one with at least 8 characters. If you already have a login, enter your current password."
+        hint="Choose a password with at least 8 characters. Already have a login? Enter your current password."
         error={error}
       >
         <Input

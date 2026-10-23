@@ -11,6 +11,7 @@ import { invite } from "@/server/actions/team";
 export function InviteForm() {
   const [state, action, pending] = useActionState(invite, {});
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const link =
     state.link && typeof window !== "undefined"
       ? `${window.location.origin}${state.link}`
@@ -28,6 +29,7 @@ export function InviteForm() {
           htmlFor="invite-email"
           error={state.fieldErrors?.email}
           className="md:flex-1"
+          hint="We'll make a link for you to send."
         >
           <Input
             id="invite-email"
@@ -36,7 +38,7 @@ export function InviteForm() {
             autoComplete="off"
             defaultValue={state.values?.email}
             required
-            {...errorProps("invite-email", state.fieldErrors?.email)}
+            {...errorProps("invite-email", state.fieldErrors?.email, true)}
           />
         </Field>
         <Field
@@ -58,7 +60,7 @@ export function InviteForm() {
           </Select>
         </Field>
         <Button type="submit" disabled={pending}>
-          {pending ? "Inviting…" : "Invite"}
+          {pending ? "Creating link…" : "Create invite link"}
         </Button>
       </form>
       <FormMessage message={state.message} />
@@ -71,6 +73,9 @@ export function InviteForm() {
             Send this link to <strong>{state.invitedEmail}</strong>. It works
             once.
           </p>
+          {copyFailed && (
+            <p>Couldn&apos;t copy. Select the link and copy it.</p>
+          )}
           <code className="block overflow-x-auto rounded bg-background px-2 py-1 text-xs">
             {link}
           </code>
@@ -80,9 +85,10 @@ export function InviteForm() {
               variant="outline"
               size="sm"
               onClick={() => {
-                void navigator.clipboard
+                navigator.clipboard
                   .writeText(link)
-                  .then(() => setCopied(true));
+                  .then(() => setCopied(true))
+                  .catch(() => setCopyFailed(true));
               }}
             >
               {copied ? "Copied" : "Copy link"}

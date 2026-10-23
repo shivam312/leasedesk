@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/monitoring";
 
-// Shown when a page fails to load. Technical detail goes to the log only.
+// Shown when a page fails to load. Technical detail goes to the log (and
+// Sentry when it is set up) only.
 export default function AppError({
   error,
   retry,
@@ -13,7 +15,11 @@ export default function AppError({
   retry: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    const digest =
+      typeof error === "object" && error !== null && "digest" in error
+        ? String(error.digest)
+        : undefined;
+    reportError("Page failed to load", error, { digest });
   }, [error]);
 
   return (

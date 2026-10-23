@@ -7,6 +7,7 @@ import { runScoped } from "@/lib/db/scoped";
 import { pdfFileName } from "@/lib/invoices/document";
 import { renderInvoicePdf } from "@/lib/invoices/pdf";
 import { getInvoiceDocument } from "@/lib/invoices/queries";
+import { reportError } from "@/lib/monitoring";
 
 export async function GET(
   _req: Request,
@@ -21,7 +22,7 @@ export async function GET(
   try {
     pdf = await renderInvoicePdf(doc);
   } catch (error) {
-    console.error("Invoice PDF failed", id, error);
+    reportError("Invoice PDF failed", error, { invoiceId: id });
     return new Response(
       "We couldn't make this PDF. Go back to the invoice and try again; if it keeps happening, check the business details in Settings.",
       { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } },

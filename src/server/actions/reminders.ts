@@ -9,6 +9,7 @@ import { PermissionError, requirePermission } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { recordWhatsappReminder } from "@/lib/reminders/manual";
 import { todayInIndia } from "@/lib/today";
+import { reportError } from "@/lib/monitoring";
 
 /**
  * Record a tap on "Remind on WhatsApp". The link itself opens in the
@@ -31,7 +32,9 @@ export async function recordWhatsappReminderAction(
       recordWhatsappReminder(s, id.data, todayInIndia()),
     );
   } catch (error) {
-    console.error("Recording a WhatsApp reminder failed", invoiceId, error);
+    reportError("Recording a WhatsApp reminder failed", error, {
+      invoiceId,
+    });
     return {
       message:
         "WhatsApp opened, but the reminder couldn't be added to the list below.",

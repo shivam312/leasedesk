@@ -11,6 +11,7 @@ import {
   searchReport,
 } from "@/lib/reports/registry";
 import { todayInIndia } from "@/lib/today";
+import { reportError } from "@/lib/monitoring";
 
 export async function GET(
   req: Request,
@@ -31,7 +32,7 @@ export async function GET(
   try {
     pdf = await renderReportPdf(report, today);
   } catch (error) {
-    console.error("Report PDF failed", slug, error);
+    reportError("Report PDF failed", error, { report: slug });
     return new Response(
       "We couldn't make this PDF. Go back to the report and try again, or download it as Excel.",
       { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } },

@@ -19,6 +19,7 @@ import { PaymentError } from "@/lib/payments/payments";
 import { todayInIndia } from "@/lib/today";
 import { z } from "zod";
 import { guardedForm } from "./guard";
+import { reportError } from "@/lib/monitoring";
 
 /** "Add bank account". */
 export async function addBankAccountAction(
@@ -68,7 +69,7 @@ export async function importStatementAction(
     id = result.import.id;
   } catch (error) {
     if (error instanceof ImportError) return { message: error.message };
-    console.error("Statement import failed", error);
+    reportError("Statement import failed", error);
     return {
       message:
         "Something went wrong; nothing was imported. Try again in a few minutes.",
@@ -140,7 +141,7 @@ export async function confirmMatchesAction(
     } catch (error) {
       if (error instanceof PaymentError) problems.push(error.message);
       else {
-        console.error("Confirming a bank line failed", l.id, error);
+        reportError("Confirming a bank line failed", error, { lineId: l.id });
         problems.push(
           "One line couldn't be recorded because something went wrong. Try it again.",
         );

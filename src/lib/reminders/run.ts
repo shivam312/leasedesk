@@ -24,6 +24,7 @@ import { loadSettings } from "@/lib/settings/store";
 import { todayInIndia } from "@/lib/today";
 import { reminderEmail } from "./email";
 import { reminderToSend } from "./schedule";
+import { reportError } from "@/lib/monitoring";
 
 type Claimed = { reminderId: string; invoiceId: string; email: Email };
 
@@ -182,7 +183,9 @@ async function deliver(
   try {
     await driver.send(claim.email);
   } catch (error) {
-    console.error("Reminder email failed", claim.invoiceId, error);
+    reportError("Reminder email failed", error, {
+      invoiceId: claim.invoiceId,
+    });
     status = "failed";
     message =
       error instanceof EmailError

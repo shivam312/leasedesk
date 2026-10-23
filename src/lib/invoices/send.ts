@@ -28,6 +28,7 @@ import { tooEarlyToSend } from "./forms";
 import { takeNumber } from "./numbering";
 import { getInvoice, leaseUnitCodes } from "./queries";
 import { freshDraft } from "./run";
+import { reportError } from "@/lib/monitoring";
 
 /** The drafts of a run month, in the order they are numbered. */
 export async function draftsForMonth(s: Scoped, runMonth: YearMonth) {
@@ -214,7 +215,7 @@ export async function emailInvoice(
     await driver.send(invoiceEmail(doc, to, pdf));
     return { kind: "emailed", to };
   } catch (error) {
-    console.error("Invoice email failed", doc.number, error);
+    reportError("Invoice email failed", error, { invoice: doc.number });
     return {
       kind: "failed",
       message:

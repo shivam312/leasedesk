@@ -53,7 +53,7 @@ Things only a person can do. Tick them when done.
 - [ ] Put `APP_URL` (the app's address, e.g. `https://app.yourdomain.in`) in `.env.local` and the hosting settings, and add it to `.env.example` (M6). The daily digest email links to Today with it; without it the email says "Open LeaseDesk and go to Today" instead. Unattended runs can't open `.env` files.
 - [ ] Get one real bank statement export (CSV or Excel) per major bank your pilots use, with personal details removed, in `tests/fixtures/bank/` (M5)
 - [ ] Get a sample Tally XML export from a pilot accountant's TallyPrime and save it in `tests/fixtures/tally/` (M7)
-- [ ] Create Sentry, Supabase cloud (Mumbai), Vercel and Inngest accounts and put the keys in `.env.local` (M8)
+- [ ] Create Sentry, Supabase cloud (Mumbai), Vercel and Inngest accounts and put the keys in `.env.local` (M8). For Sentry: pick the EU data region (no India region; reports carry ids only, D41), then set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (the same DSN), and optionally `SENTRY_ENVIRONMENT` / `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (e.g. `staging`), in `.env.local` and the hosting settings, and add them to `.env.example`, which unattended runs can't open. To get readable browser stack traces, also create a Sentry auth token and ask for `next.config.ts` to be wrapped in `withSentryConfig`.
 - [ ] Set up the staging environment and turn on database backups (M8)
 - [ ] Load a pilot landlord's real data and compare one month's invoices with their Excel (M8)
 - [ ] Usability test with an accountant who hasn't seen the app (M8)

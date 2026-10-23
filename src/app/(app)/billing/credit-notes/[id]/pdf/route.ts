@@ -7,6 +7,7 @@ import { creditNoteDocument } from "@/lib/invoices/credit-note-document";
 import { getCreditNote } from "@/lib/invoices/credit-notes";
 import { pdfFileName } from "@/lib/invoices/document";
 import { renderInvoicePdf } from "@/lib/invoices/pdf";
+import { reportError } from "@/lib/monitoring";
 
 export async function GET(
   _req: Request,
@@ -21,7 +22,7 @@ export async function GET(
   try {
     pdf = await renderInvoicePdf(creditNoteDocument(saved));
   } catch (error) {
-    console.error("Credit note PDF failed", id, error);
+    reportError("Credit note PDF failed", error, { creditNoteId: id });
     return new Response(
       "We couldn't make this PDF. Go back to the invoice and try again.",
       { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } },

@@ -12,6 +12,7 @@ import { TAX_LABELS } from "@/lib/config/tax-labels";
 import { runScoped } from "@/lib/db/scoped";
 import { supabaseStore } from "@/lib/files/supabase";
 import { attachCertificate, CertificateError } from "@/lib/tds/certificates";
+import { reportError } from "@/lib/monitoring";
 
 const schema = z.object({
   tenantId: z.uuid(),
@@ -62,7 +63,7 @@ export async function uploadCertificateAction(
   } catch (error) {
     if (error instanceof CertificateError)
       return { fieldErrors: { file: error.message } };
-    console.error("Certificate upload failed", tenantId, error);
+    reportError("Certificate upload failed", error, { tenantId });
     return {
       message: "The certificate couldn't be saved. Try again in a few minutes.",
     };

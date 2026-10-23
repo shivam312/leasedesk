@@ -20,6 +20,7 @@ import {
 } from "@/lib/payments/payments";
 import { todayInIndia } from "@/lib/today";
 import { guardedForm } from "./guard";
+import { reportError } from "@/lib/monitoring";
 
 const SOMETHING_WRONG =
   "Something went wrong; nothing was saved. Try again in a few minutes.";
@@ -53,7 +54,9 @@ export async function recordPaymentAction(
     );
     if (error instanceof PaymentError)
       return { message: error.message, values };
-    console.error("Recording a payment failed", input.tenantId, error);
+    reportError("Recording a payment failed", error, {
+      tenantId: input.tenantId,
+    });
     return { message: SOMETHING_WRONG, values };
   }
   revalidatePath("/billing");
@@ -89,7 +92,7 @@ export async function reversePaymentAction(
         tenantId = reversal.tenantId;
       } catch (error) {
         if (error instanceof PaymentError) return { message: error.message };
-        console.error("Reversing a payment failed", paymentId, error);
+        reportError("Reversing a payment failed", error, { paymentId });
         return { message: SOMETHING_WRONG };
       }
       revalidatePath(`/billing/payments/${paymentId}`);

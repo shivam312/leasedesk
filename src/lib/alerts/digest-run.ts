@@ -20,6 +20,7 @@ import { loadSettings } from "@/lib/settings/store";
 import { needsAttention } from "./attention";
 import { digestEmail, digestsFor } from "./digest";
 import { attentionInput } from "./queries";
+import { reportError } from "@/lib/monitoring";
 
 type Claimed = { digestId: string; email: Email };
 
@@ -111,7 +112,7 @@ async function deliver(
   try {
     await driver.send(claim.email);
   } catch (error) {
-    console.error("Digest email failed", claim.digestId, error);
+    reportError("Digest email failed", error, { digestId: claim.digestId });
     status = "failed";
     message =
       error instanceof EmailError

@@ -35,6 +35,7 @@ import { formatINR } from "@/lib/format";
 import { PermissionError, requirePermission } from "@/lib/auth/roles";
 import { logActivity } from "@/lib/db/activity-log";
 import { guardedForm } from "./guard";
+import { reportError } from "@/lib/monitoring";
 
 /** "Make invoices": draft every lease's invoice for the chosen month. */
 export async function runBillingNow(
@@ -70,7 +71,7 @@ async function sendOne(
     );
   } catch (error) {
     if (!(error instanceof SendError))
-      console.error("Send failed", invoiceId, error);
+      reportError("Send failed", error, { invoiceId });
     result.problems.push({
       tenantName,
       message:
@@ -217,7 +218,7 @@ export async function issueCreditNoteAction(
   } catch (error) {
     if (error instanceof SendError)
       return { message: error.message, values: valuesOf(form) };
-    console.error("Credit note failed", input.invoiceId, error);
+    reportError("Credit note failed", error, { invoiceId: input.invoiceId });
     return {
       message:
         "Something went wrong; no credit note was issued. Try again in a few minutes.",

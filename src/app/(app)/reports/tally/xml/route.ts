@@ -8,6 +8,7 @@ import { tallyXml } from "@/lib/exports/tally";
 import { recordTallyExport, tallyExportData } from "@/lib/exports/tally-data";
 import { reportParams } from "@/lib/reports/registry";
 import { todayInIndia } from "@/lib/today";
+import { reportError } from "@/lib/monitoring";
 
 export async function GET(req: Request) {
   const search = Object.fromEntries(new URL(req.url).searchParams);
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
       return tallyXml(vouchers);
     });
   } catch (error) {
-    console.error("Tally export failed", from, to, error);
+    reportError("Tally export failed", error, { from, to });
     return new Response(
       "We couldn't make the Tally file. Check the ledger names in Settings → Tally and try again.",
       { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } },

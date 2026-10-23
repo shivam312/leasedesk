@@ -282,3 +282,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - The job (`dailyDigest`, 08:00 India time, after the 06:00 billing run) claims each person's digest in `digest_sends` (unique per organization, person and day) before emailing, as the reminders do (D33). A retry or a second run sends nothing more, and a send that never finished isn't retried.
 - It is on by default and can be turned off for the organization (`alerts.dailyDigest`). There is no per-person opt-out yet (backlog).
 - The email links to Today when `APP_URL` is set (a human task); otherwise it says where to go.
+
+## D37. Reports are typed tables from one registry, worked out from the same engine as invoices (2026-10-23)
+
+**Why:** M7 needs about eight reports, each on screen, in Excel and in PDF. Building each one three times would let the screen and the files drift apart, and a report that works money out its own way could disagree with the invoices.
+**Consequences:**
+- A report is a `Report` (`src/lib/reports/report.ts`): titled sections of typed columns (money in paise, area in hundredths, percent in basis points, plain dates) and raw values. Formatting happens only when it is shown or written (`cellText`), so nothing is rounded on the way.
+- Every report is listed once in `src/lib/reports/registry.ts` with its filter and loader; the Reports screen (`/reports/[report]`) and the exports read from there.
+- Builders are pure (`rent-roll.ts`, `vacancy.ts`, ...); loaders are in `queries.ts`.
+- The rent roll's rent comes from the engine's own rent steps (`amountSteps`), with each lease's resolved settings, so it matches what the invoices bill. A quarterly charge shows a third of its quarter per month, rounded half up to the paisa (a report figure only).
+- A unit is leased on a date when a saved (not draft) lease covers it. The unit's own status field is shown but not trusted, because nothing keeps it in step with leases.

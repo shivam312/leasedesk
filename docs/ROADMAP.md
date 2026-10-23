@@ -115,7 +115,7 @@ Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: "invoices aren't 
 
 ## M7. Reports, exports and import (week 9)
 
-- [ ] Reports: rent roll and vacancy
+- [x] Reports: rent roll and vacancy
 - [ ] Reports: collections, outstanding and ageing
 - [ ] Reports: GST summary and TDS summary
 - [ ] Reports: expiry schedule

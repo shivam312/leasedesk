@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useId, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { errorProps, Field, FormMessage } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { FormState } from "@/lib/auth/forms";
@@ -12,10 +13,13 @@ import type { FormState } from "@/lib/auth/forms";
  */
 export function ReversePaymentForm({
   paymentId,
+  tenantId,
   amountLabel,
   action,
 }: {
   paymentId: string;
+  /** For "Record the correct payment" once it is reversed. */
+  tenantId: string;
   /** What it applied to invoices, or null if nothing. */
   amountLabel: string | null;
   action: (state: FormState, form: FormData) => Promise<FormState>;
@@ -24,7 +28,17 @@ export function ReversePaymentForm({
   const [open, setOpen] = useState(false);
   const id = useId();
   if (state.tone === "success")
-    return <FormMessage message={state.message} tone="success" />;
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <FormMessage message={state.message} tone="success" />
+        <Link
+          href={`/billing/payments/new?tenant=${tenantId}`}
+          className={buttonVariants({ className: "h-11 md:h-9" })}
+        >
+          Record the correct payment
+        </Link>
+      </div>
+    );
   if (!open)
     return (
       <div>
@@ -51,8 +65,8 @@ export function ReversePaymentForm({
         {amountLabel
           ? `This adds a reversal dated today that takes ${amountLabel} back off the invoices it paid; they become unpaid again.`
           : "This adds a reversal dated today, so the payment no longer counts as credit."}{" "}
-        The payment stays on record, marked reversed. Use this for a payment
-        entered by mistake, then record the correct one.
+        The payment stays on record, marked reversed. Then record the correct
+        one.
       </p>
       <Field label="Why" htmlFor={id} error={state.fieldErrors?.reason}>
         <Input

@@ -105,7 +105,7 @@ async function Payment({
             <dd>
               <Link
                 href={`/billing/payments/${related.id}`}
-                className="underline"
+                className="inline-flex min-h-11 items-center underline md:min-h-0"
               >
                 {reversal
                   ? `The payment of ${formatINR(related.amountReceived)} received ${formatDate(related.receivedDate)}`
@@ -133,7 +133,7 @@ async function Payment({
                 >
                   <Link
                     href={`/billing/invoices/${a.invoiceId}`}
-                    className="underline"
+                    className="inline-flex min-h-11 items-center underline md:min-h-0"
                   >
                     {a.number}{" "}
                     <span className="text-muted-foreground">
@@ -166,6 +166,7 @@ async function Payment({
       {canBill && !reversal && p.status === "active" && (
         <ReversePaymentForm
           paymentId={p.id}
+          tenantId={p.tenantId}
           amountLabel={applied > 0 ? formatINR(applied) : null}
           action={reversePaymentAction}
         />

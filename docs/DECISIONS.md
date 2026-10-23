@@ -66,3 +66,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Only packages in `.claude/approved-packages.txt` are installed; a hook blocks the rest. Claude doesn't edit that list, the hook, `.claude/settings.json` or the pipeline script.
 - Interactive sessions still propose a plan and wait for approval; pipeline runs put a one-line plan in each commit message.
 - The Open questions section of `docs/ROADMAP.md` stays empty; questions go to `docs/DECISIONS_NEEDED.md`.
+
+## D12. Drizzle owns migrations; the Supabase CLI only runs the local stack (2026-10-23)
+
+**Why:** One place for schema changes. Drizzle generates SQL from the TypeScript schema; keeping a second set in `supabase/migrations/` would drift.
+**Consequences:**
+- Migrations live in `drizzle/` and are applied by `scripts/migrate.ts` (`pnpm db:migrate`), not by `supabase db push` or `supabase db reset`. `supabase/migrations/` stays empty; `pnpm db:reset` runs migrate and seed after the Supabase reset.
+- Row-level security policies and other hand-written SQL go in Drizzle custom migrations (`drizzle-kit generate --custom`).
+- Drizzle manages only the `public` schema (`schemaFilter`), and uses `casing: "snake_case"`: TypeScript names are camelCase, columns are snake_case as in `docs/DATA_MODEL.md`.
+- The client uses `postgres` (postgres.js) with `prepare: false`, so it also works through Supabase's transaction pooler.
+- `db:migrate` and `db:seed` refuse any database that isn't on this machine unless `ALLOW_REMOTE_DB=yes` is set (`src/lib/db/url.ts`).

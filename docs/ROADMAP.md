@@ -10,8 +10,8 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 
 - [x] Create the Next.js app with TypeScript strict, pnpm, ESLint, Prettier
 - [x] Add Tailwind and shadcn/ui; set up the app shell with the 5-item nav (Today, Leases, Tenants, Billing, Reports) and mobile layout
-- [ ] (human) Install Docker Desktop and the Supabase CLI
-- [ ] Set up Supabase locally (CLI) and Drizzle; `db:generate`, `db:migrate`, `db:seed` scripts
+- [x] (human) Install Docker Desktop and the Supabase CLI
+- [x] Set up Supabase locally (CLI) and Drizzle; `db:generate`, `db:migrate`, `db:seed` scripts
 - [x] Set up Vitest and Playwright with one passing test each
 - [x] Add `src/lib/format.ts` (₹ lakh/crore, DD-MM-YYYY) with tests
 - [x] `.env.example`, README with local setup steps

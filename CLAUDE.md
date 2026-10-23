@@ -38,11 +38,12 @@ Keep this list in sync with package.json. Node 24 (`.nvmrc`); Next.js 16 changed
 - `pnpm test`: Vitest unit tests (`pnpm test billing` for the billing engine only; `pnpm test:watch` to watch)
 - `pnpm test:e2e`: Playwright end-to-end tests at 375px and 1280px, against a fresh production build on port 3100, so a running `pnpm dev` is never reused (first time: `pnpm exec playwright install chromium`)
 
-Not set up yet (M0 Supabase/Drizzle task):
+Database (local Supabase via `supabase start`; needs Docker running):
 
-- `pnpm db:generate`: generate a Drizzle migration from schema changes
-- `pnpm db:migrate`: apply migrations (always ask before running against a non-local database)
-- `pnpm db:seed`: load demo data (2 buildings, 40 tenants, 45 leases)
+- `pnpm db:generate`: generate a Drizzle migration in `drizzle/` from schema changes in `src/lib/db/schema/`
+- `pnpm db:migrate`: apply migrations (refuses non-local databases unless `ALLOW_REMOTE_DB=yes`; always ask before using that)
+- `pnpm db:seed`: load demo data (2 buildings, 40 tenants, 45 leases, once the M2/M3 tables exist)
+- `pnpm db:reset`: wipe the local database, then migrate and seed
 
 ## Non-negotiable rules
 

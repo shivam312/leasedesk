@@ -42,10 +42,10 @@ test("the stacking plan shows floors top first, with each unit's status", async 
   await expect(floors.locator(":scope > li").first()).toContainText("1st");
   await expect(page.getByRole("link", { name: /101.*Vacant/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /G01.*Fit-out/ })).toBeVisible();
-  // Fit-out counts as let (a tenant is moving in): 3,000 of 4,000 sq ft = 75%.
+  // Fit-out counts as leased (a tenant is moving in): 3,000 of 4,000 sq ft = 75%.
   await expect(
     page.getByText(
-      "75% of 4,000 sq ft billed area is let; 1,000 sq ft is vacant.",
+      "75% of 4,000 sq ft billed area is leased; 1,000 sq ft is vacant.",
     ),
   ).toBeVisible();
 });

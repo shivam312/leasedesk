@@ -12,6 +12,10 @@ export default function LeasesPage() {
         title="Leases"
         description="Your buildings and units, and every lease: who rents what, the rent, and when it ends."
       />
+      <p className="mb-4 max-w-2xl text-sm">
+        No leases yet. Add your buildings and units first; adding leases comes
+        next.
+      </p>
       <Link
         href="/leases/buildings"
         className="flex max-w-2xl items-center justify-between gap-4 rounded-lg border p-4 hover:bg-accent"

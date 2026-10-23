@@ -61,7 +61,7 @@ export function TenantList({ tenants }: { tenants: TenantRow[] }) {
               aria-pressed={filter === f}
               onClick={() => setFilter(f)}
               className={cn(
-                "h-9 rounded-full border px-3 text-sm",
+                "h-11 rounded-full border px-3 text-sm md:h-9",
                 filter === f
                   ? "border-primary bg-primary text-primary-foreground"
                   : "bg-background hover:bg-accent",

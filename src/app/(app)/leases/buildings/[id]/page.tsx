@@ -117,7 +117,7 @@ async function Building({ params }: { params: Promise<{ id: string }> }) {
                 name: "label",
                 label: "New floor",
                 required: true,
-                hint: "Like Ground, 1st or Basement. Added at the top.",
+                hint: "Like Ground, 1st or Basement. New floors go above the existing ones.",
               },
             ]}
             submitLabel="Add floor"

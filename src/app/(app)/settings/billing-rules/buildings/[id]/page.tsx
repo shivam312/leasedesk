@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NoAccess } from "@/components/shell/NoAccess";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -6,6 +7,7 @@ import { SimpleForm } from "@/components/forms/SimpleForm";
 import { billingRuleFields } from "@/components/settings/billing-rules";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { appDb, requireMember } from "@/lib/auth";
+import { can } from "@/lib/auth/roles";
 import { buildings, organizations } from "@/lib/db/schema";
 import { runScoped } from "@/lib/db/scoped";
 import { shownKeys } from "@/lib/settings/labels";
@@ -31,6 +33,16 @@ async function BuildingRules({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const member = await requireMember();
+  if (!can(member.role, "manage_settings"))
+    return (
+      <NoAccess
+        message="Only an owner can change building defaults."
+        back={{
+          href: "/settings/billing-rules",
+          label: "Back to Billing rules",
+        }}
+      />
+    );
   const { building, org } = await runScoped(
     appDb,
     member,

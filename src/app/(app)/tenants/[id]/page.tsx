@@ -33,7 +33,7 @@ export default function TenantPage({ params }: PageProps<"/tenants/[id]">) {
 function tdsLine(on: boolean, bp: number, what: string) {
   return on
     ? `${toFieldValue("gst.defaultRateBp", bp)}% on ${what}`
-    : `none on ${what}`;
+    : `None on ${what}`;
 }
 
 async function Tenant({ params }: { params: Promise<{ id: string }> }) {
@@ -46,7 +46,7 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
   const editable = can(member.role, "manage_tenants");
   const tds = [
     tdsLine(t.deductsTdsRent, t.tdsRateBpRent, "rent"),
-    tdsLine(t.deductsTdsCam, t.tdsRateBpCam, "CAM"),
+    tdsLine(t.deductsTdsCam, t.tdsRateBpCam, "maintenance (CAM)"),
     tdsLine(t.deductsTdsParking, t.tdsRateBpParking, "parking"),
     tdsLine(t.deductsTdsOther, t.tdsRateBpOther, "other charges"),
   ];
@@ -78,7 +78,7 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
         </div>
         <div className="md:col-span-2">
           <dt className="text-muted-foreground">TDS they deduct</dt>
-          <dd className="font-medium">{tds.join(", ")}</dd>
+          <dd className="font-medium">{tds.join(". ")}.</dd>
         </div>
         {t.notes && (
           <div className="md:col-span-2">

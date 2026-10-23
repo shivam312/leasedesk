@@ -63,7 +63,7 @@ async function Stacking({ params }: { params: Promise<{ id: string }> }) {
         description={
           plan.area === 0
             ? "Every floor and unit at a glance."
-            : `${occupiedPercent(plan.area, plan.vacantArea)}% of ${formatArea(plan.area)} billed area is let; ${formatArea(plan.vacantArea)} is vacant.`
+            : `${occupiedPercent(plan.area, plan.vacantArea)}% of ${formatArea(plan.area)} billed area is leased; ${formatArea(plan.vacantArea)} is vacant.`
         }
       />
 
@@ -119,10 +119,8 @@ async function Stacking({ params }: { params: Promise<{ id: string }> }) {
                         {u.code}
                       </span>
                       <span className="block truncate text-xs">
+                        {UNIT_STATUS_LABELS[u.status]} ·{" "}
                         {formatArea(u.chargeableArea)}
-                      </span>
-                      <span className="sr-only">
-                        , {UNIT_STATUS_LABELS[u.status]}
                       </span>
                     </>
                   );

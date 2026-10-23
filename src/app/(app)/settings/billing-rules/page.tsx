@@ -65,15 +65,17 @@ async function Rules() {
           Ask an owner to change billing rules.
         </p>
       )}
-      <SimpleForm
-        action={saveBillingRules.bind(null, null)}
-        fields={billingRuleFields(
-          shownKeys("organization", keysForScope),
-          parseStoredSettings("organization", org.settings),
-        )}
-        submitLabel="Save billing rules"
-        pendingLabel="Saving…"
-      />
+      {editable && (
+        <SimpleForm
+          action={saveBillingRules.bind(null, null)}
+          fields={billingRuleFields(
+            shownKeys("organization", keysForScope),
+            parseStoredSettings("organization", org.settings),
+          )}
+          submitLabel="Save billing rules"
+          pendingLabel="Saving…"
+        />
+      )}
 
       <section aria-labelledby="buildings-heading" className="max-w-2xl">
         <h2 id="buildings-heading" className="mb-1 text-lg font-semibold">

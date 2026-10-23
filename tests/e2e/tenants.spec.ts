@@ -30,7 +30,7 @@ test("an owner adds a tenant with a contact, then finds them in the list", async
   );
   await expect(
     page.getByText(
-      "10% on rent, 2% on CAM, 10% on parking, 10% on other charges",
+      "10% on rent. 2% on maintenance (CAM). 10% on parking. 10% on other charges.",
     ),
   ).toBeVisible();
   await expect(page.getByText("+919820012345 (WhatsApp)")).toBeVisible();

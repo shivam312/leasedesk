@@ -70,7 +70,7 @@ export function UnitList({
               aria-pressed={status === s}
               onClick={() => setStatus(s as Status | "all")}
               className={cn(
-                "h-9 rounded-full border px-3 text-sm",
+                "h-11 rounded-full border px-3 text-sm md:h-9",
                 status === s
                   ? "border-primary bg-primary text-primary-foreground"
                   : "bg-background hover:bg-accent",
@@ -88,11 +88,17 @@ export function UnitList({
         <>
           <ul className="flex flex-col gap-2 md:hidden">
             {shown.map((u) => (
-              <li key={u.id} className="rounded-lg border p-3">
+              <li
+                key={u.id}
+                className="relative rounded-lg border p-3 has-[a:hover]:bg-accent"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">
                     {editable ? (
-                      <Link href={href(u)} className="underline">
+                      <Link
+                        href={href(u)}
+                        className="underline after:absolute after:inset-0"
+                      >
                         Unit {u.code}
                       </Link>
                     ) : (

@@ -13,11 +13,11 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 | Database | Supabase Postgres, Mumbai region | Row-level security on every table |
 | ORM | Drizzle + drizzle-kit | Schema in TypeScript, SQL migrations in `drizzle/` |
 | Auth | Supabase Auth (@supabase/ssr, cookie sessions) | Email + password (built); Google login waits for an OAuth client (human task); invites. `src/proxy.ts` refreshes the session and sends signed-out visitors to `/login`; `requireMember()` in `src/lib/auth.ts` checks again in every page and action |
-| File storage | Supabase Storage | Lease PDFs, invoice PDFs, TDS certificates, imports |
+| File storage | Supabase Storage | Lease PDFs, invoice PDFs, TDS certificates, imports. Not used yet: sent invoice and credit note PDFs are rendered on demand from their frozen copies (D25; storing them is backlogged) |
 | Validation | Zod | Every server action validates its input |
-| Background jobs | Inngest | Monthly billing run, reminders, daily digests |
-| PDF | @react-pdf/renderer | Invoice and report PDFs |
-| Email | Resend | Invoices and reminders, delivery status stored |
+| Background jobs | Inngest | Daily check that makes each organization's drafts on its run day (D23), reminders, daily digests. `pnpm jobs:dev` runs the local dev server |
+| PDF | @react-pdf/renderer | Invoice and credit note PDFs (built, with a UPI QR from `qrcode`), report PDFs |
+| Email | Resend | Invoices, credit notes and reminders, through the adapter in `src/lib/email/` (a console driver writes to `.local-outbox/` without `RESEND_API_KEY`). Delivery status is only in the activity log so far (backlog) |
 | Excel | SheetJS | Import templates, report exports, bank statements |
 | Tests | Vitest (unit), Playwright (end-to-end) | Unit tests sit next to code in `__tests__/`. Playwright runs at 375px and 1280px against a production build |
 | Hosting | Vercel + Supabase | Daily database backups |
@@ -25,7 +25,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 
 ## Folder layout
 
-This is the target layout. What exists at the end of M3: the app shell; sign-up, login and invites under `(auth)/`; Settings (business details, billing rules, team), Leases (lease list, `leases/new` for the four-step form, also used to copy (`?copy=<id>`) and renew (`?renew=<id>`), the lease page `leases/[id]` with End early, and buildings, units and stacking plan), and Tenants under `(app)/`; `lib/billing/`, `lib/settings/`, `lib/auth/`, `lib/db/` (schema, `scoped.ts`, `activity-log.ts`), `lib/india/`, `lib/property/`, `lib/tenants/`, `lib/leases/`, `lib/supabase/`, `lib/today.ts`; `server/actions/`; `proxy.ts`; error and not-found pages for the signed-in app. Invoices, payments, imports, exports, alerts and jobs arrive with their milestones.
+This is the target layout. What exists at the end of M4: the app shell; sign-up, login and invites under `(auth)/`; Settings (business details, billing rules, team), Leases (lease list, `leases/new` for the four-step form, also used to copy (`?copy=<id>`) and renew (`?renew=<id>`), the lease page `leases/[id]` with End early, and buildings, units and stacking plan), Tenants, and Billing (`billing/` with the month's invoices, Make invoices and Send all; `billing/invoices/[id]` with Explain this amount, Preview PDF, Email again and `credit-note/`; PDF routes `billing/invoices/[id]/pdf` and `billing/credit-notes/[id]/pdf`) under `(app)/`; `api/inngest/` (outside the login proxy); `lib/billing/`, `lib/settings/`, `lib/auth/`, `lib/db/` (schema, `scoped.ts`, `activity-log.ts`), `lib/india/`, `lib/property/`, `lib/tenants/`, `lib/leases/`, `lib/invoices/`, `lib/email/`, `lib/jobs/`, `lib/supabase/`, `lib/today.ts`; `server/actions/`; `proxy.ts`; error and not-found pages for the signed-in app. Payments, imports, exports and alerts arrive with their milestones.
 
 ```
 src/
@@ -43,7 +43,7 @@ src/
     shell/                   app shell: nav (sidebar on laptop, bottom tabs on phone), page header
     shell/                   also RequirePermission + NoAccess: pages show "who can change this" instead of a form the user can't save
     forms/                   SimpleForm: labelled fields, inline errors, "More options"
-    <feature>/               feature components, e.g. property/UnitList.tsx, tenants/TenantList.tsx, settings/
+    <feature>/               feature components, e.g. property/UnitList.tsx, tenants/TenantList.tsx, settings/, invoices/ (InvoiceList, RunBillingForm, SendForms, CreditNoteForm, Working)
   lib/
     billing/                 PURE billing engine (no DB, no network, no clock)
       types.ts               engine input and output types
@@ -59,6 +59,7 @@ src/
       gst.ts                 CGST/SGST/IGST split, round-off
       tds.ts                 expected TDS on an invoice
       draft-invoice.ts       lease + month -> whole draft invoice (lines, GST, totals, TDS)
+      credit-note.ts         credit note amounts and GST against a sent invoice's lines, GST time limit (D26)
       __tests__/
     db/
       schema/                one file per table group
@@ -81,10 +82,14 @@ src/
                              BillingSettings for the engine (billing.ts), building defaults on charges (charge-defaults.ts),
                              Billing rules labels and form (labels.ts, rules-form.ts); docs/SETTINGS.md
     email/                   email adapter: emailDriver() picks resend (RESEND_API_KEY + EMAIL_FROM) or console (.local-outbox/); the only way code sends email
-    jobs/                    Inngest client and background jobs (daily billing run, D23), served at /api/inngest
-    invoices/                monthly run (run.ts), number format (number.ts) and gap-free assignment (numbering.ts), queries,
-                             what a PDF prints (document.ts, pure), the React-PDF layout (pdf.tsx, font in assets/fonts/),
-                             supplier and tenant copies (copies.ts, D18), sending
+    jobs/                    Inngest client (inngest.ts) and background jobs: monthlyBilling, the daily run (D23), with
+                             dueRuns picking the organizations whose run day is today; served at /api/inngest
+    invoices/                monthly run (run.ts, D22), its schedule day (schedule.ts), number format (number.ts) and
+                             gap-free assignment (numbering.ts), queries, what a PDF prints (document.ts, pure), the
+                             React-PDF layout (pdf.tsx, font in assets/fonts/), supplier and tenant copies (copies.ts, D18),
+                             sending (send.ts, D25), the draft-still-matches check (draft-rows.ts, D27), invoice emails
+                             (email.ts), line workings (explain.ts), Billing form schemas and summaries (forms.ts), credit
+                             notes (credit-notes.ts, credit-note-form.ts, credit-note-document.ts, D26)
     payments/                allocation, bank statement parsing and matching
     imports/                 Excel import for buildings, units, tenants, leases
     exports/                 Tally XML, Excel, PDF reports
@@ -95,8 +100,7 @@ src/
     auth.ts                  current user, organization, role checks
   server/
     actions/                 server actions, one file per feature; guard.ts (guardedForm: role check and Zod before the action runs)
-  proxy.ts                   refreshes the Supabase session; sends signed-out visitors to /login
-  jobs/                      Inngest functions
+  proxy.ts                   refreshes the Supabase session; sends signed-out visitors to /login (except /api/inngest)
 drizzle/                     generated SQL migrations (never edit applied ones); applied by scripts/migrate.ts
 supabase/                    local stack config for the Supabase CLI (config.toml); no migrations here (D12)
 tests/e2e/                   Playwright tests
@@ -113,13 +117,13 @@ scripts/
 
 **Billing.** The engine in `src/lib/billing/` is the heart of the product. Server code loads lease data, converts it to plain engine inputs, calls the engine, and saves the results. The engine never imports from `db/`.
 
-**Invoices.** A monthly run creates draft invoices. Drafts can be edited or deleted. Once sent, an invoice is locked; corrections are credit notes. Invoice numbers are assigned at the moment of sending, inside a transaction, to keep the series gap-free.
+**Invoices.** A monthly run (`runBilling`) creates draft invoices, one per lease per month. Drafts aren't edited by hand: running the month again replaces them (D22), and sending re-checks each draft against its lease and refuses one that no longer matches (D27). Once sent, an invoice is locked (database triggers in `drizzle/0013`); corrections are credit notes. Invoice numbers are assigned at the moment of sending, inside a transaction, to keep the series gap-free; the email goes after the commit (D25).
 
 **Multi-tenancy.** Every table has `organization_id`. Row-level security policies (`drizzle/0003_rls_policies.sql`, helper functions in the private `app` schema) restrict rows to active members of that organization, and writes by role. Server code reads and writes through `withOrg` in `db/scoped.ts`: it runs the work in a transaction as Supabase's `authenticated` role with the user's id, so the policies apply, and its `where` and `values` helpers add the organization filter explicitly, so a missing policy is not the only protection (D14).
 
 **Roles.** `owner`, `accounts`, `property_manager`, `viewer` (see `docs/PRODUCT_PLAN.md`). What each may change is one table, `PERMISSIONS` in `src/lib/auth/roles.ts`; every server action calls `requireMember()` then `requirePermission(member, "...")` before writing, never relying on the UI. The row-level security write policies grant the same roles, and `roles-rls.db.test.ts` fails if the two disagree.
 
-**Background jobs.** Inngest functions in `src/jobs/`: `monthly-billing-run` (drafts on the 1st), `send-reminders` (daily), `alert-digest` (daily email per user). Jobs are idempotent: running twice must not create duplicates.
+**Background jobs.** Inngest functions in `src/lib/jobs/`, registered in `src/app/api/inngest/route.ts`: `monthlyBilling` (built: every morning at 06:00 India time, makes drafts for each organization whose `invoice.runDay` is today, one step per organization; it never sends), then `send-reminders` (daily) and `alert-digest` (daily email per user) in later milestones. Jobs run through `runAsSystem` (D22) and are idempotent: running twice must not create duplicates.
 
 **Errors.** User-facing errors are plain sentences ("This tenant has no active lease for March"). Technical detail goes to logs, not the screen.
 

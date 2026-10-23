@@ -25,7 +25,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 
 ## Folder layout
 
-This is the target layout. What exists at the end of M0 (with M1 done): the app shell and the six placeholder pages under `(app)/`, `components/shell/`, `components/ui/button.tsx`, `lib/billing/`, `lib/config/`, `lib/db/` (client and URL guard only, no tables yet), `format.ts`, `utils.ts`, the database scripts and one Playwright test. Everything else arrives with its milestone.
+This is the target layout. What exists at the end of M2: the app shell; sign-up, login and invites under `(auth)/`; Settings (business details, billing rules, team), Leases → buildings, units and stacking plan, and Tenants under `(app)/`; `lib/billing/`, `lib/settings/`, `lib/auth/`, `lib/db/` (schema, `scoped.ts`, `activity-log.ts`), `lib/india/`, `lib/property/`, `lib/tenants/`, `lib/supabase/`; `server/actions/`; `proxy.ts`. Invoices, payments, imports, exports, alerts and jobs arrive with their milestones.
 
 ```
 src/

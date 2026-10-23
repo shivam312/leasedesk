@@ -1,8 +1,7 @@
 // How each setting on Settings → Billing rules is shown: a plain label, what
 // it changes, how its value is entered, and words for each option
 // (docs/AUTONOMY.md, "How to add a setting", step 6). Only settings whose
-// behaviour is built are listed; alerts and invoice numbering arrive with
-// their features.
+// behaviour is built are listed; invoice numbering arrives with its screen.
 
 import type { Scope, SettingKey } from "./schema";
 
@@ -139,6 +138,21 @@ export const SETTING_LABELS: Partial<Record<SettingKey, SettingLabel>> = {
   "reminders.afterDueDays": {
     label: "Remind after the due date",
     help: "Days after the due date, separated by commas, until it's paid. 1, 7, 15 means an invoice due 8 May gets reminders on 9, 15 and 23 May. Leave blank for none.",
+    input: { kind: "dayList" },
+  },
+  "alerts.expiryDays": {
+    label: "Remind before a lease ends",
+    help: "Days before the lease's last day, separated by commas. 180, 90, 30 means it shows on Today from 180 days before, and in the daily email on each of those days. Leave blank for none.",
+    input: { kind: "dayList" },
+  },
+  "alerts.increaseDays": {
+    label: "Remind before a rent increase",
+    help: "Days before the rent goes up. 30, 7 means it shows on Today from 30 days before, and in the daily email 30 and 7 days before.",
+    input: { kind: "dayList" },
+  },
+  "alerts.lockInDays": {
+    label: "Remind before a lock-in ends",
+    help: "Days before the tenant is free to leave. 60 means it shows on Today, and in the daily email, from 60 days before.",
     input: { kind: "dayList" },
   },
   "tds.rounding": {

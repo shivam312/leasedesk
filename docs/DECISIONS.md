@@ -258,3 +258,16 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Consequences:**
 - `importStatement` (`src/lib/bank/imports.ts`) inserts the lines in batches and logs one `bank_statement_imports` entry with the import row (file, period, counts) and the rows it couldn't read. This is the one exception to "every change is logged" row by row (CLAUDE.md rule 7); the import id on each line links it to that entry.
 - Confirming, setting aside or freeing a line is logged on its own, as any other change.
+
+## D35. What the Today screen counts and lists (2026-10-23)
+
+**Why:** the owner opens Today to see what needs doing, so each item has to be something to act on now, and the numbers have to agree with the rest of the app.
+**Consequences:**
+- Three numbers: **Billed** is the sum of this month's run's sent invoices. **Collected** is the money received this month on payments that weren't reversed, with any TDS kept back shown underneath. **Unpaid now** is everything left on sent invoices, worked out the same way as the payment form (`unpaidInvoices`), with the overdue part underneath.
+- An item is **overdue** once its due date has passed. Overdue invoices are grouped one row per tenant, and the row asks for what is left less the TDS the tenant may still keep back, the same amount as the reminders (D33). An invoice with only expected TDS left isn't chased; its certificate is. The `overdue` invoice status still isn't set (see the backlog), so Today goes by the due date, as the reminders do.
+- A lease date shows from its longest reminder day until the date itself, unless it is done or snoozed. "Remind me later" hides it for 7 days (`SNOOZE_DAYS`), which is fixed and not a setting. Dates of draft, ended or renewed leases never show.
+- Invoices not sent yet show from the 1st of their month (they can't be sent earlier, D23). "Not made yet" shows when this month has no invoices but a lease is running.
+- TDS certificates count as missing once past their due date, counted over this financial year and last year (last year's Q4 certificate is due in June).
+- Order: by date (the overdue due date, the 1st of the month, today for bank lines and certificates, the lease date), then money before lease dates. Choosing and ordering are pure (`src/lib/alerts/attention.ts`).
+- After an inline action the item goes away, so its success message moves to a notice above the list (`components/today/Notices.tsx`).
+- Changing the `alerts.*` settings updates the reminder days of every lease date not yet done (`applyReminderDays`), so a change isn't limited to leases saved afterwards.

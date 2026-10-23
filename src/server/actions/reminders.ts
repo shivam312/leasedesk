@@ -38,5 +38,6 @@ export async function recordWhatsappReminderAction(
     };
   }
   revalidatePath(`/billing/invoices/${id.data}`);
+  revalidatePath("/today");
   return {};
 }

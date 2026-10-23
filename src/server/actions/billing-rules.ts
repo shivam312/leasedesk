@@ -16,7 +16,8 @@ import {
   parseStoredSettings,
   type StoredSettings,
 } from "@/lib/settings/schema";
-import { saveSettings } from "@/lib/settings/store";
+import { loadSettings, saveSettings } from "@/lib/settings/store";
+import { applyReminderDays } from "@/lib/alerts/dates";
 import { guardedForm } from "./guard";
 
 export async function saveBillingRules(
@@ -60,7 +61,10 @@ export async function saveBillingRules(
           : { scope: "organization" },
         { ...kept, ...read.values },
       );
+      // Lease dates keep their own reminder days; bring them in line.
+      if (!buildingId) await applyReminderDays(s, await loadSettings(s));
       revalidatePath("/settings/billing-rules", "layout");
+      revalidatePath("/today");
       return {
         tone: "success",
         message:

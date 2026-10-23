@@ -48,7 +48,7 @@ describe("billingRuleFields", () => {
   });
 
   it("leaves out a setting that isn't on screen yet", () => {
-    expect(billingRuleFields(["alerts.expiryDays"], {})).toEqual([]);
+    expect(billingRuleFields(["invoice.numberFormat"], {})).toEqual([]);
   });
 
   it("reminder days: typed as a list, blank allowed (no reminders)", () => {

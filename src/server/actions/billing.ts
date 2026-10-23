@@ -50,6 +50,7 @@ export async function runBillingNow(
         runBilling(s, month),
       );
       revalidatePath("/billing");
+      revalidatePath("/today");
       return runSummary(result);
     },
   );
@@ -119,6 +120,7 @@ export async function sendAllInvoices(
       const result: SendAllResult = { sent: [], alreadySent: 0, problems: [] };
       for (const d of drafts) await sendOne(member, d.id, d.tenantName, result);
       revalidatePath("/billing");
+      revalidatePath("/today");
       return sendSummary(result);
     },
   );

@@ -47,7 +47,8 @@ describe("what the page shows", () => {
     expect(org).toContain("reminders.beforeDueDays");
     expect(org).toContain("reminders.afterDueDays");
     expect(org).toContain("reminders.autoSend");
-    expect(org).not.toContain("alerts.expiryDays");
+    expect(org).toContain("alerts.expiryDays");
+    expect(org).not.toContain("invoice.numberFormat");
     expect(shownKeys("building", keysForScope).sort()).toEqual([
       "billing.defaultTiming",
       "billing.roundIncreasedRent",

@@ -62,7 +62,7 @@ export function DateActions({
       <DateButton
         dateId={dateId}
         label={`Remind me in ${snoozeDays} days`}
-        pendingLabel="Snoozing…"
+        pendingLabel="Saving…"
         action={snooze}
       />
     </div>

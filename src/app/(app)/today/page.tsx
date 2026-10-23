@@ -26,7 +26,6 @@ import { attentionInput, hasLeases, monthTotals } from "@/lib/alerts/queries";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { monthOf } from "@/lib/billing/dates";
-import { TAX_LABELS } from "@/lib/config/tax-labels";
 import { runScoped } from "@/lib/db/scoped";
 import { formatDate, formatINR, formatMonth } from "@/lib/format";
 import { sendAllConsequence } from "@/lib/invoices/forms";
@@ -211,7 +210,7 @@ function Heading({
         <h3 className="font-medium break-words">{title}</h3>
         {badge}
       </div>
-      <p className="text-sm text-muted-foreground">{detail}</p>
+      <p className="text-sm break-words text-muted-foreground">{detail}</p>
     </div>
   );
 }
@@ -341,8 +340,8 @@ function Item({
         <>
           <Heading
             title={`${item.count} TDS ${item.count === 1 ? "certificate" : "certificates"} missing`}
-            badge={<Badge tone="warn">Late</Badge>}
-            detail={`Tenants kept back TDS, but their ${TAX_LABELS.tdsCertificate} hasn't come in. Ask them to send it.`}
+            badge={<Badge tone="warn">Overdue</Badge>}
+            detail="Tenants kept back TDS but haven't sent the certificate for it. Ask them to send it."
           />
           <Link
             href={`/billing/tds?fy=${item.financialYear}&missing=1`}

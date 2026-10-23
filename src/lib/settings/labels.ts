@@ -142,7 +142,7 @@ export const SETTING_LABELS: Partial<Record<SettingKey, SettingLabel>> = {
   },
   "alerts.dailyDigest": {
     label: "Daily email to the team",
-    help: "Each morning, everyone on the team gets an email with their items from Today: owners and accounts the money, owners and property managers the lease dates. Nobody gets an empty one.",
+    help: "Each morning, everyone on the team gets an email with their items from Today: owners and accountants get the money items, owners and property managers the lease dates. Nobody gets an empty one.",
     input: {
       kind: "boolean",
       yes: "Send each morning",
@@ -161,7 +161,7 @@ export const SETTING_LABELS: Partial<Record<SettingKey, SettingLabel>> = {
   },
   "alerts.lockInDays": {
     label: "Remind before a lock-in ends",
-    help: "Days before the tenant is free to leave. 60 means it shows on Today, and in the daily email, from 60 days before.",
+    help: "Days before the tenant is free to leave. 60 means it shows on Today from 60 days before, and in the daily email on that day.",
     input: { kind: "dayList" },
   },
   "tds.rounding": {

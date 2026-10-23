@@ -106,7 +106,7 @@ src/
     exports/                 report files: Excel (xlsx.ts) and PDF (pdf.tsx), D38; Tally XML (tally.ts, tally-data.ts, tally-form.ts), D39
     alerts/                  Today's needs-attention list (attention.ts, pure; D35), its queries, lease-date actions (dates.ts); the daily digest (digest.ts, pure: who gets what and the words; digest-run.ts: claim then send, D36)
     monitoring/              reportError (index.ts for server code, client.ts for the browser), Sentry options and scrubbing (options.ts), sending (send.ts); off without SENTRY_DSN (D41)
-    demo/                    the Sharma Estates demo: what it holds, from today's date (plan.ts, pure), saving it through the app's code and resetting it (seed.ts); D43; the walkthrough page and its captions (walkthrough-page.ts, pure; D44)
+    demo/                    the Sharma Estates demo: what it holds, from today's date (plan.ts, pure), saving it through the app's code and resetting it (seed.ts); D43; the walkthrough page and its captions (walkthrough-page.ts, pure; D44); what the engine says each demo lease bills, from the plan alone (expected.ts, pure)
     format.ts                ₹ and date formatting for the UI
     today.ts                 todayInIndia(): today's date in Asia/Kolkata, for server code to pass into pure logic
     utils.ts                 cn() for merging Tailwind classes (clsx + tailwind-merge; D-008)

@@ -104,7 +104,7 @@ Wrapped up on 2026-10-23 (report: `docs/milestones/M5.md`); D-024 (the open Code
 - [x] Walkthrough script: `pnpm walkthrough` runs Playwright against the dev server with the demo login, records video, and takes a numbered full-page screenshot at every step of: (1) log in and read Today, (2) open a tenant and their lease, (3) add a new lease end to end and see the rent schedule, (4) run this month's billing, review a draft, tap "explain this amount", send all, (5) record a payment with TDS and allocate it, (6) import a bank statement and confirm matches, (7) open each report. Repeat Today and the lease list at 375px width.
 - [x] Walkthrough page: `docs/walkthrough/index.html` built by the script: screenshots in order, each with a one-paragraph caption for a non-technical founder saying what the user is doing, what to notice, and which rule or setting produced the numbers on screen. Link the videos.
 - [x] Demo script: `docs/DEMO_SCRIPT.md`, a 10-minute spoken script for a landlord meeting on the demo data, with the exact clicks.
-- [ ] The walkthrough doubles as an end-to-end test in `pnpm test:e2e`, asserting the key amounts on screen match the billing engine's output for the seeded leases.
+- [x] The walkthrough doubles as an end-to-end test in `pnpm test:e2e`, asserting the key amounts on screen match the billing engine's output for the seeded leases.
 
 ## M6. Today screen and alerts (week 8)
 

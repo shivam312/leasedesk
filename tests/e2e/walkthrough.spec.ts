@@ -5,6 +5,7 @@ import { addMonths, monthOf, startOfMonth } from "../../src/lib/billing/dates";
 import { formatINR, formatMonth } from "../../src/lib/format";
 import { makeGstin } from "../../src/lib/india/identifiers";
 import { todayInIndia } from "../../src/lib/today";
+import { expectedDemoInvoices } from "../../src/lib/demo/expected";
 import {
   walkthroughPage,
   type WalkthroughFacts,
@@ -15,7 +16,8 @@ import { readDemo, resetDemo } from "./demo";
 // The demo walkthrough (ROADMAP M5a) on the Sharma Estates demo data: a
 // month's work from logging in to the reports. `pnpm walkthrough` runs it
 // against the dev server and keeps a numbered full-page screenshot of every
-// step and a video (docs/walkthrough/); `pnpm test:e2e` runs it as a test.
+// step and a video (docs/walkthrough/); `pnpm test:e2e` runs it as a test,
+// checking the amounts on screen against the billing engine.
 
 const RECORD = process.env.WALKTHROUGH === "1";
 const OUT = join(process.cwd(), "docs/walkthrough");
@@ -160,11 +162,24 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await shot(page, "3", "new-lease-saved");
 
   // 4. This month's billing: make, check one, explain an amount, send all.
+  // Every amount is checked against the billing engine's own answer for
+  // the demo leases (expectedDemoInvoices), worked out from the plan rather
+  // than from what was saved.
+  const expected = expectedDemoInvoices(today, monthOf(today));
+  const expectedTotal = [...expected.values()].reduce(
+    (s, i) => s + i.totals.grandTotal,
+    0,
+  );
+  const sendAll = `Send ${expected.size} invoices`;
   await page.goto("/billing");
   await page.getByRole("button", { name: `Make ${month} invoices` }).click();
-  await expect(visible(page, /^Made 45 invoices/)).toBeVisible({
-    timeout: 60_000,
-  });
+  await expect(
+    visible(page, new RegExp(`^Made ${expected.size} invoices`)),
+  ).toBeVisible({ timeout: 60_000 });
+  for (const [tenant, invoice] of expected)
+    await expect(
+      page.getByRole("row").filter({ hasText: tenant }),
+    ).toContainText(formatINR(invoice.totals.grandTotal));
   const thisMonth = startOfMonth(monthOf(today));
   const billed = await readDemo(demo.organizationId, async (q) => ({
     made: await q.monthTotal(thisMonth),
@@ -181,6 +196,21 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     .first()
     .click();
   await page.waitForURL(/\/billing\/invoices\/[0-9a-f-]{36}$/);
+  const kalinga = expected.get("Kalinga Infotech Pvt Ltd")!;
+  for (const l of kalinga.lines)
+    await expect(
+      page.locator("details summary").filter({ hasText: l.description }),
+    ).toContainText(formatINR(l.taxablePaise));
+  for (const amount of [
+    kalinga.totals.taxable,
+    kalinga.totals.cgst,
+    kalinga.totals.roundOff,
+    kalinga.expectedTds.amount,
+  ])
+    await expect(visible(page, formatINR(amount))).toBeVisible();
+  await expect(
+    page.locator("details summary").filter({ hasText: /^Total/ }),
+  ).toContainText(formatINR(kalinga.totals.grandTotal));
   await shot(page, "4", "draft");
   await page
     .locator("details summary")
@@ -189,12 +219,18 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     .click();
   await shot(page, "4", "explain");
   await page.goto("/billing");
-  await page.getByRole("button", { name: "Send 45 invoices" }).click();
-  await shot(page, "4", "send-check");
-  await page.getByRole("button", { name: "Send 45 invoices" }).click();
+  await page.getByRole("button", { name: sendAll }).click();
   await expect(
-    page.getByRole("button", { name: "Send 45 invoices" }),
-  ).toHaveCount(0, { timeout: 120_000 });
+    visible(
+      page,
+      `Send ${expected.size} ${month} invoices for ${formatINR(expectedTotal)} in all?`,
+    ),
+  ).toBeVisible();
+  await shot(page, "4", "send-check");
+  await page.getByRole("button", { name: sendAll }).click();
+  await expect(page.getByRole("button", { name: sendAll })).toHaveCount(0, {
+    timeout: 120_000,
+  });
   await expect(page.getByRole("cell", { name: "Draft" })).toHaveCount(0);
   await shot(page, "4", "sent");
 
@@ -204,6 +240,14 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     unpaid: await q.unpaidInvoices("Rangoli Media Labs Pvt Ltd"),
   }));
   const twoOldest = rangoli.unpaid.slice(0, 2);
+  // Sent months ago by the seed: still the engine's amounts for those months.
+  for (const i of twoOldest) {
+    const engine = expectedDemoInvoices(today, monthOf(i.invoiceDate)).get(
+      "Rangoli Media Labs Pvt Ltd",
+    )!;
+    expect(i.grandTotal).toBe(engine.totals.grandTotal);
+    expect(i.expectedTds).toBe(engine.expectedTds.amount);
+  }
   const tds = twoOldest.reduce((s, i) => s + i.expectedTds, 0);
   const received = twoOldest.reduce((s, i) => s + i.grandTotal, 0) - tds;
   await page.goto(`/billing/payments/new?tenant=${rangoli.id}`);

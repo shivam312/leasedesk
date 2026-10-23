@@ -11,7 +11,6 @@ import {
   type StoredSettings,
 } from "@/lib/settings/schema";
 
-/** How a value reads in words, e.g. "In advance", "18%", "7 days". */
 /** 1 → "1st", 22 → "22nd", 25 → "25th". */
 function ordinal(n: number): string {
   const suffix =
@@ -25,6 +24,7 @@ function ordinal(n: number): string {
   return `${n}${suffix}`;
 }
 
+/** How a value reads in words, e.g. "In advance", "18%", "7 days". */
 export function describeValue(key: SettingKey, value: unknown): string {
   const input = SETTING_LABELS[key]?.input;
   switch (input?.kind) {
@@ -37,7 +37,7 @@ export function describeValue(key: SettingKey, value: unknown): string {
     case "rupees":
       return formatINR(value as number);
     case "days":
-      return `${String(value)} days`;
+      return `${String(value)} ${value === 1 ? "day" : "days"}`;
     case "dayOfMonth":
       return `The ${ordinal(Number(value))}`;
     default:

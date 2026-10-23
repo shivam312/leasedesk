@@ -56,11 +56,11 @@ async function CreditNote({ params }: { params: Promise<{ id: string }> }) {
         href={`/billing/invoices/${invoice.id}`}
         className="mb-2 inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline md:min-h-0"
       >
-        ← Invoice {invoice.number ?? ""}
+        ← Back to invoice {invoice.number}
       </Link>
       <PageHeader
         title="Issue a credit note"
-        description={`Take money off invoice ${invoice.number ?? ""}. The invoice itself never changes.`}
+        description={`Take money off ${invoice.number ? `invoice ${invoice.number}` : "this invoice"}. The invoice itself never changes.`}
       />
       {refusal ? (
         <div

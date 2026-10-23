@@ -61,7 +61,8 @@ export function readSettingsForm(
     const input = SETTING_LABELS[key]?.input;
     let value: unknown = raw;
     if (input?.kind === "boolean") value = raw === "true";
-    if (input?.kind === "days" || input?.kind === "dayOfMonth") value = /^\d+$/.test(raw) ? Number(raw) : NaN;
+    if (input?.kind === "days" || input?.kind === "dayOfMonth")
+      value = /^\d+$/.test(raw) ? Number(raw) : NaN;
     if (input?.kind === "percent") value = percentToBp(raw);
     if (input?.kind === "rupees") value = rupeesToPaise(raw);
     const parsed = SETTINGS[key].schema.safeParse(value);

@@ -180,7 +180,7 @@ export async function emailInvoiceAgain(
       if (!to)
         return {
           message:
-            "Only a sent invoice can be emailed. A cancelled invoice isn't emailed again.",
+            "Only a sent invoice can be emailed again. This one has been credited in full.",
         };
       const email = await emailSent(member, invoiceId, to);
       revalidatePath(`/billing/invoices/${invoiceId}`);

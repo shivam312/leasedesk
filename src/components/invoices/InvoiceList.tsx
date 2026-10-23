@@ -24,7 +24,7 @@ export function InvoiceList({ invoices }: { invoices: InvoiceRow[] }) {
           <tr>
             <th className="py-2 font-normal">Tenant</th>
             <th className="py-2 font-normal">Building</th>
-            <th className="py-2 font-normal">For</th>
+            <th className="py-2 font-normal">Period</th>
             <th className="py-2 font-normal">Due</th>
             <th className="py-2 text-right font-normal">Total</th>
             <th className="py-2 pl-4 font-normal">Status</th>
@@ -33,7 +33,7 @@ export function InvoiceList({ invoices }: { invoices: InvoiceRow[] }) {
         <tbody>
           {invoices.map((i) => (
             <tr key={i.id} className="border-t hover:bg-accent">
-              <td className="max-w-xs truncate py-2">
+              <td className="max-w-xs py-2 break-words">
                 <Link
                   href={`/billing/invoices/${i.id}`}
                   className="font-medium hover:underline"
@@ -72,16 +72,20 @@ export function InvoiceList({ invoices }: { invoices: InvoiceRow[] }) {
             >
               <span className="flex items-start justify-between gap-2">
                 <span className="font-medium break-words">{i.tenantName}</span>
-                <span className="tabular-nums">{formatINR(i.grandTotal)}</span>
+                <span className="shrink-0 tabular-nums">
+                  {formatINR(i.grandTotal)}
+                </span>
               </span>
               <span className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-                <span>
+                <span className="min-w-0 break-words">
                   {i.buildingName} · {formatDate(i.periodStart)} to{" "}
                   {formatDate(i.periodEnd)} · due {formatDate(i.dueDate)}
                 </span>
-                <Badge tone={INVOICE_STATUS[i.status].tone}>
-                  {INVOICE_STATUS[i.status].label}
-                </Badge>
+                <span className="shrink-0">
+                  <Badge tone={INVOICE_STATUS[i.status].tone}>
+                    {INVOICE_STATUS[i.status].label}
+                  </Badge>
+                </span>
               </span>
             </Link>
           </li>

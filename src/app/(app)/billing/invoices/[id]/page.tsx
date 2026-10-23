@@ -70,7 +70,7 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
     <>
       <Link
         href={`/billing?month=${month}`}
-        className="mb-2 inline-block text-sm text-muted-foreground hover:underline"
+        className="mb-2 inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline md:min-h-0"
       >
         ← {formatMonth(month)} invoices
       </Link>
@@ -113,7 +113,7 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
           download={invoice.status === "draft" ? undefined : true}
           className={buttonVariants({
             variant: "outline",
-            className: "self-start",
+            className: "h-11 self-start md:h-9",
           })}
         >
           {invoice.status === "draft" ? "Preview PDF" : "Download PDF"}

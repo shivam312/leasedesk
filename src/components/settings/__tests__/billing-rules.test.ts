@@ -15,4 +15,10 @@ describe("describeValue", () => {
     expect(describeValue("invoice.runDay", 13)).toBe("The 13th");
     expect(describeValue("invoice.runDay", 25)).toBe("The 25th");
   });
+
+  it("says day or days to match the number", () => {
+    expect(describeValue("invoice.dueDays", 1)).toBe("1 day");
+    expect(describeValue("invoice.dueDays", 7)).toBe("7 days");
+    expect(describeValue("invoice.dueDays", 0)).toBe("0 days");
+  });
 });

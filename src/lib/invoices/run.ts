@@ -62,8 +62,9 @@ export function tenantTds(t: typeof tenants.$inferSelect): TenantTds {
   };
 }
 
-// An arrears quarter is billed in the run after it ends, or after the lease
-// ends: at most three months after the lease's last day.
+// An arrears quarter is billed in the first run after it ends, or after the
+// lease ends (section 7). Reaching back four months is more than needed, so
+// a lease that ended recently is never missed; the engine decides what bills.
 const ARREARS_REACH_MONTHS = 4;
 
 /** Every saved lease that could bill something in `runMonth`. */

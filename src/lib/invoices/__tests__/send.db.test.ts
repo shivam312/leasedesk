@@ -72,6 +72,17 @@ describe.skipIf(!ready)("issueInvoice (skipped until pnpm db:migrate)", () => {
     });
   });
 
+  it("treats a draft replaced by making the month again as not a draft", async () => {
+    await inRollback(async (tx) => {
+      const { ctx } = await madeDraft(tx);
+      expect(
+        await runScoped(asDb(tx), ctx, (s) =>
+          issueInvoice(s, "00000000-0000-4000-8000-000000000000", SENT_AT),
+        ),
+      ).toEqual({ kind: "not_draft" });
+    });
+  });
+
   it("refuses without a GSTIN and gives the number back", async () => {
     await inRollback(async (tx) => {
       const a = await withGstin(tx, null);

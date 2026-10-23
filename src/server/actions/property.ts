@@ -50,8 +50,7 @@ export async function saveBuilding(
             ),
           );
         const clash = prefixClash(data, others);
-        if (clash)
-          return { fieldErrors: clash, values: data };
+        if (clash) return { fieldErrors: clash, values: data };
         const saved = id
           ? await updateLogged(s, buildings, id, data)
           : await insertLogged(s, buildings, data);

@@ -98,7 +98,10 @@ export async function draftTenantsWithoutEmail(
 
 export type IssueResult =
   | { kind: "issued"; number: string; to: string[] }
-  /** Already sent, perhaps by someone else a moment ago; left as it is. */
+  /**
+   * Already sent, perhaps by someone else a moment ago, or replaced by making
+   * the month again; left as it is.
+   */
   | { kind: "not_draft" };
 
 /**
@@ -116,8 +119,8 @@ export async function issueInvoice(
     .from(invoices)
     .where(s.where(invoices, eq(invoices.id, invoiceId)))
     .for("update");
-  if (!locked) throw new Error("That invoice isn't in this organization");
-  if (locked.status !== "draft") return { kind: "not_draft" };
+  // Gone: made again a moment ago, so "Send all" listed an old draft.
+  if (!locked || locked.status !== "draft") return { kind: "not_draft" };
 
   const saved = await getInvoice(s, invoiceId);
   if (!saved) throw new Error("That invoice isn't in this organization");

@@ -429,3 +429,18 @@ describe("custom escalations", () => {
     ]);
   });
 });
+
+describe("inconsistent dates", () => {
+  it("stops when a charge starts after the lease ends (Codex M1 should-fix)", () => {
+    // Rule dates 1 Apr 2027, 2028 … grow every step, so the loop stops at the
+    // first one after the lease end (31 Mar 2031); none is after the charge
+    // start (1 Apr 2032), so only the starting ₹1,00,000 is left.
+    const steps = amountSteps({
+      charge: { ...rent, startDate: "2032-04-01" },
+      lease,
+      rules: [fivePercentYearly],
+      ...rounding,
+    });
+    expect(amounts(steps)).toEqual([["2032-04-01", 10_000_000]]);
+  });
+});

@@ -50,6 +50,13 @@
       "when": 1792735535752,
       "tag": "0006_invite_token",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792735970571,
+      "tag": "0007_bank_name",
+      "breakpoints": true
     }
   ]
 }

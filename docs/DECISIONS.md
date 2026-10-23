@@ -112,3 +112,10 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Settings → Team: the owner enters an email and role and gets a one-time link to copy or share on WhatsApp. Only a SHA-256 hash of its token is stored (`memberships.invite_token_hash`); inviting the same email again replaces the link.
 - `/invite/<token>`: the person sets a password (or enters their existing one) and joins. The login's email must be the invited email. One organization per login in v1, so a login that already belongs to another organization is refused.
 - Links don't expire on a timer; they work once and are replaced by a new invite. When the email adapter exists, "Send invite by email" can reuse the same link.
+
+## D18. Billing entity details can be edited; sent invoices keep a copy (2026-10-23)
+
+**Why:** Landlords change banks and fix typos in addresses. Sent invoices can't change (D4), so they must not read the billing entity's current details when shown or re-printed.
+**Consequences:**
+- Settings → Business details edits the organization and billing entities freely (owners only), logged in the activity log. GSTINs are checked for shape, state code and check digit, and must match the chosen state (`src/lib/india/identifiers.ts`).
+- M4 must copy the supplier's legal name, GSTIN, address and bank and UPI details onto each invoice when it is sent, and print from that copy.

@@ -1,0 +1,1 @@
+ALTER TABLE "billing_entities" ADD COLUMN "bank_name" text;

@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "../src/lib/db/schema";
 import { only } from "../src/lib/db/rows";
+import { makeGstin } from "../src/lib/india/identifiers";
 import { connectForScript } from "./db-env";
 
 const DEMO_ORG_NAME = "Demo Properties";
@@ -41,7 +42,8 @@ async function main() {
           {
             organizationId: org.id,
             legalName: "Demo Properties Private Limited",
-            gstin: "27AABCD1234E1Z5",
+            gstin: makeGstin("27", "AABCD1234E"),
+            bankName: "HDFC Bank",
             stateCode: "27",
             address: "4th Floor, Demo House, Andheri East, Mumbai 400069",
             bankAccountName: "Demo Properties Pvt Ltd",
@@ -52,7 +54,7 @@ async function main() {
           {
             organizationId: org.id,
             legalName: "Demo Properties Private Limited (Karnataka)",
-            gstin: "29AABCD1234E1Z1",
+            gstin: makeGstin("29", "AABCD1234E"),
             stateCode: "29",
             address: "2nd Floor, Demo Towers, Whitefield, Bengaluru 560066",
             // No bank or UPI yet, so screens show the "add bank details" state.
@@ -198,7 +200,7 @@ async function seedTenants(tx: Tx, organizationId: string) {
     const company = {
       organizationId,
       companyName: isCompany ? `${name} Pvt Ltd` : name,
-      gstin: i % 9 === 5 ? null : `${stateCode}${pan}1Z${(i % 9) + 1}`,
+      gstin: i % 9 === 5 ? null : makeGstin(stateCode, pan),
       pan,
       billingAddress: `${100 + i}, ${stateCode === "27" ? "Andheri East, Mumbai" : "Whitefield, Bengaluru"}`,
       stateCode,

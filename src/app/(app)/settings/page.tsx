@@ -9,6 +9,11 @@ export const metadata: Metadata = { title: "Settings" };
 
 const SECTIONS = [
   {
+    href: "/settings/business",
+    title: "Business details",
+    description: "Your name, GSTINs and the bank account on invoices.",
+  },
+  {
     href: "/settings/team",
     title: "Team",
     description: "See who can use your account, and invite people.",
@@ -18,7 +23,10 @@ const SECTIONS = [
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader title="Settings" description="Your team and account." />
+      <PageHeader
+        title="Settings"
+        description="Your business details, team and account."
+      />
       <ul className="flex max-w-2xl flex-col divide-y rounded-lg border">
         {SECTIONS.map((s) => (
           <li key={s.href}>

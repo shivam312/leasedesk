@@ -75,6 +75,7 @@ export const billingEntities = pgTable(
     // Two-digit GST state code, e.g. "27" for Maharashtra.
     stateCode: text().notNull(),
     address: text().notNull(),
+    bankName: text(),
     bankAccountName: text(),
     bankAccountNumber: text(),
     ifsc: text(),

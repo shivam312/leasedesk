@@ -55,6 +55,7 @@ Things only a person can do. Tick them when done.
 - [ ] Get a sample Tally XML export from a pilot accountant's TallyPrime and save it in `tests/fixtures/tally/` (M7)
 - [ ] Create Sentry, Supabase cloud (Mumbai), Vercel and Inngest accounts and put the keys in `.env.local` (M8). For Sentry: pick the EU data region (no India region; reports carry ids only, D41), then set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (the same DSN), and optionally `SENTRY_ENVIRONMENT` / `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (e.g. `staging`), in `.env.local` and the hosting settings, and add them to `.env.example`, which unattended runs can't open. To get readable browser stack traces, also create a Sentry auth token and ask for `next.config.ts` to be wrapped in `withSentryConfig`.
 - [ ] Set up the staging environment and turn on database backups (M8)
+- [ ] In the Supabase cloud project (Auth → URL configuration), set the Site URL to the app's address and add `<APP_URL>/auth/confirm` to the redirect URLs, so password reset links work (D42). Set up custom SMTP (e.g. Resend) for Auth emails too: the built-in sender is limited to a few emails an hour.
 - [ ] Load a pilot landlord's real data and compare one month's invoices with their Excel (M8)
 - [ ] Usability test with an accountant who hasn't seen the app (M8)
 - [ ] Have a chartered accountant review `docs/BILLING_RULES.md` and the `ca` entries below (M8, before the first paying customer)

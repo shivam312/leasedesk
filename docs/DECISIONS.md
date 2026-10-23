@@ -336,3 +336,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - `src/lib/monitoring/options.ts` sets `sendDefaultPii: false`, no performance tracing, and a `beforeSend` that drops request bodies, cookies, query strings and all headers but user-agent, referer and content type, and keeps only the user id. Don't loosen this without checking what a form body contains (tenant names, GSTINs, amounts).
 - `next.config.ts` isn't wrapped in `withSentryConfig`: uploading source maps needs a Sentry auth token at build time, which is part of the account setup. Stack traces from the browser are minified until then.
 - Optional: `SENTRY_ENVIRONMENT` / `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (default `production`, e.g. `staging`); the release is the Vercel commit (`VERCEL_GIT_COMMIT_SHA`) when present.
+
+## D42. Forgotten passwords: reset by emailed link, through Supabase Auth (2026-10-24)
+
+**Why:** The M8 UX review found no way back in for an owner who forgets their password, a blocker for the pilot.
+**Consequences:**
+- Log in → "Forgot your password?" (`/forgot-password`) emails a link (`requestPasswordReset`, Supabase `resetPasswordForEmail`). The answer is the same whether or not the email has an account, so the form can't be used to find out who's a customer.
+- The link lands on `/auth/confirm` (a route handler, public in `src/proxy.ts`), which swaps the code for a session and goes to `next`, only ever a path in this app (`safeNext`). An expired or used link goes back to the form with a note.
+- `/reset-password` sets the new password for the signed-in user (`setNewPassword`, typed twice, at least 8 characters) and goes to Today.
+- Links use `APP_URL` when set, else the request's host. Supabase only redirects to allow-listed URLs: locally `supabase/config.toml` lists `localhost:3000` and the e2e build on `3100`, and the local email limit is raised to 100 an hour so the e2e test can follow a real email from Mailpit. The cloud project needs its Site URL and redirect URLs set (human task).
+- Changing a password isn't written to `activity_log`, which records organization data; Supabase Auth keeps its own audit log.

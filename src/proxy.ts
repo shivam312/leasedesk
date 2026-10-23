@@ -7,7 +7,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseConfig } from "@/lib/supabase/config";
 
 /** Pages anyone can open. */
-const PUBLIC_PATHS = ["/login", "/signup", "/invite"];
+// /auth/confirm is where emailed links (password reset) land, before a session exists.
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/invite",
+  "/forgot-password",
+  "/auth",
+];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

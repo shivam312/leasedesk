@@ -32,6 +32,26 @@ export const logInSchema = z.object({
 
 export const welcomeSchema = z.object({ organizationName });
 
+export const forgotPasswordSchema = z.object({ email });
+
+export const newPasswordSchema = z
+  .object({
+    password: signUpSchema.shape.password,
+    confirm: z.string(),
+  })
+  .refine((v) => v.password === v.confirm, {
+    path: ["confirm"],
+    message: "The two passwords don't match. Type the same one twice.",
+  });
+
+/**
+ * Where to go after following an email link: only a path in this app, so a
+ * crafted link can't send someone to another site. Anything else is Today.
+ */
+export function safeNext(next: string | null | undefined): string {
+  return next && /^\/(?![/\\])/.test(next) ? next : "/today";
+}
+
 /** What a form action returns: a message for the form, and one per field. */
 export interface FormState {
   message?: string;
@@ -61,5 +81,6 @@ export function parseForm<S extends z.ZodType>(
   }
   const values = { ...raw };
   delete values.password;
+  delete values.confirm;
   return { state: { fieldErrors, values } };
 }

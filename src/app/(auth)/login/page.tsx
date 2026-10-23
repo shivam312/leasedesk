@@ -32,7 +32,15 @@ export default function LoginPage() {
           },
         ]}
       />
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-4 text-center text-sm">
+        <Link
+          href="/forgot-password"
+          className="inline-flex min-h-11 items-center text-muted-foreground underline md:min-h-0"
+        >
+          Forgot your password?
+        </Link>
+      </p>
+      <p className="mt-4 text-center text-sm text-muted-foreground">
         New here?{" "}
         <Link href="/signup" className="font-medium text-foreground underline">
           Create an account

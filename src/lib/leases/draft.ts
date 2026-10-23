@@ -18,7 +18,9 @@ import {
   type Settings,
   type StoredSettings,
 } from "@/lib/settings/schema";
+import { compareDates } from "@/lib/billing/dates";
 import {
+  CHARGE_ENDS_BEFORE_START,
   chargeRowSchema,
   escalationRuleSchema,
   toChargeDraft,
@@ -132,6 +134,17 @@ export function parseLeaseForm(input: LeaseFormInput): ParsedLeaseForm {
       `charges.${i}.`,
     ),
   );
+  // A charge with a blank start starts with the lease.
+  if (dates)
+    charges.forEach((c, i) => {
+      if (
+        c &&
+        c.startDate === null &&
+        c.endDate !== null &&
+        compareDates(c.endDate, dates.startDate) < 0
+      )
+        errors[`charges.${i}.endDate`] ??= CHARGE_ENDS_BEFORE_START;
+    });
   if (input.charges.length === 0)
     errors.charges = "Add the rent, or another charge.";
   const rules = input.rules.map((row, i) =>

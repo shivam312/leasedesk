@@ -28,6 +28,25 @@ const row = (extra: Record<string, unknown> = {}) => ({
 });
 
 describe("charge rows", () => {
+  it("refuses a charge that ends before it starts", () => {
+    // Starts 01-07-2026, ends 30-06-2026: no day to bill, and the database
+    // check lease_charges_end_after_start would refuse the row.
+    const result = chargeRowSchema.safeParse(
+      row({ startDate: "2026-07-01", endDate: "2026-06-30" }),
+    );
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]).toMatchObject({
+      path: ["endDate"],
+      message: "A charge can't end before it starts.",
+    });
+    // A one-day charge (start = end) is fine.
+    expect(
+      chargeRowSchema.safeParse(
+        row({ startDate: "2026-07-01", endDate: "2026-07-01" }),
+      ).success,
+    ).toBe(true);
+  });
+
   it("reads rupees with Indian commas as paise", () => {
     // ₹1,25,000.50 = 1,25,00,050 paise
     expect(

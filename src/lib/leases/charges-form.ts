@@ -4,7 +4,7 @@
 // rupees (commas allowed, "1,25,000.50") and stored in paise.
 
 import { z } from "zod";
-import { parseDate } from "@/lib/billing/dates";
+import { compareDates, parseDate } from "@/lib/billing/dates";
 import type { EscalationRule } from "@/lib/billing/types";
 import type { ChargeDraft } from "@/lib/settings/charge-defaults";
 import { percentToBp, rupeesToPaise } from "@/lib/settings/rules-form";
@@ -49,6 +49,8 @@ const percent = (message: string, { allowZero }: { allowZero: boolean }) =>
       return bp;
     });
 
+export const CHARGE_ENDS_BEFORE_START = "A charge can't end before it starts.";
+
 /** One charge row. Dates default to the lease's own when left blank. */
 export const chargeRowSchema = z
   .object({
@@ -75,6 +77,19 @@ export const chargeRowSchema = z
     waivedDuringRentFree: z.boolean().optional(),
   })
   .transform((row, ctx) => {
+    // A blank start is the lease's; parseLeaseForm checks the end against it.
+    if (
+      row.startDate !== null &&
+      row.endDate !== null &&
+      compareDates(row.endDate, row.startDate) < 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endDate"],
+        message: CHARGE_ENDS_BEFORE_START,
+      });
+      return z.NEVER;
+    }
     let slots: number | null = null;
     if (row.basis === "per_slot") {
       slots = row.slots && /^\d+$/.test(row.slots) ? Number(row.slots) : 0;

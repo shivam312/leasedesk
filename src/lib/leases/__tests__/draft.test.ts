@@ -31,6 +31,26 @@ const units = [
 ];
 
 describe("parseLeaseForm", () => {
+  it("refuses a charge that ends before the lease starts when its start is blank", () => {
+    // A blank start means the lease's, 01-04-2026; ending 31-03-2026 is a day
+    // before that, so the charge would bill nothing and fail the database
+    // check. The user goes back to the charges step.
+    const result = parseLeaseForm(
+      input({
+        charges: [
+          { type: "rent", basis: "per_sqft", amount: "100" },
+          { type: "cam", basis: "fixed", amount: "5000", endDate: "2026-03-31" },
+        ],
+      }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.step).toBe("charges");
+    expect(result.errors).toEqual({
+      "charges.1.endDate": "A charge can't end before it starts.",
+    });
+  });
+
   it("reads a complete lease", () => {
     const result = parseLeaseForm(input());
     if (!result.ok) throw new Error(JSON.stringify(result.errors));

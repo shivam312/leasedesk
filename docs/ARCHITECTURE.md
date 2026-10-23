@@ -25,7 +25,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 
 ## Folder layout
 
-This is the target layout. What exists at the end of M2: the app shell; sign-up, login and invites under `(auth)/`; Settings (business details, billing rules, team), Leases → buildings, units and stacking plan, and Tenants under `(app)/`; `lib/billing/`, `lib/settings/`, `lib/auth/`, `lib/db/` (schema, `scoped.ts`, `activity-log.ts`), `lib/india/`, `lib/property/`, `lib/tenants/`, `lib/supabase/`; `server/actions/`; `proxy.ts`. Invoices, payments, imports, exports, alerts and jobs arrive with their milestones.
+This is the target layout. What exists at the end of M2: the app shell; sign-up, login and invites under `(auth)/`; Settings (business details, billing rules, team), Leases → buildings, units and stacking plan, and Tenants under `(app)/`; `lib/billing/`, `lib/settings/`, `lib/auth/`, `lib/db/` (schema, `scoped.ts`, `activity-log.ts`), `lib/india/`, `lib/property/`, `lib/tenants/`, `lib/supabase/`; `server/actions/`; `proxy.ts`; error and not-found pages for the signed-in app. Invoices, payments, imports, exports, alerts and jobs arrive with their milestones.
 
 ```
 src/
@@ -41,7 +41,9 @@ src/
   components/
     ui/                      shadcn components (don't edit by hand unless needed)
     shell/                   app shell: nav (sidebar on laptop, bottom tabs on phone), page header
-    <feature>/               feature components, e.g. leases/LeaseForm.tsx
+    shell/                   also RequirePermission + NoAccess: pages show "who can change this" instead of a form the user can't save
+    forms/                   SimpleForm: labelled fields, inline errors, "More options"
+    <feature>/               feature components, e.g. property/UnitList.tsx, tenants/TenantList.tsx, settings/
   lib/
     billing/                 PURE billing engine (no DB, no network, no clock)
       types.ts               engine input and output types
@@ -62,11 +64,19 @@ src/
       schema/                one file per table group
       index.ts               Drizzle client (postgres.js, prepare: false, snake_case; D12)
       url.ts                 which database to use; the local-only guard for scripts
-      scoped.ts              org-scoped query helpers
-      activity-log.ts        audit logging helper
+      scoped.ts              org-scoped query helpers (withOrg, runScoped)
+      activity-log.ts        audit logging helper (insertLogged, updateLogged)
+      rows.ts                small helpers for reading query results
+    auth/                    roles and PERMISSIONS (roles.ts), memberships, invites, sign-up form schemas
+    supabase/                Supabase Auth clients for server code (cookie sessions)
+    india/                   GSTIN, PAN, IFSC, UPI and phone checks
+    property/                buildings, floors, units: form schemas, queries, stacking plan
+    tenants/                 tenant form schemas and queries
     config/
       brand.ts               product name, the only place it's written (D-006)
-    settings/                setting keys and defaults (schema.ts), resolution (resolve.ts); docs/SETTINGS.md
+    settings/                setting keys and defaults (schema.ts), resolution (resolve.ts), load/save (store.ts),
+                             BillingSettings for the engine (billing.ts), building defaults on charges (charge-defaults.ts),
+                             Billing rules labels and form (labels.ts, rules-form.ts); docs/SETTINGS.md
     email/                   email adapter: console driver (.local-outbox/) without RESEND_API_KEY, resend driver
     invoices/                numbering, PDF templates, sending
     payments/                allocation, bank statement parsing and matching
@@ -77,7 +87,8 @@ src/
     utils.ts                 cn() for merging Tailwind classes (clsx + tailwind-merge; D-008)
     auth.ts                  current user, organization, role checks
   server/
-    actions/                 server actions, one file per feature
+    actions/                 server actions, one file per feature; guard.ts (guardedForm: role check and Zod before the action runs)
+  proxy.ts                   refreshes the Supabase session; sends signed-out visitors to /login
   jobs/                      Inngest functions
 drizzle/                     generated SQL migrations (never edit applied ones); applied by scripts/migrate.ts
 supabase/                    local stack config for the Supabase CLI (config.toml); no migrations here (D12)
@@ -91,7 +102,7 @@ scripts/
 
 ## Patterns
 
-**Data flow.** Screens call server actions in `src/server/actions/`. Actions: check the user's role, validate input with Zod, call `lib/` functions, write through Drizzle inside a transaction, write an activity log entry, then revalidate the page.
+**Data flow.** Screens call server actions in `src/server/actions/`. Actions: check the user's role, validate input with Zod, call `lib/` functions, write through Drizzle inside a transaction, write an activity log entry, then revalidate the page. Form actions use `guardedForm(permission, schema, form, fn)` from `guard.ts`, which checks the role and validates the form before calling `fn`; `fn` writes inside `runScoped`, through `insertLogged`/`updateLogged` so the activity log entry is never forgotten.
 
 **Billing.** The engine in `src/lib/billing/` is the heart of the product. Server code loads lease data, converts it to plain engine inputs, calls the engine, and saves the results. The engine never imports from `db/`.
 

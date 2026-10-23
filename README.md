@@ -48,5 +48,6 @@ supabase stop       # when you're done
 - After changing the schema in `src/lib/db/schema/`, run `pnpm db:generate` and read the new SQL in `drizzle/`.
 - `pnpm db:reset` wipes the local database and runs migrate and seed again.
 - Studio (a table browser) is at http://127.0.0.1:54323.
+- To try the app, open http://localhost:3000 and create an account. The seeded demo organization has no login yet.
 - `db:migrate` and `db:seed` refuse to run against a database that isn't on your machine. To do it on purpose, prefix the command with `ALLOW_REMOTE_DB=yes`.
 - If `pnpm` says it's version 8, a Homebrew pnpm is ahead of the project's one on your `PATH`. Run `brew uninstall pnpm`, or `corepack enable`.

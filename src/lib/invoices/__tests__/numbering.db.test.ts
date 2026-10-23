@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import * as schema from "@/lib/db/schema";
 import { runScoped, type Transactional } from "@/lib/db/scoped";
@@ -42,7 +43,10 @@ describe.skipIf(skipDbTests)("takeNumber", () => {
         "TCN/26-27/0041",
       );
       expect((await take("2027-04-01")).number).toBe("T/27-28/0001");
-      const series = await tx.select().from(schema.invoiceSeries);
+      const series = await tx
+        .select()
+        .from(schema.invoiceSeries)
+        .where(eq(schema.invoiceSeries.organizationId, a.org.id));
       expect(series).toHaveLength(3);
     });
   });

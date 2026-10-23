@@ -45,7 +45,10 @@ describe.skipIf(skipDbTests)("monthly billing run", () => {
         );
       expect(await run()).toMatchObject({ drafted: 1, problems: [] });
       expect(await run()).toMatchObject({ drafted: 1, problems: [] });
-      const rows = await tx.select().from(schema.invoices);
+      const rows = await tx
+        .select()
+        .from(schema.invoices)
+        .where(eq(schema.invoices.organizationId, a.org.id));
       expect(rows).toHaveLength(1);
       // 1,300 sq ft × ₹90 = ₹1,17,000; CGST and SGST 9% = ₹10,530 each;
       // total ₹1,38,060; TDS 10% = ₹11,700.
@@ -61,7 +64,10 @@ describe.skipIf(skipDbTests)("monthly billing run", () => {
         grandTotal: 13_806_000,
         expectedTds: 1_170_000,
       });
-      const lines = await tx.select().from(schema.invoiceLines);
+      const lines = await tx
+        .select()
+        .from(schema.invoiceLines)
+        .where(eq(schema.invoiceLines.organizationId, a.org.id));
       expect(lines).toHaveLength(1);
       expect(lines[0]).toMatchObject({
         description: "Rent for Nov 2026",
@@ -84,7 +90,12 @@ describe.skipIf(skipDbTests)("monthly billing run", () => {
       expect(
         await runScoped(asDb(tx), ctx, (s) => runBilling(s, "2026-11")),
       ).toMatchObject({ drafted: 0 });
-      expect(await tx.select().from(schema.invoices)).toEqual([]);
+      expect(
+        await tx
+          .select()
+          .from(schema.invoices)
+          .where(eq(schema.invoices.organizationId, a.org.id)),
+      ).toEqual([]);
     });
   });
 
@@ -125,7 +136,10 @@ describe.skipIf(skipDbTests)("monthly billing run", () => {
       const run = () =>
         runScoped(asDb(tx), ctx, (s) => runBilling(s, "2026-11"));
       await run();
-      const [draft] = await tx.select().from(schema.invoices);
+      const [draft] = await tx
+        .select()
+        .from(schema.invoices)
+        .where(eq(schema.invoices.organizationId, a.org.id));
       await runScoped(asDb(tx), ctx, (s) =>
         issueInvoice(s, draft!.id, new Date("2026-11-01T04:30:00Z")),
       );
@@ -146,7 +160,12 @@ describe.skipIf(skipDbTests)("monthly billing run", () => {
         }),
       );
       expect(await run()).toMatchObject({ drafted: 0, alreadySent: 1 });
-      expect(await tx.select().from(schema.invoices)).toHaveLength(1);
+      expect(
+        await tx
+          .select()
+          .from(schema.invoices)
+          .where(eq(schema.invoices.organizationId, a.org.id)),
+      ).toHaveLength(1);
     });
   });
 });

@@ -17,7 +17,7 @@ import {
   leaseFormOptions,
   type SavedLease,
 } from "@/lib/leases/queries";
-import { renewalDraft } from "@/lib/leases/renewal";
+import { renewalDraft, renewalRefusal } from "@/lib/leases/renewal";
 import { billingSettings } from "@/lib/settings/billing";
 import { keysForScope } from "@/lib/settings/schema";
 import { loadSettings } from "@/lib/settings/store";
@@ -83,6 +83,8 @@ async function Form({
       const saved = await getLease(s, renew);
       if (!saved) return null;
       const { lease } = saved;
+      const refusal = renewalRefusal(lease.status);
+      if (refusal) return { refused: refusal, leaseId: lease.id };
       const settings = await loadSettings(s, {
         buildingId: lease.buildingId,
         tenantId: lease.tenantId,
@@ -128,22 +130,14 @@ async function Form({
       initial: blankLeaseForm(),
       replacesLeaseId: null,
     };
-  }).catch((error: unknown) => {
-    // renewalDraft refuses a draft or an already renewed lease.
-    if (error instanceof Error && /renew/.test(error.message))
-      return { refused: true as const };
-    throw error;
   });
   if (!data) notFound();
   if ("refused" in data)
     return (
       <div className="flex max-w-2xl flex-col gap-3 text-sm">
-        <p>
-          This lease can&apos;t be renewed: it&apos;s a draft, or it has already
-          been renewed.
-        </p>
-        <Link href="/leases" className="underline">
-          Back to Leases
+        <p>{data.refused}</p>
+        <Link href={`/leases/${data.leaseId}`} className="underline">
+          Back to the lease
         </Link>
       </div>
     );

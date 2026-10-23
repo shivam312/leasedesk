@@ -38,6 +38,26 @@ export type RenewalDraft = LeaseTemplate & {
 };
 
 /**
+ * Why a lease with `status` can't be renewed, or null when it can: only a
+ * current, leaving or expired lease is renewed. A lease ended early has no
+ * tenant left to renew with; that's a new lease.
+ */
+export function renewalRefusal(
+  status: RenewableLease["status"],
+): string | null {
+  switch (status) {
+    case "draft":
+      return "A draft lease can't be renewed; edit it instead.";
+    case "renewed":
+      return "This lease has already been renewed.";
+    case "terminated":
+      return "This lease was ended early, so it can't be renewed. Add a new lease instead.";
+    default:
+      return null;
+  }
+}
+
+/**
  * A draft renewal for `termMonths` (the form suggests the old term and the
  * user can change it). A renewal has no rent-free period unless one is added.
  */
@@ -46,13 +66,8 @@ export function renewalDraft(
   termMonths: number,
   settings: Pick<BillingSettings, "monthEndRule">,
 ): RenewalDraft {
-  if (lease.status === "draft" || lease.status === "renewed") {
-    throw new Error(
-      lease.status === "draft"
-        ? "A draft lease can't be renewed; edit it instead."
-        : "This lease has already been renewed.",
-    );
-  }
+  const refusal = renewalRefusal(lease.status);
+  if (refusal) throw new Error(refusal);
   if (!Number.isInteger(termMonths) || termMonths < 1) {
     throw new Error("Enter the renewal term in whole months.");
   }

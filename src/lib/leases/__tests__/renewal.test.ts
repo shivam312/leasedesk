@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   renewalDraft,
+  renewalRefusal,
   renewalStartProblem,
   type RenewableLease,
 } from "../renewal";
@@ -49,6 +50,30 @@ describe("renewalDraft", () => {
       renewalDraft({ ...lease, status: "renewed" }, 36, settings),
     ).toThrow("already been renewed");
     expect(() => renewalDraft(lease, 0, settings)).toThrow("whole months");
+  });
+});
+
+describe("renewalRefusal", () => {
+  it("renews a current, leaving or expired lease", () => {
+    expect(renewalRefusal("active")).toBeNull();
+    expect(renewalRefusal("in_notice")).toBeNull();
+    expect(renewalRefusal("expired")).toBeNull();
+  });
+
+  it("refuses a draft, an already renewed lease and one ended early", () => {
+    expect(renewalRefusal("draft")).toBe(
+      "A draft lease can't be renewed; edit it instead.",
+    );
+    expect(renewalRefusal("renewed")).toBe(
+      "This lease has already been renewed.",
+    );
+    // The tenant has left: a new lease for them is a new lease, not a renewal.
+    expect(renewalRefusal("terminated")).toBe(
+      "This lease was ended early, so it can't be renewed. Add a new lease instead.",
+    );
+    expect(() =>
+      renewalDraft({ ...lease, status: "terminated" }, 36, settings),
+    ).toThrow("ended early");
   });
 });
 

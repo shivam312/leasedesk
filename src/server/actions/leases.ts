@@ -35,7 +35,7 @@ import {
   markRenewed,
   unitBookings,
 } from "@/lib/leases/queries";
-import { renewalStartProblem } from "@/lib/leases/renewal";
+import { renewalRefusal, renewalStartProblem } from "@/lib/leases/renewal";
 import { reviewRows, type ReviewRow } from "@/lib/leases/review";
 import { terminationPlan } from "@/lib/leases/termination";
 import { loadSettings } from "@/lib/settings/store";
@@ -193,10 +193,8 @@ export async function saveLease(
       const old = await getLease(s, replacesLeaseId);
       if (!old)
         return refused("The lease being renewed isn't in your account.");
-      if (old.lease.status === "draft")
-        return refused("A draft lease can't be renewed; edit it instead.");
-      if (old.lease.status === "renewed")
-        return refused("This lease has already been renewed.");
+      const refusal = renewalRefusal(old.lease.status);
+      if (refusal) return refused(refusal);
       const overlap = renewalStartProblem(
         old.lease.endDate,
         draft.dates.startDate,

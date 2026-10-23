@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { FormMessage } from "@/components/ui/field";
 import { requestPasswordReset } from "@/server/actions/auth";
 
 export const metadata: Metadata = { title: "Forgot your password" };
@@ -54,8 +55,8 @@ async function ExpiredNote({
   const { expired } = await searchParams;
   if (!expired) return null;
   return (
-    <p role="alert" className="mb-4 rounded-md border px-3 py-2 text-sm">
-      That link has expired or was already used. Ask for a new one below.
-    </p>
+    <div className="mb-4">
+      <FormMessage message="That link has expired or was already used. Enter your email and we'll send a new one." />
+    </div>
   );
 }

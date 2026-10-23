@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { JoinForm } from "@/components/settings/JoinForm";
+import { Button } from "@/components/ui/button";
 import { appDb } from "@/lib/auth";
 import { findInvite } from "@/lib/auth/invites";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -30,11 +31,11 @@ async function Invite({ params }: { params: Promise<{ token: string }> }) {
           This invite link doesn&apos;t work any more
         </h1>
         <p className="mb-6 text-sm text-muted-foreground">
-          It may have been used already. Ask the owner for a new link.
+          Invite links work once. Ask whoever invited you to send a new invite.
         </p>
-        <Link href="/login" className="text-sm font-medium underline">
-          Log in instead
-        </Link>
+        <Button asChild className="h-11 md:h-9">
+          <Link href="/login">Log in instead</Link>
+        </Button>
       </>
     );
   }

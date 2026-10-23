@@ -12,7 +12,7 @@ export default function NotFound() {
         the menu to find it.
       </p>
       <div>
-        <Button asChild variant="outline" className="h-11 md:h-9">
+        <Button asChild className="h-11 md:h-9">
           <Link href="/today">Go to Today</Link>
         </Button>
       </div>

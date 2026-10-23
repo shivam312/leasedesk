@@ -134,3 +134,34 @@ describe("reportError", () => {
     expect(log).toHaveBeenCalledWith("Send failed", "inv-1", error);
   });
 });
+
+describe("reportError with Sentry on", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    vi.doUnmock("@sentry/nextjs");
+    vi.resetModules();
+  });
+
+  it("never throws or rejects when Sentry itself fails", async () => {
+    vi.stubEnv("SENTRY_DSN", "https://k@o1.ingest.sentry.io/1");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const capture = vi.fn(() => {
+      throw new Error("Sentry is down");
+    });
+    vi.doMock("@sentry/nextjs", () => ({
+      getClient: () => ({}),
+      withScope: (fn: (scope: unknown) => void) =>
+        fn({ setContext: () => {}, setTag: () => {} }),
+      captureException: capture,
+    }));
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    const { reportError: report } = await import("../index");
+    expect(() => report("Send failed", new Error("boom"))).not.toThrow();
+    await vi.waitFor(() => expect(capture).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 10));
+    process.off("unhandledRejection", unhandled);
+    expect(unhandled).not.toHaveBeenCalled();
+  });
+});

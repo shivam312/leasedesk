@@ -42,7 +42,10 @@ export default function LoginPage() {
       </p>
       <p className="mt-4 text-center text-sm text-muted-foreground">
         New here?{" "}
-        <Link href="/signup" className="font-medium text-foreground underline">
+        <Link
+          href="/signup"
+          className="inline-flex min-h-11 items-center font-medium text-foreground underline md:min-h-0"
+        >
           Create an account
         </Link>
       </p>

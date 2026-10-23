@@ -118,7 +118,7 @@ export async function requestPasswordReset(
   if (error) reportError("Password reset email failed", error);
   return {
     tone: "success",
-    message: `If there's an account for ${email}, we've emailed it a link to choose a new password. The link works for an hour.`,
+    message: `If ${email} has an account, we've emailed it a link to choose a new password. Check your inbox and spam folder; the link works for an hour.`,
     values: { email },
   };
 }

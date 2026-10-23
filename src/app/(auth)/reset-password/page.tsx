@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { setNewPassword } from "@/server/actions/auth";
 
@@ -35,6 +36,15 @@ export default function ResetPasswordPage() {
           },
         ]}
       />
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Link not working?{" "}
+        <Link
+          href="/forgot-password"
+          className="inline-flex min-h-11 items-center font-medium text-foreground underline md:min-h-0"
+        >
+          Ask for a new one
+        </Link>
+      </p>
     </>
   );
 }

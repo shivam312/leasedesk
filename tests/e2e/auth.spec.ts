@@ -75,7 +75,7 @@ test("forgot password: the emailed link lets you choose a new one", async ({
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Email me a link" }).click();
   await expect(
-    page.getByText(`If there's an account for ${email}, we've emailed it`, {
+    page.getByText(`If ${email} has an account, we've emailed it`, {
       exact: false,
     }),
   ).toBeVisible();

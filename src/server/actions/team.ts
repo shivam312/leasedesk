@@ -82,7 +82,7 @@ export async function joinTeam(
   if (!open) {
     return {
       message:
-        "This invite link doesn't work any more. Ask the owner for a new link.",
+        "This invite link doesn't work any more. Invite links work once; ask whoever invited you to send a new invite.",
     };
   }
 

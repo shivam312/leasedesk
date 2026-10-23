@@ -3,9 +3,13 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { supabaseConfig } from "./config";
 
 export async function createSupabase() {
+  // The session is request data; Supabase also reads the clock (Date.now()) to
+  // check token expiry, which Next.js only allows at request time.
+  await connection();
   const store = await cookies();
   const { url, anonKey } = supabaseConfig();
   return createServerClient(url, anonKey, {

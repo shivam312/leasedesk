@@ -12,3 +12,28 @@ export async function signUpNewOwner(page: Page) {
   await expect(page).toHaveURL("/today");
   return { email, password };
 }
+
+/** A GSTIN for the signed-in owner's business, so buildings can bill from it. */
+export async function addGstin(page: Page) {
+  await page.goto("/settings/business/entities/new");
+  await page
+    .getByLabel("Legal name", { exact: true })
+    .fill("E2E Properties Pvt Ltd");
+  await page.getByLabel("GSTIN (optional)").fill("27AAPFU0939F1ZV");
+  await page.getByLabel("State").selectOption("27");
+  await page.getByLabel("Address").fill("Andheri East, Mumbai 400069");
+  await page.getByRole("button", { name: "Add GSTIN" }).click();
+  await expect(page).toHaveURL("/settings/business");
+}
+
+/** A building with one floor, from the Leases screens. Returns its page URL. */
+export async function addBuilding(page: Page, name = "E2E Tower") {
+  await page.goto("/leases/buildings/new");
+  await page.getByLabel("Building name").fill(name);
+  await page.getByLabel("Address").fill("Plot 12, MIDC, Andheri East");
+  await page.getByLabel("City").fill("Mumbai");
+  await page.getByLabel("Invoice number prefix").fill("et");
+  await page.getByRole("button", { name: "Add building" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
+  return page.url();
+}

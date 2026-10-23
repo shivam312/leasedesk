@@ -99,3 +99,8 @@ function daysInMonth(year: number, month: number): number {
 function pad2(n: number): string {
   return n.toString().padStart(2, "0");
 }
+
+/** Area in hundredths of a sq ft: `formatArea(125050)` → `1,250.50 sq ft`. */
+export function formatArea(hundredths: number): string {
+  return `${formatINR(hundredths).replace("₹", "")} sq ft`;
+}

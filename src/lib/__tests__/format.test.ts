@@ -112,3 +112,11 @@ describe("formatFinancialYear", () => {
     expect(() => formatFinancialYear("2026-02-30")).toThrow(RangeError);
   });
 });
+
+describe("formatArea", () => {
+  it("shows hundredths of a sq ft with Indian grouping", async () => {
+    const { formatArea } = await import("../format");
+    expect(formatArea(125050)).toBe("1,250.50 sq ft");
+    expect(formatArea(12000000)).toBe("1,20,000 sq ft");
+  });
+});

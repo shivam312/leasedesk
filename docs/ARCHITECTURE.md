@@ -80,7 +80,8 @@ src/
     settings/                setting keys and defaults (schema.ts), resolution (resolve.ts), load/save (store.ts),
                              BillingSettings for the engine (billing.ts), building defaults on charges (charge-defaults.ts),
                              Billing rules labels and form (labels.ts, rules-form.ts); docs/SETTINGS.md
-    email/                   email adapter: console driver (.local-outbox/) without RESEND_API_KEY, resend driver
+    email/                   email adapter: emailDriver() picks resend (RESEND_API_KEY + EMAIL_FROM) or console (.local-outbox/); the only way code sends email
+    jobs/                    Inngest client and background jobs (daily billing run, D23), served at /api/inngest
     invoices/                monthly run (run.ts), number format (number.ts) and gap-free assignment (numbering.ts), queries, PDF templates, sending
     payments/                allocation, bank statement parsing and matching
     imports/                 Excel import for buildings, units, tenants, leases

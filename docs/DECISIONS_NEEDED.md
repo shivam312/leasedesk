@@ -30,7 +30,7 @@ Things only a person can do. Tick them when done.
 - [x] Apply the local lease migrations (M3). Done 2026-10-23: ran `pnpm db:migrate` by hand (unattended runs were refused permission five times); `pnpm test` passes. To let future unattended runs apply local migrations themselves, allow `pnpm db:migrate` in Claude Code's permissions (it already refuses non-local databases).
 - [ ] Apply the local invoice migrations (M4): run `pnpm db:migrate` (unattended runs are refused permission). Until then the invoice database tests are skipped (their titles say "skipped until pnpm db:migrate") and the invoice screens can't save.
 - [ ] Create a Google OAuth client (Google Cloud console) and turn on Google login in Supabase Auth, for "Log in with Google" (M2; email and password login works without it)
-- [ ] Create a Resend account, verify the sending domain and put `RESEND_API_KEY` in `.env.local` (M4; until then emails go to `.local-outbox/`)
+- [ ] Create a Resend account, verify the sending domain and put `RESEND_API_KEY` and `EMAIL_FROM` (the verified sender, e.g. `Invoices <invoices@yourdomain.in>`) in `.env.local` (M4; until then emails go to `.local-outbox/`). Also add `EMAIL_FROM`, `INNGEST_SIGNING_KEY` and `INNGEST_EVENT_KEY` to `.env.example`, which unattended runs can't open.
 - [ ] Get one real bank statement export (CSV or Excel) per major bank your pilots use, with personal details removed, in `tests/fixtures/bank/` (M5)
 - [ ] Get a sample Tally XML export from a pilot accountant's TallyPrime and save it in `tests/fixtures/tally/` (M7)
 - [ ] Create Sentry, Supabase cloud (Mumbai), Vercel and Inngest accounts and put the keys in `.env.local` (M8)

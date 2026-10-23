@@ -127,7 +127,9 @@ async function Today() {
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-muted-foreground">Unpaid now</p>
+          <p className="text-sm text-muted-foreground">
+            Unpaid now, including TDS
+          </p>
           <p className="text-2xl font-semibold tabular-nums">
             {formatINR(unpaid.unpaidPaise)}
           </p>
@@ -278,7 +280,7 @@ function Item({
           <Heading
             title={`${item.tenantName} hasn't paid ${formatINR(item.amountPaise)}`}
             badge={<Badge tone="bad">Overdue</Badge>}
-            detail={`${many ? `${item.invoiceCount} invoices unpaid. Oldest was due` : "Invoice was due"} ${formatDate(item.oldestDueDate)} (${dayCount(item.daysOverdue)} ago).`}
+            detail={`To pay after the TDS they may keep back. ${many ? `${item.invoiceCount} invoices unpaid. Oldest was due` : "Invoice was due"} ${formatDate(item.oldestDueDate)} (${dayCount(item.daysOverdue)} ago).`}
           />
           <div className="flex flex-wrap items-start gap-2">
             {whatsapp?.kind === "ready" && (

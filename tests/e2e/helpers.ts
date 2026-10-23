@@ -103,8 +103,12 @@ export async function makeAndSendOneInvoice(page: Page, month: string) {
   await page.getByRole("button", { name: "Send 1 invoice" }).click();
   await expect(page.getByText(`Send 1 ${month} invoice for`)).toBeVisible();
   await page.getByRole("button", { name: "Send 1 invoice" }).click();
+  // "Overdue" once this month's due date has passed (src/lib/invoices/status.ts).
   await expect(
-    page.getByText("Sent", { exact: true }).filter({ visible: true }).first(),
+    page
+      .getByText(/^(Sent|Overdue)$/)
+      .filter({ visible: true })
+      .first(),
   ).toBeVisible();
 }
 

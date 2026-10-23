@@ -322,8 +322,8 @@ export function mainActionKey(
 
 /**
  * The Today numbers that come from open invoices: everything unpaid on sent
- * invoices (TDS not yet recorded included), and how much of what tenants are
- * asked to pay is past its due date (the overdue list's total).
+ * invoices, and the part of it past its due date. Both include TDS a tenant
+ * may still keep back, like Unpaid and ageing, so the two screens agree.
  */
 export function unpaidTotals(
   open: readonly OpenInvoiceRow[],
@@ -333,7 +333,9 @@ export function unpaidTotals(
   // showing a rounded amount.
   const unpaidPaise = sumPaise(open.map((inv) => inv.outstandingPaise));
   const overduePaise = sumPaise(
-    overdueByTenant(open, today).map((t) => t.amountPaise),
+    open
+      .filter((inv) => compareDates(inv.dueDate, today) < 0)
+      .map((inv) => inv.outstandingPaise),
   );
   return { unpaidPaise, overduePaise };
 }

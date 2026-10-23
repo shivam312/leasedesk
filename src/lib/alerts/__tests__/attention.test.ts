@@ -137,9 +137,10 @@ describe("overdueByTenant", () => {
 });
 
 describe("unpaidTotals", () => {
-  it("adds everything unpaid, and the overdue amount asked for", () => {
+  it("adds everything unpaid, and the part past its due date, both including TDS", () => {
     // Unpaid: 1,18,000 + 50,000 (due later) = 1,68,000.
-    // Overdue: 1,18,000 - 10,000 TDS expected = 1,08,000.
+    // Overdue: 1,18,000, TDS expected included, as in Unpaid and ageing's
+    // overdue columns (the overdue cards ask for 1,18,000 - 10,000 = 1,08,000).
     expect(
       unpaidTotals(
         [
@@ -148,7 +149,7 @@ describe("unpaidTotals", () => {
         ],
         today,
       ),
-    ).toEqual({ unpaidPaise: 168_000_00, overduePaise: 108_000_00 });
+    ).toEqual({ unpaidPaise: 168_000_00, overduePaise: 118_000_00 });
   });
 
   // Half of 2^53 is 4,503,599,627,370,496 paise. Each amount on its own is

@@ -45,9 +45,12 @@ test("Today: make and send the month's invoices from the list", async ({
   await expect(
     page.getByRole("heading", { name: `1 ${month} invoice not sent yet` }),
   ).toHaveCount(0);
-  // ₹1,00,000 rent + 18% GST, billed this month and not yet paid (it may
-  // already be overdue too, depending on the day of the month).
-  await expect(
-    page.getByRole("region", { name: "This month" }).getByText("₹1,18,000"),
-  ).toHaveCount(2);
+  // ₹1,00,000 rent + 18% GST, billed this month and not yet paid, and once
+  // past its due date (depending on the day of the month) "₹1,18,000 of it
+  // overdue": TDS included, as in Unpaid and ageing.
+  const box = page
+    .getByRole("region", { name: "This month" })
+    .getByText("₹1,18,000");
+  await expect(box.first()).toBeVisible();
+  expect([2, 3]).toContain(await box.count());
 });

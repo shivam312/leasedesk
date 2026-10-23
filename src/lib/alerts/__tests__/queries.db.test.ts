@@ -40,10 +40,11 @@ describe.skipIf(skipDbTests)("Today queries", () => {
       }));
       expect(input.open).toHaveLength(1);
       expect(input.thisMonthNotMade).toBeNull();
-      // Unpaid ₹1,38,060; asked for ₹1,38,060 - ₹11,700 TDS = ₹1,26,360.
+      // Unpaid ₹1,38,060, all of it overdue, TDS included as in Unpaid and
+      // ageing (the overdue card asks for ₹1,38,060 - ₹11,700 TDS = ₹1,26,360).
       expect(unpaidTotals(input.open, "2026-11-20")).toEqual({
         unpaidPaise: 13_806_000,
-        overduePaise: 12_636_000,
+        overduePaise: 13_806_000,
       });
       const overdue = needsAttention(input).find((i) => i.kind === "overdue");
       expect(overdue).toMatchObject({

@@ -119,8 +119,9 @@ test("new landlord → import → billing run → send → payment → reports",
   await page.getByRole("button", { name: "Send 2 invoices" }).click();
   await expect(page.getByText(`Send 2 ${month} invoices for`)).toBeVisible();
   await page.getByRole("button", { name: "Send 2 invoices" }).click();
+  // "Overdue" once this month's due date has passed.
   await expect(
-    page.getByText("Sent", { exact: true }).filter({ visible: true }),
+    page.getByText(/^(Sent|Overdue)$/).filter({ visible: true }),
   ).toHaveCount(2);
   await expect(visible(page, "₹1,18,000")).toBeVisible();
   await expect(visible(page, "₹59,000")).toBeVisible();

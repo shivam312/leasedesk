@@ -243,7 +243,7 @@ export function ageing(
             kind: "money" as const,
             hint: b.hint,
           })),
-          { key: "total", label: "Total unpaid", kind: "money" },
+          { key: "total", label: "Unpaid now, including TDS", kind: "money" },
         ],
         rows: tenantRows,
         totals:
@@ -258,7 +258,7 @@ export function ageing(
           { key: "invoiceDate", label: "Invoice date", kind: "date" },
           { key: "dueDate", label: "Due on", kind: "date" },
           { key: "days", label: "Days overdue", kind: "count" },
-          { key: "unpaid", label: "Unpaid", kind: "money" },
+          { key: "unpaid", label: "Unpaid, including TDS", kind: "money" },
           {
             key: "tds",
             label: "TDS expected",

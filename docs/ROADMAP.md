@@ -98,6 +98,14 @@ Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice 
 
 On `main`. All migrations to `drizzle/0020` are applied locally, and the database tests no longer skip when a table is missing: they fail. Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`).
 
+## M5a. Demo data and walkthrough
+
+- [ ] Realistic seed: `pnpm db:seed:demo` creates "Sharma Estates" with 2 buildings (an 8-floor office block in Gurugram and a retail-front building in Bengaluru), 45 tenants with believable Indian company names, GSTINs with correct state codes, chargeable areas and per-sq-ft rents in realistic ranges, a mix of 5%/12-month and 15%/36-month increases, two rent-free periods, one lease expiring in 60 days, one in lock-in, 6 unpaid invoices of different ages, 3 tenants with missing TDS certificates, and 3 months of invoice and payment history so every report has data. Demo login demo@sharma-estates.example with a password printed by the script. Idempotent: running it again resets the demo organisation.
+- [ ] Walkthrough script: `pnpm walkthrough` runs Playwright against the dev server with the demo login, records video, and takes a numbered full-page screenshot at every step of: (1) log in and read Today, (2) open a tenant and their lease, (3) add a new lease end to end and see the rent schedule, (4) run this month's billing, review a draft, tap "explain this amount", send all, (5) record a payment with TDS and allocate it, (6) import a bank statement and confirm matches, (7) open each report. Repeat Today and the lease list at 375px width.
+- [ ] Walkthrough page: `docs/walkthrough/index.html` built by the script: screenshots in order, each with a one-paragraph caption for a non-technical founder saying what the user is doing, what to notice, and which rule or setting produced the numbers on screen. Link the videos.
+- [ ] Demo script: `docs/DEMO_SCRIPT.md`, a 10-minute spoken script for a landlord meeting on the demo data, with the exact clicks.
+- [ ] The walkthrough doubles as an end-to-end test in `pnpm test:e2e`, asserting the key amounts on screen match the billing engine's output for the seeded leases.
+
 ## M6. Today screen and alerts (week 8)
 
 - [ ] Today screen: billed, collected, outstanding; needs-attention list with inline actions

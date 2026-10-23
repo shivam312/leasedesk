@@ -51,6 +51,35 @@ export const buildingSchema = z
     creditNotePrefix: b.creditNotePrefix ?? `${b.invoicePrefix.slice(0, 3)}CN`,
   }));
 
+type Prefixes = { invoicePrefix: string; creditNotePrefix: string };
+
+/**
+ * Why a building's prefixes would give two documents the same number, or
+ * null. Each prefix has its own number series per GSTIN and year (section
+ * 9), so a credit note prefix must never be an invoice prefix under the same
+ * GSTIN. `others` are the other buildings billing from the same GSTIN.
+ */
+export function prefixClash(
+  building: Prefixes,
+  others: readonly Prefixes[],
+): Partial<Record<keyof Prefixes, string>> | null {
+  const { invoicePrefix, creditNotePrefix } = building;
+  if (creditNotePrefix === invoicePrefix)
+    return {
+      creditNotePrefix:
+        "Use a different prefix from the invoice prefix, so no credit note has an invoice's number.",
+    };
+  if (others.some((o) => o.invoicePrefix === creditNotePrefix))
+    return {
+      creditNotePrefix: `Another building billing from this GSTIN uses ${creditNotePrefix} for invoices. Choose a different credit note prefix.`,
+    };
+  if (others.some((o) => o.creditNotePrefix === invoicePrefix))
+    return {
+      invoicePrefix: `Another building billing from this GSTIN uses ${invoicePrefix} for credit notes. Choose a different invoice prefix.`,
+    };
+  return null;
+}
+
 export const floorSchema = z.object({
   label: z
     .string()

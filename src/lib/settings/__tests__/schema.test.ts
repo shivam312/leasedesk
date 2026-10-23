@@ -113,6 +113,23 @@ describe("parseStoredSettings", () => {
       }),
     ).toThrow(/seq/);
   });
+
+  it("refuses an invoice number format that could repeat a number", () => {
+    // Series are kept per building prefix and financial year, so a format
+    // without {prefix} gives B1's and B2's first invoices the same number,
+    // and one without {fy} repeats last year's numbers.
+    for (const format of ["{fy}/{seq}", "INV-{seq}", "{prefix}-{seq}"])
+      expect(() =>
+        parseStoredSettings("billing_entity", {
+          "invoice.numberFormat": format,
+        }),
+      ).toThrow(InvalidSettingsError);
+    expect(
+      parseStoredSettings("billing_entity", {
+        "invoice.numberFormat": "{prefix}-{fy}-{seq}",
+      }),
+    ).toEqual({ "invoice.numberFormat": "{prefix}-{fy}-{seq}" });
+  });
 });
 
 describe("helpers", () => {

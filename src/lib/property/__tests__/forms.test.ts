@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseForm } from "@/lib/auth/forms";
 import {
   buildingSchema,
+  prefixClash,
   hundredthsToSqft,
   sqftToHundredths,
   unitSchema,
@@ -75,5 +76,46 @@ describe("building form", () => {
     expect(
       "state" in result && result.state.fieldErrors?.invoicePrefix,
     ).toMatch(/1 to 5/);
+  });
+});
+
+describe("prefixClash", () => {
+  const b1 = { invoicePrefix: "B1", creditNotePrefix: "B1CN" };
+
+  it("allows distinct prefixes, and buildings sharing an invoice prefix (one series)", () => {
+    expect(
+      prefixClash({ invoicePrefix: "B2", creditNotePrefix: "B2CN" }, [b1]),
+    ).toBeNull();
+    expect(
+      prefixClash({ invoicePrefix: "B1", creditNotePrefix: "B1CN" }, [b1]),
+    ).toBeNull();
+  });
+
+  it("refuses a credit note prefix equal to the invoice prefix", () => {
+    // B1/26-27/0001 would be both an invoice and a credit note.
+    expect(
+      prefixClash({ invoicePrefix: "B1", creditNotePrefix: "B1" }, []),
+    ).toEqual({
+      creditNotePrefix:
+        "Use a different prefix from the invoice prefix, so no credit note has an invoice's number.",
+    });
+  });
+
+  it("refuses a credit note prefix another building under this GSTIN uses for invoices", () => {
+    expect(
+      prefixClash({ invoicePrefix: "B2", creditNotePrefix: "B1" }, [b1]),
+    ).toEqual({
+      creditNotePrefix:
+        "Another building billing from this GSTIN uses B1 for invoices. Choose a different credit note prefix.",
+    });
+  });
+
+  it("refuses an invoice prefix another building under this GSTIN uses for credit notes", () => {
+    expect(
+      prefixClash({ invoicePrefix: "B1CN", creditNotePrefix: "XCN" }, [b1]),
+    ).toEqual({
+      invoicePrefix:
+        "Another building billing from this GSTIN uses B1CN for credit notes. Choose a different invoice prefix.",
+    });
   });
 });

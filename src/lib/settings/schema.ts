@@ -125,7 +125,13 @@ export const SETTINGS = {
     z
       .string()
       .max(40)
-      .refine((s) => s.includes("{seq}"), "The format must include {seq}"),
+      .refine((s) => s.includes("{seq}"), "The format must include {seq}")
+      // Series are per building prefix and financial year (BILLING_RULES
+      // section 9): without both, two series could give the same number.
+      .refine(
+        (s) => s.includes("{prefix}") && s.includes("{fy}"),
+        "The format must include {prefix} and {fy}",
+      ),
     "{prefix}/{fy}/{seq}",
     ["billing_entity"],
     "advanced",

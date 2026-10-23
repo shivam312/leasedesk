@@ -87,7 +87,7 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 
 ## 9. Invoice numbering **[CA]**
 
-- One series per billing GSTIN per financial year, consecutive, no gaps, unique.
+- One series per billing GSTIN, financial year and building prefix (GST rule 46 allows several series), each consecutive with no gaps. Every number is unique within the GSTIN and financial year: a custom format must include `{prefix}`, `{fy}` and `{seq}`, and a building's credit note prefix may not be the invoice prefix of any building under the same GSTIN. Buildings sharing an invoice prefix share its series. **[CA]** (D-015)
 - Maximum 16 characters, using letters, digits, `-` and `/` only.
 - Default format `{prefix}/{fy}/{seq}`, e.g. `B1/26-27/0001` (13 characters). Prefix is a building setting.
 - Numbers are assigned when an invoice is sent, inside a database transaction with a row lock on the series.

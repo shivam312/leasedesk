@@ -2,7 +2,7 @@
 
 // Buildings, floors and units.
 
-import { eq } from "drizzle-orm";
+import { eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { appDb } from "@/lib/auth";
@@ -10,7 +10,12 @@ import type { FormState } from "@/lib/auth/forms";
 import { insertLogged, updateLogged } from "@/lib/db/activity-log";
 import { buildings, floors, units } from "@/lib/db/schema";
 import { runScoped } from "@/lib/db/scoped";
-import { buildingSchema, floorSchema, unitSchema } from "@/lib/property/forms";
+import {
+  buildingSchema,
+  floorSchema,
+  prefixClash,
+  unitSchema,
+} from "@/lib/property/forms";
 import { guardedForm } from "./guard";
 
 /** Postgres unique violation: a duplicate unit code or floor label. */
@@ -31,6 +36,22 @@ export async function saveBuilding(
     form,
     (member, data) =>
       runScoped(appDb, member, async (s) => {
+        const others = await s.tx
+          .select({
+            invoicePrefix: buildings.invoicePrefix,
+            creditNotePrefix: buildings.creditNotePrefix,
+          })
+          .from(buildings)
+          .where(
+            s.where(
+              buildings,
+              eq(buildings.billingEntityId, data.billingEntityId),
+              id ? ne(buildings.id, id) : undefined,
+            ),
+          );
+        const clash = prefixClash(data, others);
+        if (clash)
+          return { fieldErrors: clash, values: data };
         const saved = id
           ? await updateLogged(s, buildings, id, data)
           : await insertLogged(s, buildings, data);

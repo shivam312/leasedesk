@@ -57,7 +57,7 @@ describe.skipIf(skipDbTests)("settings storage", () => {
           s,
           { scope: "billing_entity", id: entity.id },
           {
-            "invoice.numberFormat": "{prefix}-{seq}",
+            "invoice.numberFormat": "{prefix}-{fy}-{seq}",
           },
         );
 
@@ -70,7 +70,7 @@ describe.skipIf(skipDbTests)("settings storage", () => {
         expect(settings["invoice.runDay"]).toBe(25);
         expect(settings["invoice.dueDays"]).toBe(15);
         expect(settings["billing.roundIncreasedRent"]).toBe("none");
-        expect(settings["invoice.numberFormat"]).toBe("{prefix}-{seq}");
+        expect(settings["invoice.numberFormat"]).toBe("{prefix}-{fy}-{seq}");
 
         const forBuilding = await loadSettingsWithSources(s, {
           buildingId: building.id,

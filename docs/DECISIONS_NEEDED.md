@@ -40,6 +40,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-028 | Bringing in what tenants already owe when a landlord starts | product | no | open |
 | D-029 | How users reach LeaseDesk support | product | no | open |
 | D-030 | Codex review of M8: unresolved items | product | no | open |
+| D-031 | Codex review of M5A: unresolved items | product | no | open |
 
 ## Human tasks
 
@@ -451,6 +452,21 @@ Things only a person can do. Tick them when done.
   - C) Review the remaining screens yourself on a phone instead of the agent
 - Recommendation: A, because several of the missed screens (Today, payments, Excel import) are the ones a pilot landlord uses on day one, the review needs no accounts or money, and it can run while the human M8 tasks (Sentry and Supabase cloud accounts, staging, backups) are still open, so it doesn't delay the pilot.
 - Done meanwhile: the roadmap task was narrowed and the missed screens became an open M8 task (commit 915c072); the matching backlog row was removed. No code changed. Then A was done on 2026-10-24: the pipeline reviewed every missed screen, fixed the must-fixes and backlogged the rest. Each screen's outcome is in the "UX review, second pass" table in `docs/milestones/M8.md`. You can close this entry with "A".
+- Answer:
+
+### D-031: Codex review of M5A: unresolved items
+- Status: open
+- Type: product
+- Blocking: no
+- Context: Codex (the independent reviewer) failed M5A (demo data and walkthrough) after two review rounds (`.pipeline/reviews/M5A-codex-review-2.md`), on one item. It concerns the demo seed only, not real invoices: no tenant is ever billed from it. Codex checked the rest by hand (tenant and invoice counts, rent-free and expiry spotlights, the ₹7,43,000 walkthrough rent, organization scoping, the local-database guard) and found it right.
+  - **Item 1: the demo security deposit was worked out with decimal (floating-point) arithmetic** (`src/lib/demo/seed.ts`).
+    - Codex says: the seed calculated the deposit as rate × area × months ÷ 100 in floating point and then rounded it. That breaks the rule that money is always whole paise, and can be off by a few paise for odd areas. Use whole-number arithmetic with half-up rounding.
+    - Claude says: agreed, and fixed in commit 121f82d, two minutes after Codex's second round, so Codex hasn't seen it. The deposit now comes from a small `demoDeposit` helper that uses the billing engine's own whole-paise functions (monthly rent rounded half up, then × months), with tests worked out by hand: for ₹85.51/sq ft on 1,250.50 sq ft the old formula gave ₹6,41,581.53 and the new one gives ₹6,41,581.56, matching six monthly invoices. The demo tests pass. Nothing is left to decide on how the app behaves.
+- Options:
+  - A) Accept the fix and close M5A; Codex checks it in its next routine review
+  - B) Run one more Codex round on M5A before moving on
+- Recommendation: A, because the fix is small, uses the same tested money functions as real invoices, only affects demo data, and M5A otherwise passed review.
+- Done meanwhile: the fix (commit 121f82d) with tests; M5A is ticked in `docs/ROADMAP.md`. You can close this entry with "A".
 - Answer:
 
 ## Applied

@@ -26,6 +26,9 @@ function cellText(cell: CellObject | undefined, date1904: boolean): string {
       };
       return `${pad(d.d)}-${pad(d.m)}-${d.y}`;
     }
+    // A percent cell holds a fraction (5% is 0.05): read it as typed.
+    if (cell.z && String(cell.z).includes("%"))
+      return `${numberText(cell.v * 100)}%`;
     return numberText(cell.v);
   }
   if (cell.t === "e") return "";

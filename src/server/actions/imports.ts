@@ -28,7 +28,7 @@ async function readFile(
   if (file.size > MAX_BYTES)
     return {
       message:
-        "This file is over 2 MB. Import it in parts, a few buildings at a time.",
+        "This file is over 2 MB. Split it into smaller files and import them one at a time.",
     };
   try {
     return { sheets: parseWorkbookSheets(await file.arrayBuffer()) };
@@ -40,14 +40,25 @@ async function readFile(
   }
 }
 
-/** "Units, row 7: …", at most 50, with a count of the rest. */
+const SHOWN = 50;
+
+/** "Units, row 7: …", at most 50. */
 function problemLines(errors: RowError[]): string[] {
-  const lines = errors.map((e) =>
-    e.row > 0 ? `${e.sheet}, row ${e.row}: ${e.message}` : e.message,
-  );
-  return lines.length > 50
-    ? [...lines.slice(0, 50), `…and ${lines.length - 50} more.`]
-    : lines;
+  return errors
+    .slice(0, SHOWN)
+    .map((e) =>
+      e.row > 0 ? `${e.sheet}, row ${e.row}: ${e.message}` : e.message,
+    );
+}
+
+/** The lead sentence above the rows to fix. */
+function refusedMessage(errors: RowError[]): string {
+  const n = errors.length;
+  return n === 1
+    ? "Nothing was imported. Fix this row in the file, then import it again."
+    : n > SHOWN
+      ? `Nothing was imported. Fix these rows in the file, then import it again. Showing the first ${SHOWN} of ${n}.`
+      : `Nothing was imported. Fix these ${n} rows in the file, then import it again.`;
 }
 
 export async function importProperty(
@@ -61,7 +72,7 @@ export async function importProperty(
       const result = planPropertyImport(read.sheets, await existingProperty(s));
       if ("errors" in result)
         return {
-          message: `Nothing was imported. Fix ${result.errors.length === 1 ? "this row" : `these ${result.errors.length} rows`} in the file, then import it again.`,
+          message: refusedMessage(result.errors),
           problems: problemLines(result.errors),
         };
       const n = await saveProperty(s, result.plan);
@@ -96,7 +107,7 @@ export async function importTenantsAndLeases(
     } catch (error) {
       if (!(error instanceof ImportRefused)) throw error;
       return {
-        message: `Nothing was imported. Fix ${error.errors.length === 1 ? "this row" : `these ${error.errors.length} rows`} in the file, then import it again.`,
+        message: refusedMessage(error.errors),
         problems: problemLines(error.errors),
       };
     }

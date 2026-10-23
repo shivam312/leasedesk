@@ -1,4 +1,4 @@
-import { read, utils } from "xlsx";
+import { read, utils, write } from "xlsx";
 import { describe, expect, it } from "vitest";
 import { parseWorkbookSheets } from "@/lib/bank/xlsx";
 import {
@@ -281,5 +281,24 @@ describe("the template", () => {
     expect(
       utils.sheet_to_json(read(bytes).Sheets.Units!, { header: 1 }),
     ).toEqual([UNIT_COLUMNS.map((c) => c.heading)]);
+  });
+});
+
+describe("percent cells", () => {
+  it("read as typed: 5% stored as 0.05 comes back as 5%", () => {
+    const sheet = utils.aoa_to_sheet([["Rent increase (%)"], [0.05], [0.125]]);
+    sheet.A2!.z = "0%";
+    sheet.A3!.z = "0.0%";
+    const book = utils.book_new();
+    utils.book_append_sheet(book, sheet, "Leases");
+    const bytes = write(book, {
+      type: "buffer",
+      bookType: "xlsx",
+    }) as Uint8Array;
+    expect(parseWorkbookSheets(bytes)[0]!.rows).toEqual([
+      ["Rent increase (%)"],
+      ["5%"],
+      ["12.50%"],
+    ]);
   });
 });

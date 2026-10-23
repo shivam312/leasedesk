@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseLeaseForm } from "@/lib/leases/draft";
 import {
+  threeMonths,
   LEASE_COLUMNS,
   leaseErrorMessage,
   leaseRowInput,
@@ -158,7 +159,7 @@ describe("leaseRowInput", () => {
       {
         type: "rent",
         basis: "fixed",
-        amount: "1,00,000",
+        amount: "300000.00",
         frequency: "quarterly",
       },
     ]);
@@ -209,5 +210,14 @@ describe("leaseErrorMessage", () => {
         ),
       ).toBe("Parking: Enter the amount in rupees.");
     }
+  });
+});
+
+describe("threeMonths", () => {
+  it("triples rupees exactly, in paise", () => {
+    // ₹1,00,000 × 3 = ₹3,00,000; ₹33,333.33 × 3 = ₹99,999.99
+    expect(threeMonths("1,00,000")).toBe("300000.00");
+    expect(threeMonths("33333.33")).toBe("99999.99");
+    expect(threeMonths("lots")).toBe("lots");
   });
 });

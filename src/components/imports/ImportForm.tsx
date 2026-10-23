@@ -27,7 +27,7 @@ export function ImportForm({
         name="file"
         type="file"
         required
-        accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         className="text-sm file:mr-3 file:h-11 file:rounded-md file:border file:bg-background file:px-3 md:file:h-9"
       />
       <div>
@@ -41,13 +41,19 @@ export function ImportForm({
         </Button>
       </div>
       {state.message && (
-        <div role="status" className="flex flex-col gap-2">
+        <div
+          role={state.tone === "success" ? "status" : "alert"}
+          className="flex flex-col gap-2"
+        >
           <FormMessage
             message={state.message}
             tone={state.tone === "success" ? "success" : "error"}
           />
           {state.problems && state.problems.length > 0 && (
-            <ul className="flex max-h-96 flex-col gap-1 overflow-y-auto rounded-lg border p-3 text-sm">
+            <ul
+              aria-label="Rows to fix"
+              className="flex flex-col gap-1 rounded-lg border p-3 text-sm"
+            >
               {state.problems.map((p) => (
                 <li key={p} className="break-words">
                   {p}

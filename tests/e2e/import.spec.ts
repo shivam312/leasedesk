@@ -44,8 +44,7 @@ test("an owner imports buildings and units from Excel, fixing a bad row first", 
   );
   const template = page.waitForEvent("download");
   await page
-    .getByRole("link", { name: "Download the template" })
-    .first()
+    .getByRole("link", { name: /buildings and units template/ })
     .click();
   expect((await template).suggestedFilename()).toBe(
     "buildings-and-units-template.xlsx",

@@ -73,9 +73,12 @@ export async function importTenancy(
           failed.add(key(values.name));
         };
         if (tenantIds.has(key(values.name))) {
-          err(
-            `${values.name} is already saved, or is in the Tenants sheet twice. Take the extra row out; its leases can still be in the Leases sheet.`,
-          );
+          // The tenant exists, so its leases are still checked.
+          errors.push({
+            sheet: tenantSheet.name,
+            row,
+            message: `${values.name} is already saved, or is in the Tenants sheet twice. Take the extra row out; its leases can still be in the Leases sheet.`,
+          });
           continue;
         }
         const parsed = readTenantRow(values);

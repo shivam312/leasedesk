@@ -7,6 +7,7 @@
 
 import { parseBankDate } from "@/lib/bank/statement";
 import type { LeaseFormErrors, LeaseFormInput } from "@/lib/leases/draft";
+import { rupeesToPaise } from "@/lib/settings/rules-form";
 import { contactSchema, tenantSchema } from "@/lib/tenants/forms";
 import { stateCodeOf } from "./property";
 import type { ColumnSpec } from "./sheets";
@@ -118,6 +119,18 @@ export function readTenantRow(v: TenantValues):
 /** Excel dates arrive as DD-MM-YYYY; the forms take YYYY-MM-DD. */
 const isoDate = (s: string) => (s.trim() ? (parseBankDate(s) ?? s.trim()) : "");
 
+/**
+ * Rupees per month as rupees per quarter, exactly (× 3 in paise):
+ * "1,00,000" → "300000.00". Text that isn't an amount is passed on for the
+ * lease form to refuse in its own words.
+ */
+export function threeMonths(rupees: string): string {
+  const paise = rupeesToPaise(rupees.trim().replace(/,/g, ""));
+  if (paise === null) return rupees;
+  const quarter = paise * 3;
+  return `${Math.trunc(quarter / 100)}.${String(quarter % 100).padStart(2, "0")}`;
+}
+
 /** Which charge each lease form charge row came from, for messages. */
 export type ChargeSource = "Rent" | "Maintenance" | "Parking";
 
@@ -180,10 +193,14 @@ export function leaseRowInput(
 
   const charges: Record<string, string>[] = [];
   const sources: ChargeSource[] = [];
+  const fixed = basis === "per month" || basis === "fixed";
+  const quarterly = frequency === "quarterly";
   charges.push({
     type: "rent",
-    basis: basis === "per month" || basis === "fixed" ? "fixed" : "per_sqft",
-    amount: v.rent,
+    basis: fixed ? "fixed" : "per_sqft",
+    // A fixed charge is per billing period (BILLING_RULES section 3): rent
+    // per month billed quarterly is three months' rent per quarter.
+    amount: fixed && quarterly ? threeMonths(v.rent) : v.rent,
     frequency: frequency || "monthly",
   });
   sources.push("Rent");
@@ -331,7 +348,7 @@ export const TENANCY_TEMPLATE = {
         rentFreeDays: "Optional; months or days, not both",
         deposit: "Optional, rupees",
         area: "Billed (default) or Carpet: which area the per sq ft amounts use",
-        rent: "Per sq ft per month, or the whole amount per month",
+        rent: "Per sq ft per month, or the whole rent per month (billed quarterly, three months at a time)",
         rentBasis: '"per sq ft" (default) or "per month"',
         rentFrequency: "Monthly (default) or Quarterly",
         increase: "Optional, like 5: rent goes up this much",

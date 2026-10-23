@@ -59,7 +59,7 @@ async function Imports() {
             className: "h-11 self-start md:h-9",
           })}
         >
-          Download the template
+          Download the buildings and units template (.xlsx)
         </a>
         {property ? (
           <ImportForm
@@ -89,7 +89,7 @@ async function Imports() {
             className: "h-11 self-start md:h-9",
           })}
         >
-          Download the template
+          Download the tenants and leases template (.xlsx)
         </a>
         {leases ? (
           <ImportForm

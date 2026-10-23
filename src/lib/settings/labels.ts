@@ -68,6 +68,17 @@ export const SETTING_LABELS: Partial<Record<SettingKey, SettingLabel>> = {
       options: { two_lines: "Two lines, one per rate", one_line: "One line" },
     },
   },
+  "billing.afterCustomIncrease": {
+    label: "After a custom rent increase",
+    help: "Rent goes up 5% every April and you set a custom rent from Oct 2028: the 5% increases stop, or carry on from the custom rent.",
+    input: {
+      kind: "choice",
+      options: {
+        stop_rule: "Stop the automatic increases",
+        resume_rule: "Carry on from the custom rent",
+      },
+    },
+  },
   "billing.skipZeroInvoices": {
     label: "₹0 invoices",
     help: "When a lease has nothing to bill in a month.",

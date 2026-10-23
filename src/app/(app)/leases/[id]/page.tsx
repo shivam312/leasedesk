@@ -110,8 +110,8 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
         <div>
           <dt className="text-muted-foreground">Units</dt>
           <dd className="font-medium">
-            {saved.units.map((u) => u.code).join(", ")} ({formatArea(area)} sq
-            ft {lease.areaBasis === "carpet" ? "carpet" : "billed"} area)
+            {saved.units.map((u) => u.code).join(", ")} ({formatArea(area)}{" "}
+            {lease.areaBasis === "carpet" ? "carpet" : "billed"} area)
           </dd>
         </div>
         <div>

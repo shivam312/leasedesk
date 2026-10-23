@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useMemo, useState, useTransition } from "react";
+import { Fragment, useId, useMemo, useState, useTransition } from "react";
 import type { FormField } from "@/components/forms/SimpleForm";
 import { Button } from "@/components/ui/button";
 import {
@@ -303,8 +303,7 @@ export function LeaseForm({
                           values.areaBasis === "carpet"
                             ? u.carpetArea
                             : u.chargeableArea,
-                        )}{" "}
-                        sq ft
+                        )}
                       </span>
                     </span>
                   </label>
@@ -649,41 +648,43 @@ export function LeaseForm({
                 More options for this lease
               </summary>
               <div className="flex flex-col gap-4 pt-2">
-                {settingFields.map((f) =>
-                  field(
-                    `settings.${f.name}`,
-                    f.label,
-                    (common) => {
-                      const props = {
-                        ...common,
-                        value: values.settings[f.name] ?? "",
-                        onChange: (
-                          e: React.ChangeEvent<
-                            HTMLInputElement | HTMLSelectElement
-                          >,
-                        ) =>
-                          set({
-                            settings: {
-                              ...values.settings,
-                              [f.name]: e.target.value,
-                            },
-                          }),
-                      };
-                      return f.options ? (
-                        <Select {...props}>
-                          {f.options.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </Select>
-                      ) : (
-                        <Input {...props} inputMode={f.inputMode} />
-                      );
-                    },
-                    f.hint,
-                  ),
-                )}
+                {settingFields.map((f) => (
+                  <Fragment key={f.name}>
+                    {field(
+                      `settings.${f.name}`,
+                      f.label,
+                      (common) => {
+                        const props = {
+                          ...common,
+                          value: values.settings[f.name] ?? "",
+                          onChange: (
+                            e: React.ChangeEvent<
+                              HTMLInputElement | HTMLSelectElement
+                            >,
+                          ) =>
+                            set({
+                              settings: {
+                                ...values.settings,
+                                [f.name]: e.target.value,
+                              },
+                            }),
+                        };
+                        return f.options ? (
+                          <Select {...props}>
+                            {f.options.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </Select>
+                        ) : (
+                          <Input {...props} inputMode={f.inputMode} />
+                        );
+                      },
+                      f.hint,
+                    )}
+                  </Fragment>
+                ))}
               </div>
             </details>
           )}
@@ -694,8 +695,8 @@ export function LeaseForm({
         <div className="flex flex-col gap-4">
           <p className="text-sm">
             Rent starts on {formatDate(review.rentCommencementDate)}. Area{" "}
-            {formatArea(review.areaHundredths)} sq ft. Amounts are before GST,
-            in the month they&apos;re billed.
+            {formatArea(review.areaHundredths)}. Amounts are before GST, in the
+            month they&apos;re billed.
           </p>
           <ul className="flex flex-col gap-1 text-sm">
             {review.criticalDates.map((d) => (

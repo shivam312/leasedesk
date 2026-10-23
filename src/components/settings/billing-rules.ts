@@ -48,14 +48,17 @@ export function describeValue(key: SettingKey, value: unknown): string {
 /**
  * Fields for the organization (`inherited` undefined: every field filled in)
  * or a building (a blank field follows `inherited`, the organization's value).
+ * Settings without a label in `SETTING_LABELS` aren't on screen yet and are
+ * left out.
  */
 export function billingRuleFields(
   keys: SettingKey[],
   stored: StoredSettings,
   inherited?: Settings,
 ): FormField[] {
-  return keys.map((key) => {
-    const label = SETTING_LABELS[key]!;
+  return keys.flatMap((key) => {
+    const label = SETTING_LABELS[key];
+    if (!label) return [];
     const def = SETTINGS[key];
     const current = stored[key];
     const fallback = inherited?.[key] ?? def.default;

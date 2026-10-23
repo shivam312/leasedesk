@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { describeValue } from "../billing-rules";
+import { SETTING_LABELS } from "@/lib/settings/labels";
+import { fieldName } from "@/lib/settings/rules-form";
+import { keysForScope } from "@/lib/settings/schema";
+import { billingRuleFields, describeValue } from "../billing-rules";
 
 describe("describeValue", () => {
   it("shows rupee settings with Indian grouping (formatINR)", () => {
@@ -20,5 +23,23 @@ describe("describeValue", () => {
     expect(describeValue("invoice.dueDays", 1)).toBe("1 day");
     expect(describeValue("invoice.dueDays", 7)).toBe("7 days");
     expect(describeValue("invoice.dueDays", 0)).toBe("0 days");
+  });
+});
+
+describe("billingRuleFields", () => {
+  it("has a field for every setting a lease, building or organization can set", () => {
+    for (const scope of ["organization", "building", "lease"] as const) {
+      const keys = keysForScope(scope).filter((k) => SETTING_LABELS[k]);
+      expect(billingRuleFields(keysForScope(scope), {}).length).toBe(
+        keys.length,
+      );
+    }
+    expect(
+      billingRuleFields(keysForScope("lease"), {}).map((f) => f.name),
+    ).toContain(fieldName("billing.afterCustomIncrease"));
+  });
+
+  it("leaves out a setting that isn't on screen yet", () => {
+    expect(billingRuleFields(["reminders.autoSend"], {})).toEqual([]);
   });
 });

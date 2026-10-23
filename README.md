@@ -40,7 +40,7 @@ You need Docker Desktop (running) and the Supabase CLI (`brew install supabase/t
 ```bash
 supabase start      # local Postgres, Auth and Storage; prints the URLs and keys
 pnpm db:migrate     # apply the migrations in drizzle/
-pnpm db:seed        # load the demo organization
+pnpm db:seed        # load the demo organization (2 buildings, 40 tenants, 45 leases)
 supabase stop       # when you're done
 ```
 

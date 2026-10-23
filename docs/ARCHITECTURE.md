@@ -25,7 +25,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 
 ## Folder layout
 
-This is the target layout. What exists at the end of M2: the app shell; sign-up, login and invites under `(auth)/`; Settings (business details, billing rules, team), Leases → buildings, units and stacking plan, and Tenants under `(app)/`; `lib/billing/`, `lib/settings/`, `lib/auth/`, `lib/db/` (schema, `scoped.ts`, `activity-log.ts`), `lib/india/`, `lib/property/`, `lib/tenants/`, `lib/supabase/`; `server/actions/`; `proxy.ts`; error and not-found pages for the signed-in app. Invoices, payments, imports, exports, alerts and jobs arrive with their milestones.
+This is the target layout. What exists at the end of M3: the app shell; sign-up, login and invites under `(auth)/`; Settings (business details, billing rules, team), Leases (lease list, `leases/new` for the four-step form, also used to copy (`?copy=<id>`) and renew (`?renew=<id>`), the lease page `leases/[id]` with End early, and buildings, units and stacking plan), and Tenants under `(app)/`; `lib/billing/`, `lib/settings/`, `lib/auth/`, `lib/db/` (schema, `scoped.ts`, `activity-log.ts`), `lib/india/`, `lib/property/`, `lib/tenants/`, `lib/leases/`, `lib/supabase/`, `lib/today.ts`; `server/actions/`; `proxy.ts`; error and not-found pages for the signed-in app. Invoices, payments, imports, exports, alerts and jobs arrive with their milestones.
 
 ```
 src/
@@ -72,6 +72,9 @@ src/
     india/                   GSTIN, PAN, IFSC, UPI and phone checks
     property/                buildings, floors, units: form schemas, queries, stacking plan
     tenants/                 tenant form schemas and queries
+    leases/                  lease form steps and validation (forms.ts, charges-form.ts), form -> engine input (draft.ts, D20),
+                             unit-overlap check, review rows (review.ts), saved rows <-> form (rows.ts, prefill.ts),
+                             critical dates, copy, renewal (D20), termination (D21), queries (queries.ts)
     config/
       brand.ts               product name, the only place it's written (D-006)
     settings/                setting keys and defaults (schema.ts), resolution (resolve.ts), load/save (store.ts),
@@ -84,6 +87,7 @@ src/
     exports/                 Tally XML, Excel, PDF reports
     alerts/                  critical-date generation and digest building
     format.ts                ₹ and date formatting for the UI
+    today.ts                 todayInIndia(): today's date in Asia/Kolkata, for server code to pass into pure logic
     utils.ts                 cn() for merging Tailwind classes (clsx + tailwind-merge; D-008)
     auth.ts                  current user, organization, role checks
   server/

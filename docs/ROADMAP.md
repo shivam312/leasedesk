@@ -4,7 +4,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 Each task is one commit. Tasks tagged `(human)` need a person and are listed in `docs/DECISIONS_NEEDED.md` under Human tasks; the pipeline skips them. Tasks tagged `(blocked: D-xxx)` wait for that decision. See `PIPELINE.md`.
 
-**Current milestone:** M3
+**Current milestone:** M4
 
 ## M0. Project setup (week 3)
 
@@ -57,17 +57,17 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 
 ## M3. Leases (week 6)
 
-- [ ] (human) Schema: leases and lease units
-- [ ] (human) Schema: lease charges, escalation rules, custom escalations, critical dates
-- [ ] (human) Lease form, first steps: tenant, units, dates, rent-free period
-- [ ] (human) Lease form, charges and rent increases, with lease-level settings under "More options"
-- [ ] (human) Review step showing the full rent schedule
-- [ ] (human) Copy an existing lease as a template
-- [ ] (human) Critical dates generated from lease terms
-- [ ] (human) Renewal (new version)
-- [ ] (human) Termination
+- [x] Schema: leases and lease units
+- [x] Schema: lease charges, escalation rules, custom escalations, critical dates
+- [x] Lease form, first steps: tenant, units, dates, rent-free period
+- [x] Lease form, charges and rent increases, with lease-level settings under "More options"
+- [x] Review step showing the full rent schedule
+- [x] Copy an existing lease as a template
+- [x] Critical dates generated from lease terms
+- [x] Renewal (new version)
+- [x] Termination
 
-All M3 tasks wait on the Human task "apply the local lease migrations" in `docs/DECISIONS_NEEDED.md`. Built on branch `m3-leases-schema` but never run against the database: the schema (`drizzle/0008`–`0011`), the logic for every task (`src/lib/leases/`, unit tests), the server actions (`src/server/actions/leases.ts`) and the screens (lease list, the four-step form with copy and renew, the lease page with End early). Once the tables exist: run the app, add the Playwright test, then tick the tasks.
+Built on branch `m3-leases-schema`; the lease migrations (`drizzle/0008`–`0011`) were applied by hand on 2026-10-23 and every unit and database test passes. Still to add: a Playwright test for adding, renewing and ending a lease (`docs/BACKLOG.md`).
 
 ## M4. Invoicing (week 7)
 

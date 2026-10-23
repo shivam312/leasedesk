@@ -1,6 +1,7 @@
 // Starting values for the lease form: blank, a copied lease (template) or a
 // renewal. Paise and basis points become the text the user would type.
 
+import { addDays, addMonths, type PlainDate } from "@/lib/billing/dates";
 import type { EscalationRule } from "@/lib/billing/types";
 import type { ChargeDraft } from "@/lib/settings/charge-defaults";
 import { fieldName, toFieldValue } from "@/lib/settings/rules-form";
@@ -147,4 +148,17 @@ export function leaseFormFrom(
     rules: template.escalationRules.map(ruleText),
     settings,
   };
+}
+
+/** Lease terms the dates step offers as a last day, in years. */
+export const SUGGESTED_TERMS = [3, 5, 9] as const;
+
+/**
+ * The last day of a lease of `years` from `start`: the day before the
+ * anniversary, so a lease from 01-11-2026 for 9 years ends on 31-10-2035
+ * (not 01-11-2035, which would bill a day of a tenth year). A start on
+ * 29 February rolls to 1 March, so the lease ends on 28 February.
+ */
+export function lastDayAfterYears(start: PlainDate, years: number): PlainDate {
+  return addDays(addMonths(start, years * 12, "roll_forward"), -1);
 }

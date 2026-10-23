@@ -60,15 +60,17 @@ Running the seed again at any time puts the demo back exactly as it was, so you 
 
 **Click:** Leases → **Add lease**. Tenant: Lakshya Ventures; Building: Sharma Corporate Tower; tick **703**. **Next**.
 
-Lease starts on: the 1st of next month; Last day of the lease: nine years later. **Next**.
+Lease starts on: the 1st of next month (e.g. `01-11-2026`). Under Last day of the lease, tap **9 years** (e.g. 31-10-2035).
 
-₹ per sq ft a month: `125`. **Next**.
+**Say:** "It ends the day before the anniversary, so nine years is exactly nine years." **Next**.
+
+₹ per sq ft a month: `125`. **Click:** **Add a rent increase**; Increase in %: `5` (every 12 months is filled in). **Next**.
 
 **Say:** "GST at 18%, the SAC code, billing in advance: all filled in from the building. I only typed what's in the lease." **Point at** the monthly rent on Check and save (5,944 sq ft × ₹125 = ₹7,43,000).
 
 **Click:** **Save lease**.
 
-**Say:** "Done. From next month it's on the invoices, increases and all, without anyone touching it again."
+**Say:** "Done. The rent schedule shows every increase to 2035: 5% each November. From next month it's on the invoices, increases and all, without anyone touching it again."
 
 ## 5. Next month's invoices (2 minutes)
 

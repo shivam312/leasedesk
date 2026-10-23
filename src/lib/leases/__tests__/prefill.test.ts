@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { defaultSettings } from "@/lib/settings/schema";
 import { leaseTemplate } from "../copy";
 import { leaseInputFor, parseLeaseForm } from "../draft";
-import { bpText, leaseFormFrom, paiseText } from "../prefill";
+import {
+  bpText,
+  lastDayAfterYears,
+  leaseFormFrom,
+  paiseText,
+} from "../prefill";
 
 describe("prefill", () => {
   it("writes paise and basis points as the user would type them", () => {
@@ -111,5 +116,19 @@ describe("prefill", () => {
     expect(parsed.draft.settings).toEqual({
       "billing.monthEndRule": "last_day",
     });
+  });
+});
+
+describe("lastDayAfterYears", () => {
+  it("is the day before the anniversary", () => {
+    expect(lastDayAfterYears("2026-11-01", 9)).toBe("2035-10-31");
+    expect(lastDayAfterYears("2026-08-15", 3)).toBe("2029-08-14");
+    // 1 January: the last day is 31 December of the year before the anniversary.
+    expect(lastDayAfterYears("2027-01-01", 5)).toBe("2031-12-31");
+  });
+
+  it("ends a lease from 29 February on 28 February", () => {
+    // 29-02-2028 + 1 year has no 29th: rolls to 01-03-2029, less a day.
+    expect(lastDayAfterYears("2028-02-29", 1)).toBe("2029-02-28");
   });
 });

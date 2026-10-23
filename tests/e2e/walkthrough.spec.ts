@@ -1,8 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { addMonths, monthOf, startOfMonth } from "../../src/lib/billing/dates";
-import { formatINR, formatMonth } from "../../src/lib/format";
+import {
+  addDays,
+  addMonths,
+  monthOf,
+  startOfMonth,
+} from "../../src/lib/billing/dates";
+import { formatDate, formatINR, formatMonth } from "../../src/lib/format";
 import { makeGstin } from "../../src/lib/india/identifiers";
 import { todayInIndia } from "../../src/lib/today";
 import { expectedDemoInvoices } from "../../src/lib/demo/expected";
@@ -162,7 +167,9 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   );
 
   const start = addMonths(startOfMonth(monthOf(today)), 1, "roll_forward");
-  const end = addMonths(start, 9 * 12, "roll_forward");
+  // Nine years, ending the day before the anniversary (31-10-2035 for a
+  // lease from 01-11-2026), as the dates step suggests.
+  const end = addDays(addMonths(start, 9 * 12, "roll_forward"), -1);
   await page.goto("/leases/new");
   await page
     .getByLabel("Tenant")
@@ -174,10 +181,16 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await shot(page, "3", "new-lease-units");
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByLabel("Lease starts on").fill(start);
-  await page.getByLabel("Last day of the lease").fill(end);
+  await page
+    .getByRole("button", { name: `9 years: ${formatDate(end)}` })
+    .click();
+  await expect(page.getByLabel("Last day of the lease")).toHaveValue(end);
   await shot(page, "3", "new-lease-dates");
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByLabel("₹ per sq ft a month").fill("125");
+  await page.getByRole("button", { name: "Add a rent increase" }).click();
+  await page.getByLabel("Increase in %").fill("5");
+  await expect(visible(page, "Rent goes up 5% every 12 months")).toBeVisible();
   await shot(page, "3", "new-lease-charges");
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.getByText("Check and save")).toBeVisible();

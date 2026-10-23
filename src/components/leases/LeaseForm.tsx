@@ -20,7 +20,12 @@ import {
   type LeaseFormInput,
   type LeaseFormStep,
 } from "@/lib/leases/draft";
-import { BLANK_CHARGE, BLANK_RULE } from "@/lib/leases/prefill";
+import {
+  BLANK_CHARGE,
+  BLANK_RULE,
+  lastDayAfterYears,
+  SUGGESTED_TERMS,
+} from "@/lib/leases/prefill";
 import {
   previewLease,
   saveLease,
@@ -340,6 +345,29 @@ export function LeaseForm({
         <div className="flex flex-col gap-4">
           {text("startDate", "Lease starts on", undefined, "date")}
           {text("endDate", "Last day of the lease", undefined, "date")}
+          {/^\d{4}-\d{2}-\d{2}$/.test(values.startDate) && (
+            <div className="-mt-2 flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">
+                The day before the anniversary:
+              </span>
+              {SUGGESTED_TERMS.map((years) => {
+                const last = lastDayAfterYears(values.startDate, years);
+                return (
+                  <Button
+                    key={years}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-11 md:h-8"
+                    aria-pressed={values.endDate === last}
+                    onClick={() => set({ endDate: last })}
+                  >
+                    {years} years: {formatDate(last)}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
           {field("rentFree", "Rent-free period", (common) => (
             <Select
               {...common}

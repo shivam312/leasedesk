@@ -104,9 +104,9 @@ export const CAPTIONS: Record<string, (f: WalkthroughFacts) => string> = {
   "new-lease-units": (f) =>
     `The lease form, step 1: the tenant, the building and the units, here the empty office ${f.newLease.unit} on the 7th floor. A unit already leased on the new lease's dates is refused when saving.`,
   "new-lease-dates": (f) =>
-    `Step 2: the lease runs nine years from ${formatDate(f.newLease.startDate)}, the 1st of next month, so it's on next month's invoices and not on this month's, which are already sent.`,
+    `Step 2: the lease runs nine years from ${formatDate(f.newLease.startDate)}, the 1st of next month, to the day before the anniversary (one tap on "9 years"), so it's on next month's invoices and not on this month's, which are already sent.`,
   "new-lease-charges": (f) =>
-    `Step 3: rent of ${formatINR(f.newLease.ratePaise)} per sq ft a month. GST (18%), the SAC code (997212) and billing in advance aren't typed: they come from the building's defaults.`,
+    `Step 3: rent of ${formatINR(f.newLease.ratePaise)} per sq ft a month, going up 5% every 12 months. GST (18%), the SAC code (997212) and billing in advance aren't typed: they come from the building's defaults.`,
   "new-lease-check": (f) =>
     `Step 4: everything is shown once more before saving, including the monthly rent: ${formatArea(f.newLease.area)} × ${formatINR(f.newLease.ratePaise)} = ${formatINR(Math.round((f.newLease.ratePaise * f.newLease.area) / 100))}.`,
   "new-lease-saved": () =>

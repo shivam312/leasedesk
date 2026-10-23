@@ -48,7 +48,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [x] TDS settings, a test for each option: `tds.rounding`, `tds.tolerancePaise`, `tds.quarterBasis`
 - [x] Sign up and log in
 - [x] Invite users and accept an invite
-- [ ] Roles (owner, accounts, property manager, viewer), checked in server actions
+- [x] Roles (owner, accounts, property manager, viewer), checked in server actions
 - [ ] Settings: organization and billing entities (GSTIN, bank, UPI)
 - [ ] Settings → Billing rules page (organization and building level, basic and "More options")
 - [ ] Buildings and units screens

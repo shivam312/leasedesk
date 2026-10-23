@@ -13,7 +13,7 @@ import {
   InviteError,
   inviteMember,
 } from "@/lib/auth/invites";
-import { ROLES } from "@/lib/auth/roles";
+import { PermissionError, requirePermission, ROLES } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { createSupabase } from "@/lib/supabase/server";
 
@@ -36,8 +36,11 @@ export async function invite(
   form: FormData,
 ): Promise<InviteState> {
   const member = await requireMember();
-  if (member.role !== "owner") {
-    return { message: "Only an owner can invite people." };
+  try {
+    requirePermission(member, "manage_team");
+  } catch (error) {
+    if (error instanceof PermissionError) return { message: error.message };
+    throw error;
   }
   const parsed = parseForm(inviteSchema, form);
   if ("state" in parsed) return parsed.state;

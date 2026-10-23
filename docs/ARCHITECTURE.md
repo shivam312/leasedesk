@@ -99,7 +99,7 @@ scripts/
 
 **Multi-tenancy.** Every table has `organization_id`. Row-level security policies (`drizzle/0003_rls_policies.sql`, helper functions in the private `app` schema) restrict rows to active members of that organization, and writes by role. Server code reads and writes through `withOrg` in `db/scoped.ts`: it runs the work in a transaction as Supabase's `authenticated` role with the user's id, so the policies apply, and its `where` and `values` helpers add the organization filter explicitly, so a missing policy is not the only protection (D14).
 
-**Roles.** `owner`, `accounts`, `property_manager`, `viewer` (see `docs/PRODUCT_PLAN.md`). Checked in every server action via `lib/auth.ts`, never only in the UI.
+**Roles.** `owner`, `accounts`, `property_manager`, `viewer` (see `docs/PRODUCT_PLAN.md`). What each may change is one table, `PERMISSIONS` in `src/lib/auth/roles.ts`; every server action calls `requireMember()` then `requirePermission(member, "...")` before writing, never relying on the UI. The row-level security write policies grant the same roles, and `roles-rls.db.test.ts` fails if the two disagree.
 
 **Background jobs.** Inngest functions in `src/jobs/`: `monthly-billing-run` (drafts on the 1st), `send-reminders` (daily), `alert-digest` (daily email per user). Jobs are idempotent: running twice must not create duplicates.
 

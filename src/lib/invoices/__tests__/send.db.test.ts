@@ -67,7 +67,12 @@ describe.skipIf(skipDbTests)("issueInvoice", () => {
       await expect(
         runScoped(asDb(tx), ctx, (s) => issueInvoice(s, invoice.id, SENT_AT)),
       ).rejects.toThrow(/changed after this invoice was made/);
-      expect(await tx.select().from(schema.invoiceSeries)).toHaveLength(0);
+      expect(
+        await tx
+          .select()
+          .from(schema.invoiceSeries)
+          .where(eq(schema.invoiceSeries.organizationId, ctx.organizationId)),
+      ).toHaveLength(0);
     });
   });
 
@@ -91,7 +96,12 @@ describe.skipIf(skipDbTests)("issueInvoice", () => {
           issueInvoice(s, invoice.id, new Date("2026-10-25T06:00:00Z")),
         ),
       ).rejects.toThrow(/can be sent from that day/);
-      expect(await tx.select().from(schema.invoiceSeries)).toHaveLength(0);
+      expect(
+        await tx
+          .select()
+          .from(schema.invoiceSeries)
+          .where(eq(schema.invoiceSeries.organizationId, ctx.organizationId)),
+      ).toHaveLength(0);
     });
   });
 
@@ -103,7 +113,12 @@ describe.skipIf(skipDbTests)("issueInvoice", () => {
       await expect(
         runScoped(asDb(tx), ctx, (s) => issueInvoice(s, invoice.id, SENT_AT)),
       ).rejects.toBeInstanceOf(SendError);
-      expect(await tx.select().from(schema.invoiceSeries)).toHaveLength(0);
+      expect(
+        await tx
+          .select()
+          .from(schema.invoiceSeries)
+          .where(eq(schema.invoiceSeries.organizationId, ctx.organizationId)),
+      ).toHaveLength(0);
     });
   });
 });

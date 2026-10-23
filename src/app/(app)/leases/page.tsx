@@ -38,6 +38,18 @@ export default function LeasesPage() {
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </Link>
+      <Link
+        href="/leases/import"
+        className="mt-3 flex max-w-2xl items-center justify-between gap-4 rounded-lg border p-4 hover:bg-accent"
+      >
+        <span>
+          <span className="block font-medium">Import from Excel</span>
+          <span className="block text-sm text-muted-foreground">
+            Bring in buildings, units, tenants and leases from a spreadsheet.
+          </span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      </Link>
     </>
   );
 }
@@ -59,7 +71,7 @@ async function Leases() {
         <p className="max-w-2xl text-sm">
           No leases yet.{" "}
           {editable
-            ? "Add your first lease: the tenant, units, dates and rent."
+            ? "Add your first lease: the tenant, units, dates and rent. Or import them from Excel, below."
             : "An owner or property manager can add them."}
         </p>
       ) : (

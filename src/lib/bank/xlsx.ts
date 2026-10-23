@@ -32,7 +32,11 @@ function cellText(cell: CellObject | undefined, date1904: boolean): string {
   return String(cell.v).trim();
 }
 
-function sheetRows(sheet: WorkSheet, date1904: boolean): string[][] {
+function sheetRows(
+  sheet: WorkSheet,
+  date1904: boolean,
+  keepBlank = false,
+): string[][] {
   const ref = sheet["!ref"];
   if (!ref) return [];
   const range = utils.decode_range(ref);
@@ -41,7 +45,7 @@ function sheetRows(sheet: WorkSheet, date1904: boolean): string[][] {
     const row: string[] = [];
     for (let c = 0; c <= range.e.c; c++)
       row.push(cellText(sheet[utils.encode_cell({ r, c })], date1904));
-    if (row.some((c) => c !== "")) rows.push(row);
+    if (keepBlank || row.some((c) => c !== "")) rows.push(row);
   }
   return rows;
 }
@@ -58,4 +62,20 @@ export function parseSpreadsheet(data: ArrayBuffer | Uint8Array): string[][] {
     if (rows.length > 0) return rows;
   }
   return [];
+}
+
+/**
+ * Every sheet that has rows, by name, read the same way as `parseSpreadsheet`
+ * but keeping blank rows (as rows of ""), so a row's index + 1 is its Excel
+ * row number when the sheet starts at A1.
+ */
+export function parseWorkbookSheets(
+  data: ArrayBuffer | Uint8Array,
+): { name: string; rows: string[][] }[] {
+  const book = read(data, { type: "array", cellNF: true, dense: false });
+  const date1904 = Boolean(book.Workbook?.WBProps?.date1904);
+  return book.SheetNames.map((name) => ({
+    name,
+    rows: sheetRows(book.Sheets[name]!, date1904, true),
+  })).filter((s) => s.rows.some((r) => r.some((c) => c !== "")));
 }

@@ -312,3 +312,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - The same vouchers can be downloaded as an Excel sheet of entries (date, voucher, party, ledger, debit, credit, bill-wise) for accountants who don't use Tally.
 - A receipt carries only what its payment settled when it was recorded (allocations made in the same transaction, so with the same `created_at`). Credit applied to invoices later ("Apply credit") is its own Journal on the India date it was applied, moving the amount from On Account to each invoice, so re-making an old month's file never changes, and the later application isn't lost.
 - One file covers the whole organization, all GSTINs together (backlog: one file per GSTIN for a Tally company per GSTIN).
+
+## D40. Excel imports: a template per kind, checked row by row, all or nothing (2026-10-23)
+
+**Why:** "Excel import for buildings, units, tenants and leases, with a template and row-by-row error messages" (docs/PRODUCT_PLAN.md). A landlord moving from Excel should be live in a day, and a half-imported file is harder to fix than one that was refused.
+**Consequences:**
+- Leases → Import from Excel (`/leases/import`) offers a template per kind (`/leases/import/template/<kind>`): a "How to fill this in" sheet with each column, whether it's required and an example, then one sheet per kind of row with only its headings, so example rows are never imported.
+- The uploaded file is read on the server (`parseWorkbookSheets`, the same cell reading as bank statements, D30; up to 2 MB). Sheets and columns are found by their headings, whatever the case or order.
+- Every row is checked with the same rules as the forms (`buildingSchema`, `unitSchema`, `prefixClash`, …), and every problem is listed as "Units, row 7: …" with the row number Excel shows. If any row has a problem nothing is saved; otherwise everything is saved in one transaction, each row through `insertLogged`.
+- Rows that depend on a row with a problem (units of a building whose row failed) aren't reported again; they are checked once that row is fixed.
+- Units can be added to buildings already saved (leave the building out of the Buildings sheet). Floors are added when a unit names a new one. A building with several GSTINs to choose from needs "Our GSTIN"; with one, it's used.

@@ -73,6 +73,48 @@ describe("scrubEvent", () => {
     expect(event.user).toEqual({ id: "u1" });
   });
 
+  it("keeps only the error's type, not its text, which can hold tenant details", () => {
+    // A failed Drizzle query's message carries its values:
+    // "Failed query: insert ...\nparams: Acme Traders,27AAACA1234A1Z5,11800000".
+    const event = scrubEvent({
+      exception: {
+        values: [
+          {
+            type: "DrizzleQueryError",
+            value:
+              "Failed query: insert into tenants\nparams: Acme Traders,27AAACA1234A1Z5,11800000",
+          },
+          { type: "Error", value: "duplicate key 27AAACA1234A1Z5" },
+        ],
+      },
+      message: "Acme Traders owes 11800000",
+      logentry: { message: "Acme Traders" },
+      breadcrumbs: [{ category: "console", message: "Send failed Acme" }],
+      extra: { tenant: "Acme Traders" },
+    });
+    const text = JSON.stringify(event);
+    expect(text).not.toContain("27AAACA1234A1Z5");
+    expect(text).not.toContain("Acme");
+    expect(text).not.toContain("11800000");
+    expect(event.exception?.values).toEqual([
+      { type: "DrizzleQueryError", value: "DrizzleQueryError" },
+      { type: "Error", value: "Error" },
+    ]);
+  });
+
+  it("cuts the query string off the page address and the referer", () => {
+    const event = scrubEvent({
+      request: {
+        url: "https://app.example.in/tenants?q=Acme%20Traders",
+        headers: { Referer: "https://app.example.in/billing?q=Acme#x" },
+      },
+    });
+    expect(event.request?.url).toBe("https://app.example.in/tenants");
+    expect(event.request?.headers).toEqual({
+      Referer: "https://app.example.in/billing",
+    });
+  });
+
   it("leaves an event without a request or user alone", () => {
     expect(scrubEvent({})).toEqual({});
   });

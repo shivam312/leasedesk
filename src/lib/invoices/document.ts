@@ -40,6 +40,8 @@ export type DocumentSource = {
   tenant: RecipientSource;
   building: Pick<typeof buildings.$inferSelect, "name" | "address" | "city">;
   unitCodes: string[];
+  /** Total of the credit notes issued against the invoice, in paise; 0 if none. */
+  credited?: number;
   lines: Pick<
     typeof invoiceLines.$inferSelect,
     | "position"
@@ -198,11 +200,14 @@ export function invoiceDocument(src: DocumentSource): InvoiceDocument {
   // What the tenant is asked to pay: the total less the TDS they're expected
   // to deduct (D24). Nothing for a cancelled or paid invoice; a part-paid one
   // has a balance that payments (M5) know, so no amount is printed for it.
-  const asksForPayment =
+  // Nor for one with a credit note: its balance depends on the TDS still
+  // expected after the credit (D-017).
+  const unpaid =
     invoice.status === "draft" ||
     invoice.status === "sent" ||
     invoice.status === "overdue";
-  const payable = asksForPayment || invoice.status === "part_paid";
+  const asksForPayment = unpaid && (src.credited ?? 0) === 0;
+  const payable = unpaid || invoice.status === "part_paid";
   const toPayPaise = Math.max(invoice.grandTotal - invoice.expectedTds, 0);
   const toPay = !asksForPayment
     ? null

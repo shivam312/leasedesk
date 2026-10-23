@@ -1,9 +1,10 @@
 // Reading one invoice with its lines, for the invoice page and the PDF.
 
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sum } from "drizzle-orm";
 import {
   billingEntities,
   buildings,
+  creditNotes,
   invoiceLines,
   invoices,
   leaseUnits,
@@ -55,5 +56,9 @@ export async function getInvoiceDocument(s: Scoped, id: string) {
   const saved = await getInvoice(s, id);
   if (!saved) return null;
   const unitCodes = await leaseUnitCodes(s, saved.invoice.leaseId);
-  return invoiceDocument({ ...saved, unitCodes });
+  const [credit] = await s.tx
+    .select({ total: sum(creditNotes.total).mapWith(Number) })
+    .from(creditNotes)
+    .where(s.where(creditNotes, eq(creditNotes.invoiceId, id)));
+  return invoiceDocument({ ...saved, unitCodes, credited: credit?.total ?? 0 });
 }

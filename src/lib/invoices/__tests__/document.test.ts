@@ -169,6 +169,17 @@ describe("invoiceDocument", () => {
     );
   });
 
+  it("asks for no fixed amount once a credit note is issued against it", () => {
+    // ₹1,18,000 invoice, ₹10,000 TDS: ₹1,08,000 to pay before any credit.
+    // After a ₹59,000 credit note the balance depends on the TDS still due
+    // (D-017), so, like a part-paid invoice, no amount is printed or put in
+    // the QR code.
+    const doc = invoiceDocument({ ...source(), credited: 5900000 });
+    expect(doc.payment!.toPay).toBeNull();
+    expect(doc.payment!.upiLink).not.toMatch(/am=/);
+    expect(invoiceDocument(source()).payment!.toPay).toMatch(/₹1,08,000/);
+  });
+
   it("an overdue invoice still asks for the full amount", () => {
     // ₹59,000 total, ₹5,000 TDS → ₹54,000 in the QR
     const doc = invoiceDocument(

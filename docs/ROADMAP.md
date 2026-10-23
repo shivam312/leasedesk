@@ -82,7 +82,7 @@ Merged into `main` on 2026-10-23; the lease migrations (`drizzle/0008`–`0011`)
 - [x] Credit notes
 - [ ] (human) Create a Resend account, verify the sending domain and put `RESEND_API_KEY` in `.env.local`
 
-Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice migrations (`drizzle/0012`–`0013`) are applied and the invoice database tests run. Sending is covered by `tests/e2e/flow.spec.ts`; still to add: a Playwright test for credit notes (`docs/BACKLOG.md`). Reviewed by the billing and UX reviewers on 2026-10-23; the fixes and open decisions (D-015 to D-019) are in the report.
+Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice migrations (`drizzle/0012`–`0013`) are applied and the invoice database tests run. Sending is covered by `tests/e2e/flow.spec.ts`; still to add: a Playwright test for credit notes (`docs/BACKLOG.md`). Reviewed by the billing and UX reviewers on 2026-10-23; the fixes and open decisions (D-015 to D-019) are in the report. Codex's review (2026-10-24): number series are now kept per GSTIN, so two billing entities with one GSTIN can't repeat a number (D45, `drizzle/0027`).
 
 ## M5. Payments and TDS (week 8)
 

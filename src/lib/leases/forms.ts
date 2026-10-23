@@ -117,7 +117,7 @@ export type UnitBooking = {
 /**
  * Units of `lease` already in another lease with overlapping dates
  * (docs/DATA_MODEL.md invariant: a unit can't be in two active leases at once).
- * Pass the bookings of active and in-notice leases; the lease being edited
+ * Pass the bookings of every saved (non-draft) lease; the lease being edited
  * and the version it renews are ignored.
  */
 export function unitClashes(

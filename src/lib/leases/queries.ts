@@ -2,7 +2,7 @@
 // Every write is logged (insertLogged/updateLogged). Sent invoices aren't
 // touched here; a lease change only affects future billing.
 
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { insertLogged, updateLogged } from "@/lib/db/activity-log";
 import {
   buildings,
@@ -79,7 +79,11 @@ export async function buildingUnits(s: Scoped, buildingId: string) {
     .where(s.where(units, eq(units.buildingId, buildingId)));
 }
 
-/** Active and in-notice leases holding any of `unitIds`, for unitClashes. */
+/**
+ * Saved leases holding any of `unitIds`, for unitClashes. Every status but
+ * draft: a lease's dates are what it bills, and a `renewed` version keeps
+ * billing up to its own end date (D20).
+ */
 export async function unitBookings(
   s: Scoped,
   unitIds: string[],
@@ -100,7 +104,7 @@ export async function unitBookings(
       s.where(
         leaseUnits,
         inArray(leaseUnits.unitId, unitIds),
-        inArray(leases.status, ["active", "in_notice"]),
+        ne(leases.status, "draft"),
       ),
     );
 }

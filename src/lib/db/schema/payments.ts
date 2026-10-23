@@ -22,6 +22,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { bankStatementLines } from "./bank";
 import { id, timestamps } from "./columns";
+import { documents } from "./documents";
 import { invoices } from "./invoices";
 import { tenants } from "./tenants";
 
@@ -155,7 +156,7 @@ export const tdsRecords = pgTable(
     financialYear: text().notNull(),
     quarter: integer().notNull(),
     certificateReceived: boolean().notNull().default(false),
-    // No foreign key until `documents` exists.
+    // The uploaded certificate (documents, kind tds_certificate).
     certificateDocumentId: uuid(),
     ...timestamps,
   },
@@ -171,7 +172,15 @@ export const tdsRecords = pgTable(
       columns: [t.organizationId, t.tenantId, t.invoiceId],
       foreignColumns: [invoices.organizationId, invoices.tenantId, invoices.id],
     }).onDelete("restrict"),
+    foreignKey({
+      columns: [t.organizationId, t.certificateDocumentId],
+      foreignColumns: [documents.organizationId, documents.id],
+    }).onDelete("restrict"),
     check("tds_records_amount_positive", sql`${t.amount} > 0`),
+    check(
+      "tds_records_certificate",
+      sql`${t.certificateDocumentId} is null or ${t.certificateReceived}`,
+    ),
     check("tds_records_quarter", sql`${t.quarter} between 1 and 4`),
     check(
       "tds_records_financial_year",

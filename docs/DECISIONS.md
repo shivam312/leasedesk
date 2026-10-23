@@ -232,3 +232,12 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Suggestions are stored on the line after every import and every confirm (`refreshSuggestions`), not worked out on page load, so viewing never writes.
 - The suggested TDS is stored with the line and shown before confirming; if what the tenant owes has changed by then, confirming refuses and asks the user to look again. Suggestions only change lines still to match (row-locked), so a refresh never undoes a confirm. Reversing a payment recorded from a bank line frees the line to be matched again.
 - "Likely" (75+) lines start ticked; "possible" ones don't. "Record N payments" records each ticked line through `recordPayment` in its own transaction, dated the bank's date, with TDS and invoices from the matcher for the tenant chosen (the invoices it names first, then the oldest), mode guessed from the bank's words, and the line linked (`payments.bank_statement_line_id`, one active payment per line). "Not rent" sets lines aside (`ignored`).
+
+## D32. Uploaded files go through a FileStore into one private bucket (2026-10-23)
+
+**Why:** TDS certificates are the first uploads; lease agreements and other documents follow. Tests shouldn't need the storage server, and the bucket must keep organizations apart like row-level security does.
+**Consequences:**
+- `FileStore` (`src/lib/files/store.ts`) with `supabaseStore` (as the signed-in user, so storage policies apply) and `memoryStore` for tests. Paths are `<organization id>/<area>/...` with a random part; a file is never overwritten.
+- `documents` rows say what each file is and whose; storage policies on the `documents` bucket let members read their organization's folder and owners, accounts and property managers upload into it (`drizzle/0020`).
+- Uploads are limited to 3 MB (PDF, PNG, JPG) so they fit a server action (D30's 4 MB limit).
+- The TDS tracker (`src/lib/tds/tracker.ts`, pure) groups active payments' TDS records by tenant and quarter; uploading a certificate marks that tenant-quarter's records received.

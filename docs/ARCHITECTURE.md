@@ -13,7 +13,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 | Database | Supabase Postgres, Mumbai region | Row-level security on every table |
 | ORM | Drizzle + drizzle-kit | Schema in TypeScript, SQL migrations in `drizzle/` |
 | Auth | Supabase Auth (@supabase/ssr, cookie sessions) | Email + password (built); Google login waits for an OAuth client (human task); invites. `src/proxy.ts` refreshes the session and sends signed-out visitors to `/login`; `requireMember()` in `src/lib/auth.ts` checks again in every page and action |
-| File storage | Supabase Storage | Lease PDFs, invoice PDFs, TDS certificates, imports. Not used yet: sent invoice and credit note PDFs are rendered on demand from their frozen copies (D25; storing them is backlogged) |
+| File storage | Supabase Storage | TDS certificates (private `documents` bucket, one folder per organization, behind `FileStore` in `src/lib/files/`; D32). Sent invoice and credit note PDFs are rendered on demand from their frozen copies (D25; storing them is backlogged) |
 | Validation | Zod | Every server action validates its input |
 | Background jobs | Inngest | Daily check that makes each organization's drafts on its run day (D23), reminders, daily digests. `pnpm jobs:dev` runs the local dev server |
 | PDF | @react-pdf/renderer | Invoice and credit note PDFs (built, with a UPI QR from `qrcode`), report PDFs |

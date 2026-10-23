@@ -90,7 +90,7 @@ Built on branch `m3-leases-schema` (report: `docs/milestones/M4.md`). The invoic
 - [x] Bank statement import with column mapping saved per account (CSV; Excel waits for the task below)
 - [ ] (human) Allow installing SheetJS (`xlsx`, from cdn.sheetjs.com, already on the approved list) so Excel bank statements can be read; the unattended run was refused permission to install packages
 - [x] Matching suggestions and bulk confirm
-- [ ] TDS tracker by tenant and quarter, certificate upload
+- [x] TDS tracker by tenant and quarter, certificate upload
 - [ ] Reminders: automatic emails
 - [ ] Reminders: one-tap WhatsApp link
 - [ ] Tenant ledger with running balance

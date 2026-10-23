@@ -30,6 +30,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-018 | Billing a month again after its invoice was credited in full | product | no | open |
 | D-019 | Credit notes against an invoice that's already paid | product | no | open |
 | D-020 | TDS on a payment reversed in a later quarter | ca | no | open |
+| D-021 | TDS certificate name and due dates under the new Income-tax Act | ca | no | open |
 
 ## Human tasks
 
@@ -299,6 +300,18 @@ Things only a person can do. Tick them when done.
   - B) Keep it in the original quarter and add a negative TDS entry in the quarter of the reversal
 - Recommendation: A, because a reversal is for a payment entered by mistake, so the TDS never belonged to that quarter; the TDS tracker will show the change so the accountant can check any return already filed.
 - Done meanwhile: A (`settledBy` and the TDS queries count only active payments' TDS records; D29).
+- Answer:
+
+### D-021: TDS certificate name and due dates under the new Income-tax Act
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: The TDS screen calls the tenant's certificate "Form 16A" and treats it as due 15 days after each quarter's TDS return: 15 Aug, 15 Nov, 15 Feb and 15 Jun. A missing certificate shows as overdue after that. The Income-tax Act 2025 renumbers sections and forms, so the name or dates may have changed.
+- Options:
+  - A) Keep "Form 16A" and these dates
+  - B) Use the new Act's form name and dates (tell us what they are)
+- Recommendation: A until your CA confirms; it's one line each to change in `src/lib/config/tax-labels.ts`.
+- Done meanwhile: A, all in `src/lib/config/tax-labels.ts`.
 - Answer:
 
 ## Applied

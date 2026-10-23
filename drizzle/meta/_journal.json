@@ -134,6 +134,20 @@
       "when": 1792760298083,
       "tag": "0018_bank_suggested_tds",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792760474188,
+      "tag": "0019_documents",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792760474753,
+      "tag": "0020_documents_rules",
+      "breakpoints": true
     }
   ]
 }

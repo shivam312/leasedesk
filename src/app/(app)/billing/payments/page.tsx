@@ -61,6 +61,15 @@ async function Payments() {
           >
             Import bank statement
           </Link>
+          <Link
+            href="/billing/tds"
+            className={buttonVariants({
+              variant: "outline",
+              className: "h-11 md:h-9",
+            })}
+          >
+            TDS certificates
+          </Link>
           {toMatch > 0 && (
             <Link
               href="/billing/bank/match"

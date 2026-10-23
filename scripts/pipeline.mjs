@@ -2,8 +2,9 @@
 // LeaseDesk build pipeline.
 //
 // Runs the roadmap milestone by milestone, each stage in a fresh Claude Code session:
-//   answers -> build (repeats until done) -> checks (+ fix loop) -> review & decision sweep
-//   -> checks (+ fix loop) -> wrap-up -> git tag -> next milestone
+//   answers -> build (repeats until done) -> checks (+ fix loop) -> Claude review & decision sweep
+//   -> checks -> Codex independent review (+ Claude fix loop, up to --codex-rounds)
+//   -> checks -> wrap-up -> Codex sign-off -> git tag -> next milestone
 //
 // Usage (from the project root, in a normal terminal):
 //   node scripts/pipeline.mjs                     run from the first unfinished milestone to the end
@@ -11,6 +12,8 @@
 //   node scripts/pipeline.mjs --from M3 --to M3   run one milestone
 //   node scripts/pipeline.mjs --dry-run           show what would run
 //   node scripts/pipeline.mjs --fix-model sonnet  use a faster model for fix and review stages
+//   node scripts/pipeline.mjs --no-codex          skip the Codex review stages
+//   node scripts/pipeline.mjs --codex-model gpt-5 pick the Codex model
 //
 // Stop it gracefully: create the file .pipeline/STOP (it stops after the current stage).
 // Progress: .pipeline/status.md   Full logs: .pipeline/logs/
@@ -28,13 +31,21 @@ const LOGS = path.join(PDIR, "logs");
 const STATUS = path.join(PDIR, "status.md");
 const STATE = path.join(PDIR, "state.json");
 const STOP = path.join(PDIR, "STOP");
+const REVIEWS = path.join(PDIR, "reviews");
+const CODEX_SCHEMA = path.join(PDIR, "codex-review-schema.json");
 const IS_WIN = process.platform === "win32";
+let codexChecked = null;
 
 const args = parseArgs(process.argv.slice(2));
 const cfg = {
   from: args.from ? String(args.from).toUpperCase() : null,
   to: args.to ? String(args.to).toUpperCase() : null,
   claudeBin: process.env.CLAUDE_BIN || "claude",
+  codexBin: process.env.CODEX_BIN || "codex",
+  codexModel: args["codex-model"] || null,
+  codexRounds: num(args["codex-rounds"], 2),
+  noCodex: Boolean(args["no-codex"]),
+  requireCodex: Boolean(args["require-codex"]),
   buildModel: args["build-model"] || null,
   fixModel: args["fix-model"] || null,
   reviewModel: args["review-model"] || args["fix-model"] || null,
@@ -57,6 +68,7 @@ main();
 
 function main() {
   fs.mkdirSync(LOGS, { recursive: true });
+  fs.mkdirSync(REVIEWS, { recursive: true });
   if (fs.existsSync(STOP)) fs.rmSync(STOP);
   log(`\n# Pipeline run ${new Date().toLocaleString()}\n`);
 
@@ -103,10 +115,19 @@ function main() {
       if (!checksWithFixes(m, "after review")) finish("failed", `Checks failing for ${m.id} after review fixes.`);
     }
 
-    // 4. Wrap up.
+    // 4. Independent review by Codex, with Claude fixing what it finds.
+    if (codexEnabled()) {
+      const verdict = codexReviewLoop(m, state.milestones[m.id].startSha);
+      if (verdict === "failed") finish("failed", `Codex review stage for ${m.id} failed. See .pipeline/logs/.`);
+    }
+
+    // 5. Wrap up.
     const w = runClaude("wrap", m, wrapPrompt(m), cfg.reviewModel);
     if (!w.ok) finish("failed", `Wrap-up for ${m.id} failed: ${short(w.result, 300)}`);
     commitLeftovers(m);
+
+    // 6. Codex sign-off: an independent verdict on the finished milestone, saved for the founder.
+    if (codexEnabled()) codexSignOff(m, state.milestones[m.id].startSha);
     tagMilestone(m);
 
     state.milestones[m.id].status = "done";
@@ -199,6 +220,245 @@ function applyAnswers(state) {
   const r = runClaude("answers", { id: "D", title: "decisions" }, answersPrompt(), cfg.fixModel);
   if (!r.ok) finish("failed", `Applying answers failed: ${short(r.result, 300)}`);
   commitLeftovers({ id: "decisions" });
+}
+
+// ---------- Codex (independent reviewer) ----------
+
+function codexEnabled() {
+  return !cfg.noCodex && (cfg.dryRun || codexAvailable());
+}
+
+function codexAvailable() {
+  if (codexChecked !== null) return codexChecked;
+  const v = spawnSync(cfg.codexBin, ["--version"], { encoding: "utf8", shell: IS_WIN });
+  codexChecked = v.status === 0;
+  if (codexChecked) log(`- Codex CLI ${oneLine(v.stdout)}`);
+  else if (cfg.requireCodex) finish("failed", `Couldn't run "${cfg.codexBin} --version". Install the Codex CLI (npm i -g @openai/codex) and run "codex login", or pass --no-codex.`);
+  else log("- ⚠ Codex CLI not found; skipping the independent review stages. Install it with: npm i -g @openai/codex, then codex login.");
+  return codexChecked;
+}
+
+function codexSchema() {
+  return {
+  type: "object",
+  additionalProperties: false,
+  required: ["verdict", "summary", "must_fix", "should_fix", "verified"],
+  properties: {
+    verdict: { type: "string", enum: ["pass", "fail"] },
+    summary: { type: "string" },
+    must_fix: { type: "array", items: finding() },
+    should_fix: { type: "array", items: finding() },
+    verified: { type: "array", items: { type: "string" } },
+  },
+  };
+}
+function finding() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["file", "problem", "evidence", "fix"],
+    properties: {
+      file: { type: "string" },
+      problem: { type: "string" },
+      evidence: { type: "string" },
+      fix: { type: "string" },
+    },
+  };
+}
+
+function codexReviewContext(m, startSha) {
+  return [
+    `You are an independent reviewer for LeaseDesk, a lease and rent billing product for Indian commercial landlords. Another AI agent (Claude Code) wrote the code for milestone ${m.id} (${m.title}) and has already reviewed and tested it. Your job is to catch what it missed. Be sceptical: assume the author's tests and summaries may be wrong, and verify against the specs and the code.`,
+    "",
+    `Scope: everything changed between git commit ${startSha} and HEAD. Start with \`git diff ${startSha}..HEAD --stat\`, then read the diff and any file you need. You are read-only; do not modify anything.`,
+    "",
+    "Specs to check against (read them first): CLAUDE.md (non-negotiable rules), docs/BILLING_RULES.md (money rules and golden cases), docs/DATA_MODEL.md, docs/UX_PRINCIPLES.md, docs/SETTINGS.md, and the tasks for this milestone in docs/ROADMAP.md.",
+    "",
+    "Check, in priority order:",
+    "1. Money correctness: recompute at least three test expectations by hand from docs/BILLING_RULES.md and compare with the code and tests. Look for float arithmetic on money, rounding in the wrong place, off-by-one days, wrong days-in-month or leap years, timezone leaks, mutable sent invoices or payments.",
+    "2. Spec drift: behaviour that contradicts the docs, or docs that no longer match the code. Golden cases silently changed or weakened. Tests that are skipped, deleted or assert nothing.",
+    "3. Security and multi-tenancy: queries not scoped to organization_id, missing row-level security, role checks only in the UI, secrets in code, user input not validated with Zod.",
+    "4. Roadmap honesty: every task ticked in this milestone actually exists and works as described. List ticked tasks you could not verify.",
+    "5. Simplicity: screens that break the rules in docs/UX_PRINCIPLES.md (more than one primary action, jargon from the glossary's don't-say column, missing empty or error states).",
+    "",
+    "Report rules: a must_fix is a wrong number, a rule violation, a security hole, or a ticked task that doesn't work. Everything else is should_fix. For every finding give the file path, the problem, concrete evidence (quote the line or the calculation), and the fix. Do not pad: an empty must_fix list is a fine answer when the work is good. List in `verified` the specific things you checked by hand and found correct.",
+  ].join("\n");
+}
+
+function runCodex(stage, m, prompt) {
+  fs.writeFileSync(CODEX_SCHEMA, JSON.stringify(codexSchema()));
+  const outFile = path.join(REVIEWS, `${m.id}-${stage}.json`);
+  const cliArgs = ["exec", "--sandbox", "read-only", "--output-schema", CODEX_SCHEMA, "-o", outFile, "--color", "never"];
+  if (cfg.codexModel) cliArgs.push("-m", cfg.codexModel);
+  cliArgs.push(prompt);
+  let limitWaits = 0;
+  let retried = false;
+  for (;;) {
+    checkStop();
+    const started = Date.now();
+    log(`- ▶ ${m.id} ${stage} (Codex) started ${time()}`);
+    if (cfg.dryRun) {
+      log(`  (dry run) codex exec --sandbox read-only <${prompt.length} character prompt>`);
+      return { ok: true, report: { verdict: "pass", summary: "dry run", must_fix: [], should_fix: [], verified: [] } };
+    }
+    if (fs.existsSync(outFile)) fs.rmSync(outFile);
+    const r = spawnSync(cfg.codexBin, cliArgs, {
+      cwd: ROOT,
+      encoding: "utf8",
+      shell: IS_WIN,
+      maxBuffer: 256 * 1024 * 1024,
+      timeout: cfg.stageTimeoutMin * 60000,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const logFile = path.join(LOGS, `${stamp()}-${m.id}-${stage}-codex.log`);
+    fs.writeFileSync(logFile, `${r.stdout || ""}\n\n--- stderr ---\n${r.stderr || ""}\n${r.error ? r.error.message : ""}`);
+    const mins = ((Date.now() - started) / 60000).toFixed(0);
+    const report = parseCodexReport(outFile, r.stdout);
+    if (r.status === 0 && report) {
+      log(`  ✔ done in ${mins} min: ${report.verdict}, ${report.must_fix.length} must-fix, ${report.should_fix.length} should-fix. ${short(oneLine(report.summary), 300)}`);
+      return { ok: true, report };
+    }
+    const text = oneLine(`${r.stderr || ""} ${r.stdout || ""} ${r.error ? r.error.message : ""}`);
+    if (r.error && r.error.code === "ENOENT") finish("failed", `Couldn't run "${cfg.codexBin}". Install the Codex CLI or pass --no-codex.`);
+    if (/not logged in|login|unauthori[sz]ed|invalid api key|401/i.test(text)) finish("failed", `Codex isn't logged in. Run "codex login" (ChatGPT account) or set CODEX_API_KEY, or pass --no-codex. Log: ${logFile}`);
+    if (/usage limit|rate.?limit|too many requests|quota|\b429\b|\b529\b|overloaded/i.test(text) && limitWaits < cfg.limitWaits) {
+      limitWaits++;
+      log(`  ⏸ Codex usage or rate limit; waiting ${cfg.limitWaitMin} min (${limitWaits}/${cfg.limitWaits}).`);
+      sleepMinutes(cfg.limitWaitMin);
+      continue;
+    }
+    if (!retried) {
+      retried = true;
+      log(`  ⚠ Codex failed after ${mins} min (${short(text, 200)}); retrying once in ${cfg.retryWaitMin} min. Log: ${logFile}`);
+      sleepMinutes(cfg.retryWaitMin);
+      continue;
+    }
+    log(`  ✗ Codex failed again. Log: ${logFile}`);
+    return { ok: false, report: null };
+  }
+}
+
+function parseCodexReport(outFile, stdout) {
+  const candidates = [];
+  try {
+    candidates.push(fs.readFileSync(outFile, "utf8"));
+  } catch {}
+  if (stdout) candidates.push(stdout);
+  for (const c of candidates) {
+    const text = String(c).trim();
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start < 0 || end < start) continue;
+    try {
+      const obj = JSON.parse(text.slice(start, end + 1));
+      if (obj && Array.isArray(obj.must_fix) && Array.isArray(obj.should_fix)) {
+        obj.verified ??= [];
+        obj.summary ??= "";
+        obj.verdict = obj.must_fix.length ? "fail" : obj.verdict || "pass";
+        return obj;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function reportToMarkdown(title, report) {
+  const item = (f) => `- **${f.file}**: ${f.problem}\n  - Evidence: ${f.evidence}\n  - Fix: ${f.fix}`;
+  return [
+    `# ${title}`,
+    "",
+    `**Verdict:** ${report.verdict}`,
+    "",
+    report.summary,
+    "",
+    `## Must fix (${report.must_fix.length})`,
+    "",
+    report.must_fix.length ? report.must_fix.map(item).join("\n") : "None.",
+    "",
+    `## Should fix (${report.should_fix.length})`,
+    "",
+    report.should_fix.length ? report.should_fix.map(item).join("\n") : "None.",
+    "",
+    "## Verified by hand",
+    "",
+    report.verified.length ? report.verified.map((v) => `- ${v}`).join("\n") : "Nothing listed.",
+    "",
+  ].join("\n");
+}
+
+// Codex reviews; Claude fixes must-fix items; repeat until Codex is satisfied or rounds run out.
+function codexReviewLoop(m, startSha) {
+  for (let round = 1; round <= cfg.codexRounds; round++) {
+    const r = runCodex(`codex-review-${round}`, m, codexReviewContext(m, startSha));
+    if (!r.ok) return "failed";
+    const mdFile = path.join(REVIEWS, `${m.id}-codex-review-${round}.md`);
+    fs.writeFileSync(mdFile, reportToMarkdown(`Codex review of ${m.id}, round ${round}`, r.report));
+    if (r.report.must_fix.length === 0) {
+      if (r.report.should_fix.length && !cfg.dryRun) {
+        const f = runClaude(`codex-triage`, m, codexTriagePrompt(m, mdFile), cfg.fixModel);
+        if (!f.ok) return "failed";
+        if (!checksWithFixes(m, "after Codex triage")) return "failed";
+      }
+      return "pass";
+    }
+    log(`- Codex found ${r.report.must_fix.length} must-fix item(s); asking Claude to fix them (round ${round}/${cfg.codexRounds}).`);
+    const f = runClaude(`codex-fix-${round}`, m, codexFixPrompt(m, mdFile), cfg.fixModel);
+    if (!f.ok) return "failed";
+    if (!checksWithFixes(m, `after Codex fixes (round ${round})`)) return "failed";
+  }
+  log(`- ⚠ Codex still had must-fix items after ${cfg.codexRounds} round(s). Logged to docs/DECISIONS_NEEDED.md for you; continuing.`);
+  const n = runClaude("codex-escalate", m, codexEscalatePrompt(m), cfg.fixModel);
+  return n.ok ? "unresolved" : "failed";
+}
+
+function codexFixPrompt(m, mdFile) {
+  return `${header("codex-fix", m)}
+
+An independent reviewer (OpenAI Codex, which did not write this code) reviewed ${m.id} and found problems. Its report is in ${mdFile}; read it in full.
+
+For each item under "Must fix":
+1. Check the evidence yourself against docs/BILLING_RULES.md, CLAUDE.md and the code. The reviewer can be wrong.
+2. If it's right: fix it properly, test-first (a failing test with a hand calculation in a comment, then the fix). One commit per item: "fix(${m.id}): <what>, found by Codex review".
+3. If it's wrong: don't change the code. Append a short "Disputed" note to ${mdFile} explaining why, with the spec line that supports the current behaviour.
+Then go through "Should fix": fix the small, clearly correct ones; add the rest to docs/BACKLOG.md.
+Never weaken, skip or delete tests, and never change golden expectations in docs/BILLING_RULES.md. Finish with pnpm typecheck, pnpm lint and pnpm test passing.`;
+}
+
+function codexTriagePrompt(m, mdFile) {
+  return `${header("codex-triage", m)}
+
+An independent reviewer (OpenAI Codex) reviewed ${m.id} and found no must-fix problems, but listed suggestions under "Should fix" in ${mdFile}. Read it. Fix the ones that are small and clearly right (one commit each, "fix(${m.id}): <what>, from Codex review"); add the rest to docs/BACKLOG.md with file, problem and suggested fix. Don't weaken tests. Finish with pnpm typecheck, pnpm lint and pnpm test passing.`;
+}
+
+function codexEscalatePrompt(m) {
+  return `${header("codex-escalate", m)}
+
+Codex (an independent reviewer) and you disagree, or its must-fix items couldn't be resolved, after ${cfg.codexRounds} rounds. Read the latest file matching .pipeline/reviews/${m.id}-codex-review-*.md. Add one entry to docs/DECISIONS_NEEDED.md of Type "product", Blocking: no, titled "Codex review of ${m.id}: unresolved items", with the remaining items, what each side says, and your recommendation. Update the summary table. Commit as "docs: escalate Codex review of ${m.id}".`;
+}
+
+// Final independent verdict on the finished milestone, saved where the founder reads milestone reports.
+function codexSignOff(m, startSha) {
+  const prompt = [
+    codexReviewContext(m, startSha),
+    "",
+    `This is the final sign-off after all fixes. Also read docs/milestones/${m.id}.md, the plain-language report written for the founder, and check that every claim in it is true in the code. Any false claim is a must_fix. In summary, write three to five sentences for a non-technical founder: what this milestone delivers, how confident you are in the money calculations, and what they should look at themselves.`,
+  ].join("\n");
+  const r = runCodex("codex-signoff", m, prompt);
+  if (!r.ok) {
+    log("- ⚠ Codex sign-off failed; continuing without it.");
+    return;
+  }
+  const md = reportToMarkdown(`Independent review of ${m.id} (Codex)`, r.report);
+  fs.writeFileSync(path.join(REVIEWS, `${m.id}-codex-signoff.md`), md);
+  if (!cfg.dryRun) {
+    fs.mkdirSync("docs/milestones", { recursive: true });
+    fs.writeFileSync(path.join("docs/milestones", `${m.id}-independent-review.md`), md);
+    git(["add", "docs/milestones"]);
+    git(["commit", "-m", `docs: Codex sign-off for ${m.id} (${r.report.verdict})`]);
+  }
+  if (r.report.verdict === "fail") {
+    log(`- ⚠ Codex sign-off for ${m.id} is FAIL with ${r.report.must_fix.length} item(s). Read docs/milestones/${m.id}-independent-review.md.`);
+  }
 }
 
 // ---------- checks ----------
@@ -385,6 +645,7 @@ function preflight() {
   const v = spawnSync(cfg.claudeBin, ["--version"], { encoding: "utf8" });
   if (v.status !== 0) finish("failed", `Couldn't run "${cfg.claudeBin} --version". Is Claude Code installed?`);
   log(`- Claude Code ${oneLine(v.stdout)}`);
+  if (!cfg.noCodex) codexAvailable();
   if (!gitClean()) {
     log("- ⚠ The working tree has uncommitted changes. The first stage will see them; commit or stash them if they aren't meant for the pipeline.");
   }

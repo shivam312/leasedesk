@@ -30,6 +30,12 @@ test("an owner adds a tenant with a contact, then finds them in the list", async
   await page
     .getByLabel("TDS rate on maintenance (CAM) (%) (optional)")
     .fill("2");
+  // No state chosen: refused, since it decides CGST + SGST or IGST.
+  await page.getByRole("button", { name: "Add tenant" }).click();
+  await expect(
+    page.getByText("Choose the state of their billing address."),
+  ).toBeVisible();
+  await page.getByLabel("State").selectOption("27");
   await page.getByRole("button", { name: "Add tenant" }).click();
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(

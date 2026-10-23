@@ -111,7 +111,7 @@ Wrapped up on 2026-10-23 (report: `docs/milestones/M5.md`); D-024 (the open Code
 - [x] Today screen: billed, collected, outstanding; needs-attention list with inline actions (include "N bank lines to match" and "N TDS certificates missing", which are otherwise only reachable from Billing → Payments)
 - [x] Daily email digest per user
 
-Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: "invoices aren't made yet" no longer sticks (and is emailed daily) in a month where no lease bills anything, such as quarterly leases between quarters; one filled button on Today; a lease date assigned to a viewer goes to owners and property managers instead; plainer certificate and settings wording. The rest is in `docs/BACKLOG.md`; no new founder decisions.
+Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: "invoices aren't made yet" no longer sticks (and is emailed daily) in a month where no lease bills anything, such as quarterly leases between quarters; one filled button on Today; a lease date assigned to a viewer goes to owners and property managers instead; plainer certificate and settings wording. The rest is in `docs/BACKLOG.md`; no new founder decisions. Codex reviewed it twice: the paise-sum and loading fixes are in, and its two disputed must-fix items are D-025. Wrapped up on 2026-10-23 (report: `docs/milestones/M6.md`); 838 unit and database tests pass.
 
 ## M7. Reports, exports and import (week 9)
 

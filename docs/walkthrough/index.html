@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LeaseDesk walkthrough: a month at Sharma Estates</title>
+<style>
+  body { font: 16px/1.55 system-ui, sans-serif; color: #111; max-width: 960px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+  h2 { margin-top: 3rem; border-top: 1px solid #ddd; padding-top: 1rem; }
+  figure { margin: 1.5rem 0 2.5rem; }
+  figcaption { margin-bottom: 0.75rem; }
+  .n { display: inline-block; min-width: 1.8rem; font-weight: 600; color: #555; }
+  img { width: 100%; border: 1px solid #ddd; border-radius: 6px; }
+  figure.phone img { width: 320px; max-width: 100%; }
+  code { background: #f3f3f3; padding: 0 4px; border-radius: 3px; font-size: 0.9em; }
+  .meta { color: #555; }
+</style>
+</head>
+<body>
+<h1>A month at Sharma Estates</h1>
+<p class="meta">Recorded on 24-10-2026 by <code>pnpm walkthrough</code>, on the demo data from <code>pnpm db:seed:demo</code>. All names, GSTINs and amounts are made up.</p>
+<p>What a landlord's month looks like in LeaseDesk: checking Today, looking up a tenant, adding a lease, making and sending Oct 2026's invoices, recording payments by hand and from a bank statement, and the reports. Every number on these screens was worked out by the app from the leases; the captions say which rule or setting produced it (rules are in <code>docs/BILLING_RULES.md</code>, settings in <code>docs/SETTINGS.md</code>).</p>
+<p>Videos of the whole run: <a href="videos/laptop.webm">on a laptop</a> and <a href="videos/phone.webm">on a phone</a>. They're made fresh by <code>pnpm walkthrough</code> and aren't kept in git, so run it once to see them.</p>
+<section><h2>1. Log in and read Today</h2>
+<figure id="shot-1">
+  <figcaption><span class="n">1</span> The owner of Sharma Estates logs in with the demo login (demo@sharma-estates.example; <code>pnpm db:seed:demo</code> prints a new password each time). The demo has two buildings, the 8-floor Sharma Corporate Tower in Gurugram and Sharma Arcade in Bengaluru (shops below, offices above), with 45 tenants and invoices and payments up to last month.</figcaption>
+  <a href="screens/01-log-in.png"><img src="screens/01-log-in.png" alt="Screenshot 1: log in" loading="lazy"></a>
+</figure>
+<figure id="shot-2">
+  <figcaption><span class="n">2</span> Today is the first screen after logging in: what's billed, collected and unpaid this month, then what needs doing. Notice the three tenants who haven't paid (Rangoli Media Labs Pvt Ltd, Gulmohar Interiors Pvt Ltd, Mysore Silk Emporium Pvt Ltd), the reminder that Oct 2026 invoices aren't made yet, the 3 TDS certificates past their due date (Q1's were due 15 August), coming rent increases, and Ojas Wellness Pvt Ltd's lease ending in 60 days. &quot;Overdue&quot; counts from each invoice's due date: 7 days after the invoice date in the tower and 10 in the arcade (setting <code>invoice.dueDays</code>, set on the arcade building).</figcaption>
+  <a href="screens/02-today.png"><img src="screens/02-today.png" alt="Screenshot 2: today" loading="lazy"></a>
+</figure>
+</section>
+<section><h2>The same screens on a phone (375px wide)</h2>
+<figure id="shot-3" class="phone">
+  <figcaption><span class="n">3</span> The same Today screen on a phone, as an owner would check it. The cards stack in one column and every button is big enough to tap.</figcaption>
+  <a href="screens/03-phone-today.png"><img src="screens/03-phone-today.png" alt="Screenshot 3: phone today" loading="lazy"></a>
+</figure>
+<figure id="shot-4" class="phone">
+  <figcaption><span class="n">4</span> The lease list on a phone: each lease is a card with the tenant, building, dates and status, instead of a wide table.</figcaption>
+  <a href="screens/04-phone-leases.png"><img src="screens/04-phone-leases.png" alt="Screenshot 4: phone leases" loading="lazy"></a>
+</figure>
+</section>
+<section><h2>2. Open a tenant and their lease</h2>
+<figure id="shot-5">
+  <figcaption><span class="n">5</span> Tenants lists everyone the landlord bills, with their GSTIN, accounts contact and whether they deduct TDS. Shops run by proprietors (Malnad Coffee House, Udupi Sagar Restaurant, Namma Pharmacy, Kumar Tailors) don't deduct TDS; companies and LLPs deduct 10%. Kumar Tailors isn't registered for GST, so it has no GSTIN.</figcaption>
+  <a href="screens/05-tenants.png"><img src="screens/05-tenants.png" alt="Screenshot 5: tenants" loading="lazy"></a>
+</figure>
+<figure id="shot-6">
+  <figcaption><span class="n">6</span> A tenant's page: their GSTIN and PAN, the TDS they deduct, their lease, every payment with the TDS kept back, and the accounts contact who receives invoices and reminders. The GSTIN's first two digits (06) are Haryana's state code, and characters 3 to 12 are the PAN.</figcaption>
+  <a href="screens/06-tenant.png"><img src="screens/06-tenant.png" alt="Screenshot 6: tenant" loading="lazy"></a>
+</figure>
+<figure id="shot-7">
+  <figcaption><span class="n">7</span> Kalinga Infotech's lease of 2,718 sq ft started on 01-08-2023 at ₹90 per sq ft a month (₹2,44,620). The rent schedule shows every increase worked out in advance: 5% every 12 months, compounding, each new rent rounded to the nearest rupee (setting <code>billing.roundIncreasedRent</code>). That is how this month's rent comes to ₹2,83,179.</figcaption>
+  <a href="screens/07-lease.png"><img src="screens/07-lease.png" alt="Screenshot 7: lease" loading="lazy"></a>
+</figure>
+</section>
+<section><h2>3. Add a new lease and see its rent schedule</h2>
+<figure id="shot-8">
+  <figcaption><span class="n">8</span> A new tenant, Lakshya Ventures, is added with their GSTIN and an accounts contact. A GSTIN with a wrong check digit (its last character) is refused, so typing mistakes are caught here and not on the invoice.</figcaption>
+  <a href="screens/08-new-tenant.png"><img src="screens/08-new-tenant.png" alt="Screenshot 8: new tenant" loading="lazy"></a>
+</figure>
+<figure id="shot-9">
+  <figcaption><span class="n">9</span> The lease form, step 1: the tenant, the building and the units, here the empty office 703 on the 7th floor. A unit already leased on the new lease's dates is refused when saving.</figcaption>
+  <a href="screens/09-new-lease-units.png"><img src="screens/09-new-lease-units.png" alt="Screenshot 9: new lease units" loading="lazy"></a>
+</figure>
+<figure id="shot-10">
+  <figcaption><span class="n">10</span> Step 2: the lease runs nine years from 01-11-2026, the 1st of next month, so it doesn't change this month's invoices.</figcaption>
+  <a href="screens/10-new-lease-dates.png"><img src="screens/10-new-lease-dates.png" alt="Screenshot 10: new lease dates" loading="lazy"></a>
+</figure>
+<figure id="shot-11">
+  <figcaption><span class="n">11</span> Step 3: rent of ₹125 per sq ft a month. GST (18%), the SAC code (997212) and billing in advance aren't typed: they come from the building's defaults.</figcaption>
+  <a href="screens/11-new-lease-charges.png"><img src="screens/11-new-lease-charges.png" alt="Screenshot 11: new lease charges" loading="lazy"></a>
+</figure>
+<figure id="shot-12">
+  <figcaption><span class="n">12</span> Step 4: everything is shown once more before saving, including the monthly rent: 5,944 sq ft × ₹125 = ₹7,43,000.</figcaption>
+  <a href="screens/12-new-lease-check.png"><img src="screens/12-new-lease-check.png" alt="Screenshot 12: new lease check" loading="lazy"></a>
+</figure>
+<figure id="shot-13">
+  <figcaption><span class="n">13</span> The saved lease with its full rent schedule, month by month to the last day. Nothing else needs entering: from now on it's billed every month on its own.</figcaption>
+  <a href="screens/13-new-lease-saved.png"><img src="screens/13-new-lease-saved.png" alt="Screenshot 13: new lease saved" loading="lazy"></a>
+</figure>
+</section>
+<section><h2>4. Make this month's invoices, check one, send them all</h2>
+<figure id="shot-14">
+  <figcaption><span class="n">14</span> &quot;Make Oct 2026 invoices&quot; works out every lease's invoice for the month: 45 drafts totalling ₹2,65,50,952. Nothing is sent yet, and drafts get their numbers only when they're sent, so a mistake caught now leaves no gap in the numbering.</figcaption>
+  <a href="screens/14-invoices-made.png"><img src="screens/14-invoices-made.png" alt="Screenshot 14: invoices made" loading="lazy"></a>
+</figure>
+<figure id="shot-15">
+  <figcaption><span class="n">15</span> Kalinga Infotech's draft: Rent ₹2,83,179, Maintenance (CAM) ₹48,924, Parking ₹4,000, ₹3,36,103 before GST. GST is CGST 9% + SGST 9% (₹30,249.27 each) because the bill comes from Sharma Estates' Haryana GSTIN for a building in Haryana; a different state would mean IGST (rules section 8). The total is rounded to the rupee with a round-off line of ₹0.46 (setting <code>billing.roundInvoiceTotal</code>), giving ₹3,96,602. The tenant may keep back ₹33,610 TDS: 10% of the amount before GST, rounded to the rupee (setting <code>tds.rounding</code>). It's due on 08-10-2026.</figcaption>
+  <a href="screens/15-draft.png"><img src="screens/15-draft.png" alt="Screenshot 15: draft" loading="lazy"></a>
+</figure>
+<figure id="shot-16">
+  <figcaption><span class="n">16</span> Tapping a line explains the amount: the area times the rate per sq ft, whether it's a full or part month, and how the tax was split. This is what the accountant checks against the lease, line by line.</figcaption>
+  <a href="screens/16-explain.png"><img src="screens/16-explain.png" alt="Screenshot 16: explain" loading="lazy"></a>
+</figure>
+<figure id="shot-17">
+  <figcaption><span class="n">17</span> &quot;Send 45 invoices&quot; asks once more, with the count and the total. Each invoice is checked against its lease again before it gets a number, so an invoice whose lease changed after it was made isn't sent.</figcaption>
+  <a href="screens/17-send-check.png"><img src="screens/17-send-check.png" alt="Screenshot 17: send check" loading="lazy"></a>
+</figure>
+<figure id="shot-18">
+  <figcaption><span class="n">18</span> Sent: each invoice now has its number: the building's prefix (SCT for the tower, SA for the arcade), the financial year (26-27) and a running number with no gaps, carrying on from last month's (setting <code>invoice.numberFormat</code>, rules section 9). Tenants with an email address get the invoice by email.</figcaption>
+  <a href="screens/18-sent.png"><img src="screens/18-sent.png" alt="Screenshot 18: sent" loading="lazy"></a>
+</figure>
+</section>
+<section><h2>5. Record a payment with TDS</h2>
+<figure id="shot-19">
+  <figcaption><span class="n">19</span> Rangoli Media Labs, three months behind, pays two of its invoices: ₹9,04,562 reaches the bank and ₹83,756 is TDS they kept back. The payment goes to the oldest invoices first (SCT/26-27/0049 and SCT/26-27/0079), each paid in full: what was received plus the TDS on it (rules section 11).</figcaption>
+  <a href="screens/19-payment.png"><img src="screens/19-payment.png" alt="Screenshot 19: payment" loading="lazy"></a>
+</figure>
+<figure id="shot-20">
+  <figcaption><span class="n">20</span> The recorded payment. The TDS goes to the TDS tracker under this quarter, waiting for Rangoli's certificate.</figcaption>
+  <a href="screens/20-payment-recorded.png"><img src="screens/20-payment-recorded.png" alt="Screenshot 20: payment recorded" loading="lazy"></a>
+</figure>
+</section>
+<section><h2>6. Import a bank statement and confirm the matches</h2>
+<figure id="shot-21">
+  <figcaption><span class="n">21</span> The landlord uploads the HDFC statement as it comes from net banking. The columns are recognised (date, narration, credit), and the 3 money-received lines are shown before importing; withdrawals are skipped.</figcaption>
+  <a href="screens/21-bank-import.png"><img src="screens/21-bank-import.png" alt="Screenshot 21: bank import" loading="lazy"></a>
+</figure>
+<figure id="shot-22">
+  <figcaption><span class="n">22</span> Each credit is matched to a tenant from the name and invoice number in the bank's text (Gulmohar Interiors Pvt Ltd and Mysore Silk Emporium Pvt Ltd), with the TDS worked out from the amount: the bank shows what arrived after TDS, so the TDS is the rest of the invoice.</figcaption>
+  <a href="screens/22-matches.png"><img src="screens/22-matches.png" alt="Screenshot 22: matches" loading="lazy"></a>
+</figure>
+<figure id="shot-23">
+  <figcaption><span class="n">23</span> &quot;Record 3 payments&quot; turns the matched lines into payments, ₹9,63,774 in all, each applied to the invoice named in its bank text. They're on the payments list with the one typed in by hand.</figcaption>
+  <a href="screens/23-payments.png"><img src="screens/23-payments.png" alt="Screenshot 23: payments" loading="lazy"></a>
+</figure>
+</section>
+<section><h2>7. The reports</h2>
+<figure id="shot-24">
+  <figcaption><span class="n">24</span> Reports: everything the landlord or their accountant asks for at month-end, each downloadable as Excel or PDF.</figcaption>
+  <a href="screens/24-reports.png"><img src="screens/24-reports.png" alt="Screenshot 24: reports" loading="lazy"></a>
+</figure>
+<figure id="shot-25">
+  <figcaption><span class="n">25</span> Rent roll: every running lease with its units, area, rent and rate per sq ft today (after all increases so far), its dates and its next rent increase.</figcaption>
+  <a href="screens/25-report-rent-roll.png"><img src="screens/25-report-rent-roll.png" alt="Screenshot 25: report rent roll" loading="lazy"></a>
+</figure>
+<figure id="shot-26">
+  <figcaption><span class="n">26</span> Vacancy: how much of each building is leased, and every empty unit. Office 703 shows the lease added in step 3 starting on the 1st; 704 is being fitted out.</figcaption>
+  <a href="screens/26-report-vacancy.png"><img src="screens/26-report-vacancy.png" alt="Screenshot 26: report vacancy" loading="lazy"></a>
+</figure>
+<figure id="shot-27">
+  <figcaption><span class="n">27</span> Expiry schedule: leases ending in the next 12 months, soonest first, with the last day to give notice. Ojas Wellness Pvt Ltd ends in 60 days; its 3-month notice day has already passed.</figcaption>
+  <a href="screens/27-report-expiry.png"><img src="screens/27-report-expiry.png" alt="Screenshot 27: report expiry" loading="lazy"></a>
+</figure>
+<figure id="shot-28">
+  <figcaption><span class="n">28</span> Collections: money received this month, by payment and by tenant, with the TDS kept back shown separately: the hand-recorded payment from step 5 and the three from the bank statement. Received is what reached the bank; received plus TDS is what was settled.</figcaption>
+  <a href="screens/28-report-collections.png"><img src="screens/28-report-collections.png" alt="Screenshot 28: report collections" loading="lazy"></a>
+</figure>
+<figure id="shot-29">
+  <figcaption><span class="n">29</span> Unpaid and ageing: what each tenant hasn't paid today, grouped by how long it has been overdue, and every unpaid invoice. Rangoli's two newest invoices are still here after step 5.</figcaption>
+  <a href="screens/29-report-ageing.png"><img src="screens/29-report-ageing.png" alt="Screenshot 29: report ageing" loading="lazy"></a>
+</figure>
+<figure id="shot-30">
+  <figcaption><span class="n">30</span> GST summary: a month's invoices and credit notes by GST rate, with CGST, SGST and IGST, and B2B (the tenant has a GSTIN) or B2C (Kumar Tailors), for the GST returns. The figures are copied from the sent invoices, never worked out again.</figcaption>
+  <a href="screens/30-report-gst-summary.png"><img src="screens/30-report-gst-summary.png" alt="Screenshot 30: report gst summary" loading="lazy"></a>
+</figure>
+<figure id="shot-31">
+  <figcaption><span class="n">31</span> TDS summary: TDS kept back by each tenant, by quarter, and how much of it their Form 16A certificates cover. Q1's certificates were due on 15 August: Tarang Telecom Pvt Ltd, Sapphire HR Solutions Pvt Ltd, Kodagu Spices Exports Pvt Ltd haven't sent theirs, so they show as overdue. Q2's aren't due until 15 November.</figcaption>
+  <a href="screens/31-report-tds-summary.png"><img src="screens/31-report-tds-summary.png" alt="Screenshot 31: report tds summary" loading="lazy"></a>
+</figure>
+<figure id="shot-32">
+  <figcaption><span class="n">32</span> Tally export: sent invoices, credit notes and payments between two dates, as a file the accountant imports into TallyPrime.</figcaption>
+  <a href="screens/32-report-tally.png"><img src="screens/32-report-tally.png" alt="Screenshot 32: report tally" loading="lazy"></a>
+</figure>
+</section>
+</body>
+</html>

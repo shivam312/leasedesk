@@ -1,6 +1,74 @@
 {
-  "today": "2026-10-24",
-  "month": "Oct 2026",
+  "facts": {
+    "today": "2026-10-24",
+    "month": "Oct 2026",
+    "email": "demo@sharma-estates.example",
+    "kalinga": {
+      "lease": {
+        "startDate": "2023-08-01",
+        "endDate": "2032-07-31",
+        "area": 271800,
+        "rentRate": 9000,
+        "percentBp": 500,
+        "everyMonths": 12
+      },
+      "invoice": {
+        "taxable": 33610300,
+        "cgst": 3024927,
+        "sgst": 3024927,
+        "roundOff": 46,
+        "grandTotal": 39660200,
+        "expectedTds": 3361000,
+        "dueDate": "2026-10-08",
+        "lines": [
+          {
+            "type": "rent",
+            "description": "Rent for Oct 2026",
+            "quantityLabel": "2,718 sq ft",
+            "taxable": 28317900
+          },
+          {
+            "type": "cam",
+            "description": "Maintenance (CAM) for Oct 2026",
+            "quantityLabel": "2,718 sq ft",
+            "taxable": 4892400
+          },
+          {
+            "type": "parking",
+            "description": "Parking for Oct 2026",
+            "quantityLabel": "1 slot",
+            "taxable": 400000
+          }
+        ]
+      }
+    },
+    "newLease": {
+      "unit": "703",
+      "area": 594400,
+      "ratePaise": 12500,
+      "startDate": "2026-11-01"
+    },
+    "made": {
+      "count": 45,
+      "total": 2655095200
+    },
+    "rangoli": {
+      "received": 90456200,
+      "tds": 8375600,
+      "numbers": [
+        "SCT/26-27/0049",
+        "SCT/26-27/0079"
+      ]
+    },
+    "statement": {
+      "count": 3,
+      "received": 96377400,
+      "tenants": [
+        "Gulmohar Interiors Pvt Ltd",
+        "Mysore Silk Emporium Pvt Ltd"
+      ]
+    }
+  },
   "shots": [
     {
       "n": 1,

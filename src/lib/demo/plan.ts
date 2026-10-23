@@ -552,7 +552,7 @@ export const DEMO_TENANTS: DemoTenant[] = TENANTS.map((spec, i) => {
     contact: {
       name: spec.contact,
       email: `accounts@${slug}.example`,
-      phone: `+91 98${String(10000000 + ((i * 7654321) % 89999999)).padStart(8, "0")}`,
+      phone: `+91 98${String(10000000 + ((i * 7654321 + 3141592) % 89999999)).padStart(8, "0")}`,
     },
   };
 });

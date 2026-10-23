@@ -5,6 +5,11 @@ import { addMonths, monthOf, startOfMonth } from "../../src/lib/billing/dates";
 import { formatINR, formatMonth } from "../../src/lib/format";
 import { makeGstin } from "../../src/lib/india/identifiers";
 import { todayInIndia } from "../../src/lib/today";
+import {
+  walkthroughPage,
+  type WalkthroughFacts,
+  type WalkthroughShot,
+} from "../../src/lib/demo/walkthrough-page";
 import { readDemo, resetDemo } from "./demo";
 
 // The demo walkthrough (ROADMAP M5a) on the Sharma Estates demo data: a
@@ -15,14 +20,7 @@ import { readDemo, resetDemo } from "./demo";
 const RECORD = process.env.WALKTHROUGH === "1";
 const OUT = join(process.cwd(), "docs/walkthrough");
 
-type Shot = {
-  n: number;
-  file: string;
-  step: string;
-  name: string;
-  width: number;
-};
-const shots: Shot[] = [];
+const shots: WalkthroughShot[] = [];
 
 async function shot(page: Page, step: string, name: string) {
   if (!RECORD) return;
@@ -59,7 +57,7 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     await p.video()?.saveAs(join(OUT, "videos", `${name}.webm`));
   };
 
-  // Indian dates in the browser's own date fields, as a landlord would see them.
+  // An Indian browser: language and time zone.
   const india = { locale: "en-IN", timezoneId: "Asia/Kolkata" };
   const laptop = await browser.newContext({
     ...india,
@@ -167,6 +165,15 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await expect(visible(page, /^Made 45 invoices/)).toBeVisible({
     timeout: 60_000,
   });
+  const thisMonth = startOfMonth(monthOf(today));
+  const billed = await readDemo(demo.organizationId, async (q) => ({
+    made: await q.monthTotal(thisMonth),
+    kalinga: {
+      lease: await q.lease("Kalinga Infotech Pvt Ltd"),
+      invoice: await q.invoice("Kalinga Infotech Pvt Ltd", thisMonth),
+    },
+    newLease: await q.lease("Lakshya Ventures Pvt Ltd"),
+  }));
   await shot(page, "4", "invoices-made");
   await page
     .getByRole("link", { name: /Kalinga Infotech Pvt Ltd/ })
@@ -216,7 +223,6 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
 
   // 6. A bank statement with Gulmohar's and Mysore Silk's overdue invoices
   // paid (this month's are not due yet).
-  const thisMonth = startOfMonth(monthOf(today));
   const overdue = await readDemo(demo.organizationId, async (q) => [
     ...(await q.unpaidInvoices("Gulmohar Interiors Pvt Ltd")).map((i) => ({
       ...i,
@@ -274,9 +280,33 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
 
   if (!RECORD) return;
   rmSync(join(OUT, "videos", "raw"), { recursive: true, force: true });
+  const facts: WalkthroughFacts = {
+    today,
+    month,
+    email: demo.email,
+    kalinga: billed.kalinga,
+    newLease: {
+      unit: "703",
+      area: billed.newLease.area,
+      ratePaise: 12500,
+      startDate: start,
+    },
+    made: billed.made,
+    rangoli: {
+      received,
+      tds,
+      numbers: twoOldest.map((i) => i.number ?? ""),
+    },
+    statement: {
+      count: statement.length,
+      received: statement.reduce((s, i) => s + i.grandTotal - i.expectedTds, 0),
+      tenants: ["Gulmohar Interiors Pvt Ltd", "Mysore Silk Emporium Pvt Ltd"],
+    },
+  };
+  writeFileSync(join(OUT, "index.html"), walkthroughPage({ facts, shots }));
   writeFileSync(
     join(OUT, "shots.json"),
-    JSON.stringify({ today, month, shots }, null, 2) + "\n",
+    JSON.stringify({ facts, shots }, null, 2) + "\n",
   );
 });
 

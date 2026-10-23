@@ -34,6 +34,9 @@ test("an owner reads the rent roll and vacancy", async ({ page }) => {
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download Excel" }).click();
   expect((await download).suggestedFilename()).toBe(`rent-roll-${today}.xlsx`);
+  const pdf = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download PDF" }).click();
+  expect((await pdf).suggestedFilename()).toBe(`rent-roll-${today}.pdf`);
 
   // Before the lease starts, nothing is running.
   await page.getByLabel("As on").fill("2020-01-01");

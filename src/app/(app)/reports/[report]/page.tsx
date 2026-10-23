@@ -164,6 +164,16 @@ async function Body({
         >
           Download Excel
         </a>
+        <a
+          href={exportHref(def, p, q, "pdf")}
+          download
+          className={buttonVariants({
+            variant: "outline",
+            className: "h-11 md:h-9",
+          })}
+        >
+          Download PDF
+        </a>
       </div>
       <p className="text-sm text-muted-foreground">
         {report.period}

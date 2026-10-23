@@ -3,7 +3,7 @@
 // The monthly billing run and sending invoices (M4).
 
 import { revalidatePath } from "next/cache";
-import { appDb, type Member } from "@/lib/auth";
+import { appDb, requireMember, type Member } from "@/lib/auth";
 import type { FormState } from "@/lib/auth/forms";
 import { runScoped } from "@/lib/db/scoped";
 import { emailDriver } from "@/lib/email";
@@ -15,6 +15,9 @@ import {
   sendSummary,
   type SendAllResult,
 } from "@/lib/invoices/forms";
+import { creditNoteDocument } from "@/lib/invoices/credit-note-document";
+import { parseCreditNoteForm } from "@/lib/invoices/credit-note-form";
+import { getCreditNote, issueCreditNote } from "@/lib/invoices/credit-notes";
 import { renderInvoicePdf } from "@/lib/invoices/pdf";
 import { getInvoice, getInvoiceDocument } from "@/lib/invoices/queries";
 import { runBilling } from "@/lib/invoices/run";
@@ -27,6 +30,10 @@ import {
   SendError,
   type EmailResult,
 } from "@/lib/invoices/send";
+import { todayInIndia } from "@/lib/today";
+import { formatINR } from "@/lib/format";
+import { PermissionError, requirePermission } from "@/lib/auth/roles";
+import { logActivity } from "@/lib/db/activity-log";
 import { guardedForm } from "./guard";
 
 /** "Make invoices": draft every lease's invoice for the chosen month. */
@@ -180,4 +187,85 @@ export async function emailInvoiceAgain(
       return emailAgainMessage(email);
     },
   );
+}
+
+/**
+ * "Issue credit note": number and save it in one transaction, then email its
+ * PDF to the tenant's billing contacts (D25, D26).
+ */
+export async function issueCreditNoteAction(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const member = await requireMember();
+  try {
+    requirePermission(member, "manage_billing");
+  } catch (error) {
+    if (error instanceof PermissionError) return { message: error.message };
+    throw error;
+  }
+  const parsed = parseCreditNoteForm(form.entries());
+  if ("state" in parsed) return parsed.state;
+  const input = parsed.data;
+  let note;
+  try {
+    note = await runScoped(appDb, member, (s) =>
+      issueCreditNote(s, { ...input, date: todayInIndia() }),
+    );
+  } catch (error) {
+    if (error instanceof SendError)
+      return { message: error.message, values: valuesOf(form) };
+    console.error("Credit note failed", input.invoiceId, error);
+    return {
+      message:
+        "Something went wrong; no credit note was issued. Try again in a few minutes.",
+      values: valuesOf(form),
+    };
+  }
+  revalidatePath(`/billing/invoices/${input.invoiceId}`);
+  revalidatePath("/billing");
+
+  const { doc, to } = await runScoped(appDb, member, async (s) => {
+    const saved = await getCreditNote(s, note.id);
+    const invoice = saved?.invoice;
+    return {
+      doc: saved ? creditNoteDocument(saved) : null,
+      to: invoice ? await recipientsFor(s, invoice.tenantId) : [],
+    };
+  });
+  const email: EmailResult = doc
+    ? await emailInvoice(doc, to, emailDriver(), renderInvoicePdf)
+    : { kind: "failed", message: "The credit note couldn't be found." };
+  await runScoped(appDb, member, (s) =>
+    logActivity(s, {
+      entityType: "credit_note_email",
+      entityId: note.id,
+      action: "send",
+      after: email,
+    }),
+  );
+  const issued = `Issued credit note ${note.number} for ${formatINR(note.total)}.`;
+  switch (email.kind) {
+    case "emailed":
+      return {
+        message: `${issued} Emailed to ${email.to.join(", ")}.`,
+        tone: "success",
+      };
+    case "no_email":
+      return {
+        message: `${issued} The tenant has no email address: download the PDF from the invoice page and send it yourself.`,
+        tone: "success",
+      };
+    case "failed":
+      return {
+        message: `${issued} The email couldn't be sent: download the PDF from the invoice page and send it yourself.`,
+        tone: "success",
+      };
+  }
+}
+
+function valuesOf(form: FormData) {
+  const values: Record<string, string> = {};
+  for (const [k, v] of form.entries()) if (typeof v === "string") values[k] = v;
+  return values;
 }

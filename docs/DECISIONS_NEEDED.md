@@ -23,6 +23,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-011 | Billing from a business with no GSTIN | ca | no | open |
 | D-012 | E-invoicing (IRN) for landlords over ₹5 crore turnover | ca | no | open |
 | D-013 | Signature and "Original for recipient" on emailed invoices | ca | no | open |
+| D-014 | How credit notes work out GST, round off and the time limit | ca | no | open |
 
 ## Human tasks
 
@@ -204,6 +205,19 @@ Things only a person can do. Tick them when done.
   - C) Sign each PDF with a digital signature certificate (needs a certificate and a signing service)
 - Recommendation: A for the pilot; B is small to add if your CA prefers it.
 - Done meanwhile: A, with "Original for recipient" printed under the title. The landlord keeps the sent PDF as their copy.
+- Answer:
+
+### D-014: How credit notes work out GST, round off and the time limit
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: A credit note takes money off a sent invoice. We reverse GST in the same split as the invoice (CGST + SGST, or IGST). Crediting all that's left on a line reverses exactly the tax charged on it. A part credit (say ₹5,000 of maintenance) works GST out on that amount at the line's rate. The invoice's round off is reversed only with the last of the invoice. We refuse a credit note after 30 November following the end of the invoice's financial year, because GST can't be reduced after that (CGST Act section 34(2)).
+- Options:
+  - A) As built: GST at the line's rate on a part credit, round off only on the last credit, refuse after the 30 November limit
+  - B) As A, but after the limit allow a "financial" credit note with no GST (the tenant's balance goes down; GST paid stays paid)
+  - C) Round every credit note's total to the rupee, like invoices
+- Recommendation: A for the pilot; ask your CA whether B is needed for late corrections.
+- Done meanwhile: A, in `src/lib/billing/credit-note.ts` (`creditNoteAmounts`, `creditNoteDeadline`) and BILLING_RULES section 12, marked [CA].
 - Answer:
 
 ## Applied

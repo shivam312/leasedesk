@@ -79,7 +79,7 @@ Built on branch `m3-leases-schema`; the lease migrations (`drizzle/0008`–`0011
 - [x] Invoice PDF with GST fields, bank details and UPI QR code
 - [x] Review drafts and "Send all": assign numbers, generate PDFs, email through the adapter
 - [x] "Explain this amount" on every line
-- [ ] Credit notes
+- [x] Credit notes
 - [ ] (human) Create a Resend account, verify the sending domain and put `RESEND_API_KEY` in `.env.local`
 
 ## M5. Payments and TDS (week 8)

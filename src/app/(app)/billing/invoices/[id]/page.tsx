@@ -15,6 +15,8 @@ import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { formatDate, formatINR, formatMonth } from "@/lib/format";
+import { creditNotesFor } from "@/lib/invoices/credit-notes";
+import { CREDIT_REASONS } from "@/lib/invoices/credit-note-document";
 import { lineWorking, totalWorking } from "@/lib/invoices/explain";
 import { getInvoice } from "@/lib/invoices/queries";
 import { todayInIndia } from "@/lib/today";
@@ -40,8 +42,12 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const member = await requireMember();
-  const data = await runScoped(appDb, member, (s) => getInvoice(s, id));
+  const data = await runScoped(appDb, member, async (s) => {
+    const saved = await getInvoice(s, id);
+    return saved ? { ...saved, credits: await creditNotesFor(s, id) } : null;
+  });
   if (!data) notFound();
+  const { credits } = data;
   const { invoice, tenant, building, lines } = data;
   const status = INVOICE_STATUS[invoice.status];
   const canBill = can(member.role, "manage_billing");
@@ -218,6 +224,69 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
             </p>
           )}
         </section>
+
+        {(credits.length > 0 ||
+          (canBill &&
+            invoice.status !== "draft" &&
+            invoice.status !== "cancelled")) && (
+          <section className="flex flex-col gap-2">
+            <h2 className="font-medium">Credit notes</h2>
+            {credits.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                None. To take money off this invoice (a mistake, a waiver or a
+                discount), issue a credit note; the invoice itself never
+                changes.
+              </p>
+            ) : (
+              <ul className="flex flex-col divide-y rounded-lg border">
+                {credits.map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex flex-wrap items-center justify-between gap-2 p-4 text-sm"
+                  >
+                    <span className="flex flex-col">
+                      <span className="font-medium">{c.number}</span>
+                      <span className="break-words text-muted-foreground">
+                        {formatDate(c.date)} · {CREDIT_REASONS[c.reason]}
+                        {c.note ? `: ${c.note}` : ""}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-4">
+                      <span className="tabular-nums">
+                        −{formatINR(c.total)}
+                      </span>
+                      <a
+                        href={`/billing/credit-notes/${c.id}/pdf`}
+                        target="_blank"
+                        rel="noopener"
+                        className="inline-flex min-h-11 items-center underline md:min-h-0"
+                      >
+                        PDF
+                        <span className="sr-only">
+                          {" "}
+                          of credit note {c.number}
+                        </span>
+                      </a>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {canBill &&
+              invoice.status !== "draft" &&
+              invoice.status !== "cancelled" && (
+                <Link
+                  href={`/billing/invoices/${invoice.id}/credit-note`}
+                  className={buttonVariants({
+                    variant: "outline",
+                    className: "h-11 self-start md:h-9",
+                  })}
+                >
+                  Issue a credit note
+                </Link>
+              )}
+          </section>
+        )}
       </div>
     </>
   );

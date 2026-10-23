@@ -113,7 +113,7 @@ export function InvoicePdf({
 }) {
   return (
     <Document
-      title={`Invoice ${doc.number} – ${doc.recipient.name}`}
+      title={`${doc.title === "Credit Note" ? "Credit note" : "Invoice"} ${doc.number} – ${doc.recipient.name}`}
       author={doc.supplier.name}
     >
       <Page size="A4" style={s.page}>
@@ -134,17 +134,25 @@ export function InvoicePdf({
             <Text style={s.title}>{doc.title}</Text>
             <Text style={s.copyLabel}>{doc.copyLabel}</Text>
             <Text style={{ textAlign: "right" }}>
-              <Text style={s.muted}>Invoice no: </Text>
+              <Text style={s.muted}>{doc.numberLabel}: </Text>
               {doc.number}
             </Text>
             <Text style={{ textAlign: "right" }}>
-              <Text style={s.muted}>Invoice date: </Text>
+              <Text style={s.muted}>{doc.dateLabel}: </Text>
               {doc.invoiceDate}
             </Text>
-            <Text style={{ textAlign: "right" }}>
-              <Text style={s.muted}>Due date: </Text>
-              {doc.dueDate}
-            </Text>
+            {doc.dueDate && (
+              <Text style={{ textAlign: "right" }}>
+                <Text style={s.muted}>Due date: </Text>
+                {doc.dueDate}
+              </Text>
+            )}
+            {doc.against && (
+              <Text style={{ textAlign: "right" }}>
+                <Text style={s.muted}>Against invoice: </Text>
+                {doc.against}
+              </Text>
+            )}
           </View>
         </View>
 
@@ -205,39 +213,42 @@ export function InvoicePdf({
           </View>
         </View>
         <Text style={s.section}>{doc.amountInWords}</Text>
+        {doc.reason && <Field label="Reason">{doc.reason}</Field>}
 
-        <View style={[s.row, s.section]} wrap={false}>
-          <View style={s.half}>
-            <Text style={s.label}>How to pay</Text>
-            {doc.payment.rows.map(([k, v]) => (
-              <Field key={k} label={k}>
-                {v}
-              </Field>
-            ))}
-            {doc.payment.toPay && (
-              <Text style={s.toPay}>Amount to pay: {doc.payment.toPay}</Text>
-            )}
-            <Text style={[s.muted, { marginTop: 4 }]}>
-              Please quote the invoice number in your payment reference.
-            </Text>
-          </View>
-          {qr && (
-            <View>
-              {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt */}
-              <Image src={qr} style={s.qr} />
-              <Text style={[s.muted, { textAlign: "center" }]}>
-                Scan to pay by UPI
+        {doc.payment && (
+          <View style={[s.row, s.section]} wrap={false}>
+            <View style={s.half}>
+              <Text style={s.label}>How to pay</Text>
+              {doc.payment.rows.map(([k, v]) => (
+                <Field key={k} label={k}>
+                  {v}
+                </Field>
+              ))}
+              {doc.payment.toPay && (
+                <Text style={s.toPay}>Amount to pay: {doc.payment.toPay}</Text>
+              )}
+              <Text style={[s.muted, { marginTop: 4 }]}>
+                Please quote the invoice number in your payment reference.
               </Text>
             </View>
-          )}
-        </View>
+            {qr && (
+              <View>
+                {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt */}
+                <Image src={qr} style={s.qr} />
+                <Text style={[s.muted, { textAlign: "center" }]}>
+                  Scan to pay by UPI
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={s.footer} wrap={false}>
           <View>
             <Text>
               Whether tax is payable on reverse charge: {doc.reverseCharge}
             </Text>
-            <Text style={s.muted}>This is a computer-generated invoice.</Text>
+            <Text style={s.muted}>{doc.footnote}</Text>
           </View>
           <View>
             <Text style={{ marginBottom: 28, textAlign: "center" }}>
@@ -253,7 +264,7 @@ export function InvoicePdf({
 
 /** The invoice as PDF bytes, with its UPI QR code. */
 export async function renderInvoicePdf(doc: InvoiceDocument): Promise<Buffer> {
-  const qr = doc.payment.upiLink
+  const qr = doc.payment?.upiLink
     ? await QRCode.toDataURL(doc.payment.upiLink, { margin: 1, width: 240 })
     : null;
   return renderToBuffer(<InvoicePdf doc={doc} qr={qr} />);

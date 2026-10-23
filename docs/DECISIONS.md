@@ -177,3 +177,12 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - After the commit, the PDF is rendered from the frozen copies and emailed (`emailInvoice`). A failed email leaves the invoice sent; the summary says so, and the invoice page has "Email again", which goes to the tenant's billing contacts as they are now. Every attempt is in the activity log (`invoice_email`, `send`). No delivery status column yet (backlog).
 - Recipients are the tenant's billing contacts with an email, or the primary contact's if there are none (`invoiceRecipients`). A tenant with no address is still sent (numbered), and the summary asks the user to send the PDF themselves.
 - `pdf_path` stays empty for now: a sent invoice's PDF is rendered on demand from its frozen copies, which give the same content every time. Storing the file in Supabase Storage is backlogged.
+
+## D26. Credit notes are issued in one step, with the engine's amounts shown as you type (2026-10-23)
+
+**Why:** A credit note can't be changed once issued (D4), and the landlord must see the exact total, GST included, before issuing it. A preview worked out differently from the save could disagree.
+**Consequences:**
+- `creditNoteAmounts` (`src/lib/billing/credit-note.ts`, pure) is the only calculation. The form (`CreditNoteForm`) runs it in the browser for the preview, and `issueCreditNote` (`src/lib/invoices/credit-notes.ts`) runs it again on the server under a lock on the invoice, against the amounts already credited, before taking the number.
+- The form starts each line at all that is left on it, so the usual case (credit the whole invoice) is one click and a confirmation. The credit note is dated today in India.
+- It is emailed after the commit like an invoice (D25), and its PDF reuses the invoice layout (`creditNoteDocument`), printed from the invoice's frozen copies, with "Credit Note", its number, and the invoice's number and date.
+- `invoice.startingNumber` applies to invoice series only; credit-note series start at 1.

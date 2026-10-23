@@ -4,6 +4,11 @@ import { renderInvoicePdf } from "../pdf";
 
 const doc: InvoiceDocument = {
   title: "Tax Invoice",
+  numberLabel: "Invoice no",
+  dateLabel: "Invoice date",
+  against: null,
+  reason: null,
+  footnote: "This is a computer-generated invoice.",
   draft: false,
   notice: null,
   copyLabel: "Original for recipient",
@@ -66,7 +71,24 @@ describe("renderInvoicePdf", () => {
       draft: true,
       notice: "NOT SENT YET. For checking only.",
       number: "Not sent yet",
-      payment: { ...doc.payment, upiLink: null },
+      payment: { ...doc.payment!, upiLink: null },
+    });
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(pdf.toString("latin1")).not.toContain("/Subtype /Image");
+  }, 20_000);
+
+  it("renders a credit note with its invoice and reason, and no payment", async () => {
+    const pdf = await renderInvoicePdf({
+      ...doc,
+      title: "Credit Note",
+      numberLabel: "Credit note no",
+      dateLabel: "Credit note date",
+      number: "BCN/26-27/0001",
+      dueDate: null,
+      against: "B1/26-27/0001 dated 01-11-2026",
+      reason: "Waiver: one week rent-free agreed",
+      payment: null,
+      footnote: "This is a computer-generated credit note.",
     });
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
     expect(pdf.toString("latin1")).not.toContain("/Subtype /Image");

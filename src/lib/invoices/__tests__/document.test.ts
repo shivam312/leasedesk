@@ -41,14 +41,14 @@ describe("invoiceDocument", () => {
       "Tower A (renamed later), MG Road, Pune · Units 10, 401, 402",
     );
     // A draft still shows what will be asked for, so it can be checked.
-    expect(doc.payment.toPay).toBe(
+    expect(doc.payment!.toPay).toBe(
       "₹1,08,000 (total ₹1,18,000 less TDS ₹10,000)",
     );
     expect(doc.supplier.name).toBe("Demo Properties (renamed later)");
     expect(doc.recipient.name).toBe("Acme (renamed later)");
     expect(doc.recipient.gstin).toBe("Unregistered");
     expect(doc.recipient.state).toBe("Karnataka (29)");
-    expect(doc.payment.upiLink).toBeNull();
+    expect(doc.payment!.upiLink).toBeNull();
   });
 
   it("splits each line into CGST and SGST at half the rate within a state", () => {
@@ -110,13 +110,13 @@ describe("invoiceDocument", () => {
   it("asks for the total less expected TDS, leaving the amount out of the QR above UPI's ₹1 lakh limit", () => {
     const doc = invoiceDocument(source());
     // ₹1,18,000 − ₹10,000 TDS = ₹1,08,000: over ₹1,00,000, so no am=
-    expect(doc.payment.upiLink).toBe(
+    expect(doc.payment!.upiLink).toBe(
       "upi://pay?pa=demo%40okhdfcbank&pn=Demo%20Properties%20LLP&cu=INR&tn=B1%2F26-27%2F0001",
     );
-    expect(doc.payment.toPay).toBe(
+    expect(doc.payment!.toPay).toBe(
       "₹1,08,000 (total ₹1,18,000 less TDS ₹10,000)",
     );
-    expect(doc.payment.rows).toEqual([
+    expect(doc.payment!.rows).toEqual([
       ["Bank", "HDFC Bank"],
       ["Account name", "Demo Properties LLP"],
       ["Account number", "50100012345678"],
@@ -130,26 +130,26 @@ describe("invoiceDocument", () => {
     const doc = invoiceDocument(
       source({ grandTotal: 11000000, taxableTotal: 9200000 }),
     );
-    expect(doc.payment.upiLink).toContain("&am=100000.00&");
+    expect(doc.payment!.upiLink).toContain("&am=100000.00&");
     // ₹1,10,000.01 − ₹10,000 = ₹1,00,000.01, one paisa over
     const over = invoiceDocument(
       source({ grandTotal: 11000001, taxableTotal: 9200001 }),
     );
-    expect(over.payment.upiLink).not.toContain("am=");
+    expect(over.payment!.upiLink).not.toContain("am=");
   });
 
   it("a cancelled invoice asks for nothing and has no QR", () => {
     const doc = invoiceDocument(source({ status: "cancelled" }));
     expect(doc.notice).toBe("CANCELLED. This invoice is not payable.");
-    expect(doc.payment.toPay).toBeNull();
-    expect(doc.payment.upiLink).toBeNull();
+    expect(doc.payment!.toPay).toBeNull();
+    expect(doc.payment!.upiLink).toBeNull();
   });
 
   it("a paid invoice asks for nothing and has no QR", () => {
     const doc = invoiceDocument(source({ status: "paid" }));
     expect(doc.notice).toMatch(/^PAID/);
-    expect(doc.payment.toPay).toBeNull();
-    expect(doc.payment.upiLink).toBeNull();
+    expect(doc.payment!.toPay).toBeNull();
+    expect(doc.payment!.upiLink).toBeNull();
   });
 
   it("a part-paid invoice has a QR without an amount, and no amount to pay", () => {
@@ -163,8 +163,8 @@ describe("invoiceDocument", () => {
       }),
     );
     expect(doc.notice).toBeNull();
-    expect(doc.payment.toPay).toBeNull();
-    expect(doc.payment.upiLink).toBe(
+    expect(doc.payment!.toPay).toBeNull();
+    expect(doc.payment!.upiLink).toBe(
       "upi://pay?pa=demo%40okhdfcbank&pn=Demo%20Properties%20LLP&cu=INR&tn=B1%2F26-27%2F0001",
     );
   });
@@ -181,7 +181,7 @@ describe("invoiceDocument", () => {
         expectedTds: 500000,
       }),
     );
-    expect(doc.payment.upiLink).toContain("&am=54000.00&");
+    expect(doc.payment!.upiLink).toContain("&am=54000.00&");
   });
 
   it("refuses to print a sent invoice without its copies, rather than show current details", () => {
@@ -197,9 +197,9 @@ describe("invoiceDocument", () => {
     const s = source({ expectedTds: 0 });
     s.invoice.supplier = { ...s.invoice.supplier!, upiId: null, ifsc: null };
     const doc = invoiceDocument(s);
-    expect(doc.payment.upiLink).toBeNull();
-    expect(doc.payment.toPay).toBe("₹1,18,000");
-    expect(doc.payment.rows.map(([k]) => k)).toEqual([
+    expect(doc.payment!.upiLink).toBeNull();
+    expect(doc.payment!.toPay).toBe("₹1,18,000");
+    expect(doc.payment!.rows.map(([k]) => k)).toEqual([
       "Bank",
       "Account name",
       "Account number",

@@ -119,6 +119,12 @@ Tenants usually deduct TDS before paying rent. Section numbers and thresholds ch
 - Always reference one original invoice.
 - Reverse taxable value and tax in the same split as the original.
 - Reasons: `correction`, `waiver`, `discount`, `other`, with a free-text note.
+- The user enters the amount before GST to take off each line, up to what is left on it after earlier credit notes. **[CA]** (D-014)
+- Crediting all that is left on a line reverses exactly the CGST, SGST or IGST left on it, so crediting a whole invoice reverses it to the paisa. A part credit works GST out on the amount credited at the line's rate (section 8, per line), never more than the tax left on the line. **[CA]**
+- The invoice's round off is reversed only by the credit note that takes the last of the invoice; other credit notes have no round off. If reversing it would bring that last credit note to ₹0 or below (a negative round off bigger than the few paise left), it has no round off either. **[CA]**
+- A credit note is dated the day it is issued, never before its invoice, and only until 30 November after the end of the invoice's financial year (CGST Act section 34(2)): later, GST can't be reduced, so it is refused and the user is told to ask their accountant. **[CA]** (D-014)
+- Credit notes are numbered when issued, in the credit-note series of the invoice's billing GSTIN (section 9), with the building's credit note prefix. There are no draft credit notes.
+- When nothing is left on the invoice, its status becomes `cancelled` ("Credit note issued").
 
 ## 13. Golden test cases
 

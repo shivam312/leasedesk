@@ -57,7 +57,10 @@ export type DocumentSource = {
 };
 
 export type InvoiceDocument = {
-  title: "Tax Invoice";
+  title: "Tax Invoice" | "Credit Note";
+  /** "Invoice no" or "Credit note no", and the same for the date. */
+  numberLabel: string;
+  dateLabel: string;
   draft: boolean;
   /** A banner above everything, for anything that isn't a payable invoice. */
   notice: string | null;
@@ -65,7 +68,12 @@ export type InvoiceDocument = {
   copyLabel: string;
   number: string;
   invoiceDate: string;
-  dueDate: string;
+  /** Null on a credit note. */
+  dueDate: string | null;
+  /** A credit note's original invoice: "B1/26-27/0001 dated 01-11-2026". */
+  against: string | null;
+  /** A credit note's reason, e.g. "Waiver: rent-free week agreed". */
+  reason: string | null;
   supplier: {
     name: string;
     address: string;
@@ -88,19 +96,22 @@ export type InvoiceDocument = {
   }[];
   totals: { label: string; amount: string }[];
   amountInWords: string;
+  /** How to pay; null on a credit note. */
   payment: {
     rows: [string, string][];
     /** Null when nothing is asked for: cancelled, paid or part-paid. */
     toPay: string | null;
     /** The UPI QR's content; null on drafts, cancelled and paid invoices, and without a UPI ID. */
     upiLink: string | null;
-  };
+  } | null;
   reverseCharge: "No";
+  /** "This is a computer-generated invoice." */
+  footnote: string;
 };
 
 /** "B1/26-27/0001" → "Invoice-B1-26-27-0001.pdf"; a draft → "Invoice-Not-sent-yet.pdf". */
-export function pdfFileName(number: string): string {
-  return `Invoice-${number.replace(/[^A-Za-z0-9-]/g, "-")}.pdf`;
+export function pdfFileName(number: string, creditNote = false): string {
+  return `${creditNote ? "Credit-note" : "Invoice"}-${number.replace(/[^A-Za-z0-9-]/g, "-")}.pdf`;
 }
 
 /** "27" → "Maharashtra (27)". */
@@ -210,12 +221,16 @@ export function invoiceDocument(src: DocumentSource): InvoiceDocument {
 
   return {
     title: "Tax Invoice",
+    numberLabel: "Invoice no",
+    dateLabel: "Invoice date",
     draft,
     notice: NOTICES[invoice.status] ?? null,
     copyLabel: "Original for recipient",
     number: invoice.number ?? "Not sent yet",
     invoiceDate: formatDate(invoice.invoiceDate),
     dueDate: formatDate(invoice.dueDate),
+    against: null,
+    reason: null,
     supplier: {
       name: supplier.legalName,
       address: supplier.address,
@@ -248,5 +263,6 @@ export function invoiceDocument(src: DocumentSource): InvoiceDocument {
           : null,
     },
     reverseCharge: "No",
+    footnote: "This is a computer-generated invoice.",
   };
 }

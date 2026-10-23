@@ -22,38 +22,46 @@ export function invoiceRecipients(contacts: Contact[]): string[] {
   return [...new Set(chosen.map((c) => c.email!.trim().toLowerCase()))];
 }
 
-/** The invoice email, with its PDF attached. */
+/** The invoice or credit-note email, with its PDF attached. */
 export function invoiceEmail(
   doc: InvoiceDocument,
   to: string[],
   pdf: Buffer,
 ): Email {
+  const creditNote = doc.title === "Credit Note";
+  const toPay = doc.payment?.toPay ?? null;
   const lines = [
     `Dear ${doc.recipient.name},`,
     "",
-    `Please find attached invoice ${doc.number} dated ${doc.invoiceDate} for ${doc.property}.`,
+    creditNote
+      ? `Please find attached credit note ${doc.number} dated ${doc.invoiceDate} against invoice ${doc.against} for ${doc.property}.`
+      : `Please find attached invoice ${doc.number} dated ${doc.invoiceDate} for ${doc.property}.`,
   ];
   // Nothing is asked for on a paid or part-paid invoice (D24): this is a copy.
-  if (doc.payment.toPay)
+  if (toPay)
+    lines.push("", `Amount to pay: ${toPay}`, `Due by: ${doc.dueDate}`);
+  else
     lines.push(
       "",
-      `Amount to pay: ${doc.payment.toPay}`,
-      `Due by: ${doc.dueDate}`,
+      `${creditNote ? "Credit note" : "Invoice"} total: ${doc.totals.at(-1)!.amount}`,
     );
-  else lines.push("", `Invoice total: ${doc.totals.at(-1)!.amount}`);
-  if (doc.payment.toPay && doc.payment.rows.length > 0)
+  if (doc.reason) lines.push(`Reason: ${doc.reason}`);
+  if (toPay && doc.payment!.rows.length > 0)
     lines.push(
       "",
       "Pay to:",
-      ...doc.payment.rows.map(([label, value]) => `${label}: ${value}`),
+      ...doc.payment!.rows.map(([label, value]) => `${label}: ${value}`),
     );
-  if (doc.payment.toPay)
-    lines.push("", `Please quote ${doc.number} with your payment.`);
+  if (toPay) lines.push("", `Please quote ${doc.number} with your payment.`);
   lines.push("", "Regards,", doc.supplier.name);
   return {
     to,
-    subject: `Invoice ${doc.number} from ${doc.supplier.name}, due ${doc.dueDate}`,
+    subject: creditNote
+      ? `Credit note ${doc.number} from ${doc.supplier.name} against invoice ${doc.against?.split(" ")[0]}`
+      : `Invoice ${doc.number} from ${doc.supplier.name}, due ${doc.dueDate}`,
     text: lines.join("\n"),
-    attachments: [{ filename: pdfFileName(doc.number), content: pdf }],
+    attachments: [
+      { filename: pdfFileName(doc.number, creditNote), content: pdf },
+    ],
   };
 }

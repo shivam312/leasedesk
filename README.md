@@ -55,5 +55,5 @@ supabase stop       # when you're done
 
 ### Email and background jobs
 
-- Without `RESEND_API_KEY` and `EMAIL_FROM` in `.env.local`, every email (invoices, credit notes) is written to `.local-outbox/` instead of being sent: the message and its PDF attachments.
-- `pnpm jobs:dev` runs Inngest's local dev server against `pnpm dev` (http://localhost:8288). The daily billing run (`monthlyBilling`) can be triggered by hand there; the Billing page's "Make invoices" button does the same work without it.
+- Without `RESEND_API_KEY` and `EMAIL_FROM` in `.env.local`, every email (invoices, credit notes, payment reminders) is written to `.local-outbox/` instead of being sent: the message and its PDF attachments.
+- `pnpm jobs:dev` runs Inngest's local dev server against `pnpm dev` (http://localhost:8288). The daily billing run (`monthlyBilling`) can be triggered by hand there; the Billing page's "Make invoices" button does the same work without it. The daily payment reminders (`dailyReminders`, 09:00 India time) can be triggered there too.

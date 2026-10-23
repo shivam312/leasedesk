@@ -82,6 +82,6 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 - A sent invoice's amounts and lines never change.
 - Sum of allocations for a payment ≤ amount_received + tds_deducted.
-- An invoice's `paid` status ⇔ allocations + credit notes ≥ grand_total (within round-off).
+- An invoice's `paid` status ⇔ allocations + credit notes ≥ grand_total, or TDS is recorded against it and no more than `tds.tolerancePaise` is left (BILLING_RULES section 11, D-022).
 - Invoice numbers within a series and financial year are unique and gap-free.
 - A unit can't be in two active leases with overlapping dates.

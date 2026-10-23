@@ -4,7 +4,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 Each task is one commit. Tasks tagged `(human)` need a person and are listed in `docs/DECISIONS_NEEDED.md` under Human tasks; the pipeline skips them. Tasks tagged `(blocked: D-xxx)` wait for that decision. See `PIPELINE.md`.
 
-**Current milestone:** M5
+**Current milestone:** M5a
 
 ## M0. Project setup (week 3)
 
@@ -96,7 +96,7 @@ Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice 
 - [x] Tenant ledger with running balance
 - [ ] (human) Get one real bank statement export (CSV or Excel) per major bank the pilots use, personal details removed, into `tests/fixtures/bank/`
 
-On `main`. Migrations to `drizzle/0022` (including the reminders tables) are applied locally, and the database tests no longer skip when a table is missing: they fail, the reminder tests included. Checked on 2026-10-23 after applying them: the reminder database tests run and pass, and `pnpm test:e2e` passes, including every screen opening without an error. Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`). Reviewed by the billing and UX reviewers on 2026-10-23: the must-fix items are fixed (bank TDS when only a newer invoice is named, a credit note clearing a part-paid invoice, the TDS tolerance on invoice status, the tenant page's lease list, bank "credits" wording, tap targets, the reversal's next step); the rest are in `docs/BACKLOG.md`, and D-022 and D-023 are open.
+Wrapped up on 2026-10-23 (report: `docs/milestones/M5.md`); D-024 (the open Codex point) waits for an answer. On `main`. Migrations to `drizzle/0022` (including the reminders tables) are applied locally, and the database tests no longer skip when a table is missing: they fail, the reminder tests included. Checked on 2026-10-23 after applying them: the reminder database tests run and pass, and `pnpm test:e2e` passes, including every screen opening without an error. Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`). Reviewed by the billing and UX reviewers on 2026-10-23: the must-fix items are fixed (bank TDS when only a newer invoice is named, a credit note clearing a part-paid invoice, the TDS tolerance on invoice status, the tenant page's lease list, bank "credits" wording, tap targets, the reversal's next step); the rest are in `docs/BACKLOG.md`, and D-022 and D-023 are open.
 
 ## M5a. Demo data and walkthrough
 

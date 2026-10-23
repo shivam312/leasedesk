@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { formatMonth } from "../../src/lib/format";
 import { todayInIndia } from "../../src/lib/today";
 import {
   addBuilding,
@@ -6,6 +7,8 @@ import {
   addLease,
   addTenant,
   addUnit,
+  makeAndSendOneInvoice,
+  openFirstInvoice,
   signUpNewOwner,
 } from "./helpers";
 
@@ -43,5 +46,45 @@ test("an owner reads the rent roll and vacancy", async ({ page }) => {
   await page.getByRole("button", { name: "Show" }).click();
   await expect(
     page.getByText("Never leased").filter({ visible: true }).first(),
+  ).toBeVisible();
+});
+
+// A sent ₹1,18,000 invoice is unpaid until a payment settles it; the
+// payment then shows in collections.
+test("an owner reads unpaid rent and collections", async ({ page }) => {
+  const today = todayInIndia();
+  await signUpNewOwner(page);
+  await addGstin(page);
+  await addBuilding(page);
+  await addUnit(page);
+  await addTenant(page);
+  await addLease(page, today);
+  await makeAndSendOneInvoice(page, formatMonth(today));
+
+  await page.goto("/reports");
+  await page.getByRole("link", { name: /Unpaid and ageing/ }).click();
+  await expect(
+    page.getByText("₹1,18,000").filter({ visible: true }).first(),
+  ).toBeVisible();
+
+  await openFirstInvoice(page);
+  await page.getByRole("link", { name: "Record payment" }).click();
+  await page.getByLabel("Amount received").fill("1,08,000");
+  await page.getByLabel("TDS deducted").fill("10,000");
+  await page
+    .getByRole("button", { name: "Record payment of ₹1,08,000" })
+    .click();
+  await page.waitForURL(/\/billing\/payments\/[0-9a-f-]{36}/);
+
+  await page.goto("/reports/ageing");
+  await expect(
+    page.getByText("Nothing is unpaid. Every sent invoice is settled.").first(),
+  ).toBeVisible();
+  await page.goto(`/reports/collections?from=${today}&to=${today}`);
+  await expect(
+    page.getByText("₹1,08,000").filter({ visible: true }).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByText("₹10,000").filter({ visible: true }).first(),
   ).toBeVisible();
 });

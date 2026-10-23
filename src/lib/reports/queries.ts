@@ -1,10 +1,13 @@
 // Loading what each report needs, for the current organization. Building the
 // report from it is pure (rent-roll.ts, vacancy.ts and the rest).
 
-import { asc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte, ne } from "drizzle-orm";
 import type { PlainDate } from "@/lib/billing/dates";
 import {
   buildings,
+  invoices,
+  paymentAllocations,
+  payments,
   customEscalations,
   escalationRules,
   floors,
@@ -14,10 +17,12 @@ import {
   tenants,
   units,
 } from "@/lib/db/schema";
+import { openInvoiceRows } from "@/lib/alerts/queries";
 import type { Scoped } from "@/lib/db/scoped";
 import { savedLeaseInput } from "@/lib/leases/rows";
 import { billingSettings } from "@/lib/settings/billing";
 import { loadSettings } from "@/lib/settings/store";
+import { ageing, collections } from "./collections";
 import type { Report } from "./report";
 import { rentRoll, type RentRollLease } from "./rent-roll";
 import { vacancy } from "./vacancy";
@@ -142,4 +147,93 @@ export async function vacancyReport(
       .where(s.where(leaseUnits, ne(leases.status, "draft"))),
   ]);
   return vacancy(unitRows, leaseRows, asOf);
+}
+
+export async function collectionsReport(
+  s: Scoped,
+  from: PlainDate,
+  to: PlainDate,
+): Promise<Report> {
+  const rows = await s.tx
+    .select({
+      id: payments.id,
+      kind: payments.kind,
+      receivedDate: payments.receivedDate,
+      tenantName: tenants.companyName,
+      mode: payments.mode,
+      reference: payments.reference,
+      amountReceived: payments.amountReceived,
+      tdsDeducted: payments.tdsDeducted,
+    })
+    .from(payments)
+    .innerJoin(tenants, eq(tenants.id, payments.tenantId))
+    .where(
+      s.where(
+        payments,
+        and(gte(payments.receivedDate, from), lte(payments.receivedDate, to)),
+      ),
+    );
+  const ids = rows.map((r) => r.id);
+  const allocated =
+    ids.length === 0
+      ? []
+      : await s.tx
+          .select({
+            paymentId: paymentAllocations.paymentId,
+            number: invoices.number,
+          })
+          .from(paymentAllocations)
+          .innerJoin(invoices, eq(invoices.id, paymentAllocations.invoiceId))
+          .where(
+            s.where(
+              paymentAllocations,
+              inArray(paymentAllocations.paymentId, ids),
+            ),
+          );
+  return collections(
+    rows.map((r) => ({
+      ...r,
+      invoiceNumbers: [
+        ...new Set(
+          allocated
+            .filter((a) => a.paymentId === r.id && a.number)
+            .map((a) => a.number!),
+        ),
+      ].sort(),
+    })),
+    from,
+    to,
+  );
+}
+
+/** Unpaid as recorded now, aged to `today`. */
+export async function ageingReport(
+  s: Scoped,
+  today: PlainDate,
+): Promise<Report> {
+  const open = await openInvoiceRows(s);
+  const ids = open.map((o) => o.id);
+  const details =
+    ids.length === 0
+      ? []
+      : await s.tx
+          .select({
+            id: invoices.id,
+            number: invoices.number,
+            invoiceDate: invoices.invoiceDate,
+          })
+          .from(invoices)
+          .where(s.where(invoices, inArray(invoices.id, ids)));
+  const byId = new Map(details.map((d) => [d.id, d]));
+  return ageing(
+    open.map((o) => ({
+      tenantName: o.tenantName,
+      number: byId.get(o.id)?.number ?? "",
+      invoiceDate: byId.get(o.id)?.invoiceDate ?? o.dueDate,
+      dueDate: o.dueDate,
+      outstandingPaise: o.outstandingPaise,
+      expectedTdsPaise: o.expectedTdsPaise,
+    })),
+    today,
+  );
 }

@@ -49,7 +49,10 @@ export type Report = {
 export function cellText(kind: ColumnKind, value: Cell): string {
   if (value === null || value === "") return "";
   if (typeof value === "string") {
-    return kind === "date" ? formatDate(value) : value;
+    // A label such as "Total" can sit in a date column.
+    return kind === "date" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? formatDate(value)
+      : value;
   }
   switch (kind) {
     case "money":

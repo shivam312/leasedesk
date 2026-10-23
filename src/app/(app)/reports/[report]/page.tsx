@@ -80,15 +80,39 @@ async function Body({
         className="flex flex-wrap items-end gap-3"
         aria-label="Filter the report"
       >
-        <label className="flex flex-col gap-1 text-sm">
-          {def.dateLabel}
-          <Input
-            type="date"
-            name="asOf"
-            defaultValue={p.asOf}
-            className="h-11 w-44 md:h-9"
-          />
-        </label>
+        {def.filter === "asOf" && (
+          <label className="flex flex-col gap-1 text-sm">
+            As on
+            <Input
+              type="date"
+              name="asOf"
+              defaultValue={p.asOf}
+              className="h-11 w-44 md:h-9"
+            />
+          </label>
+        )}
+        {def.filter === "range" && (
+          <>
+            <label className="flex flex-col gap-1 text-sm">
+              From
+              <Input
+                type="date"
+                name="from"
+                defaultValue={p.from}
+                className="h-11 w-44 md:h-9"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              To
+              <Input
+                type="date"
+                name="to"
+                defaultValue={p.to}
+                className="h-11 w-44 md:h-9"
+              />
+            </label>
+          </>
+        )}
         <label className="flex flex-col gap-1 text-sm">
           Search
           <Input

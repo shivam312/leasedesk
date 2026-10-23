@@ -2,21 +2,42 @@
 // is loaded. The Reports screen, the Excel export and the PDF export all go
 // through here, so a report added once shows and exports everywhere.
 
-import { compareDates, parseDate, type PlainDate } from "@/lib/billing/dates";
+import {
+  compareDates,
+  monthOf,
+  parseDate,
+  startOfMonth,
+  type PlainDate,
+} from "@/lib/billing/dates";
 import type { Scoped } from "@/lib/db/scoped";
 import type { Report, ReportRow } from "./report";
-import { rentRollReport, vacancyReport } from "./queries";
+import {
+  ageingReport,
+  collectionsReport,
+  rentRollReport,
+  vacancyReport,
+} from "./queries";
 
-/** Filters a report reads from the address: ?asOf=2026-10-23 */
-export type ReportParams = { asOf: PlainDate };
+/**
+ * Filters a report reads from the address: ?asOf=2026-10-23, or
+ * ?from=2026-10-01&to=2026-10-31 for a period.
+ */
+export type ReportParams = {
+  asOf: PlainDate;
+  from: PlainDate;
+  to: PlainDate;
+  today: PlainDate;
+};
+
+/** asOf: one date; range: from and to; today: no filter, figures as they are now. */
+export type ReportFilter = "asOf" | "range" | "today";
 
 export type ReportDefinition = {
   slug: string;
   title: string;
   /** One sentence on the Reports list. */
   description: string;
-  /** The words on the date filter. */
-  dateLabel: string;
+  filter: ReportFilter;
   load: (s: Scoped, params: ReportParams) => Promise<Report>;
 };
 
@@ -26,7 +47,7 @@ export const REPORTS: ReportDefinition[] = [
     title: "Rent roll",
     description:
       "Every running lease: units, area, rent, rate per sq ft, lease dates and the next rent increase.",
-    dateLabel: "As on",
+    filter: "asOf",
     load: (s, p) => rentRollReport(s, p.asOf),
   },
   {
@@ -34,8 +55,24 @@ export const REPORTS: ReportDefinition[] = [
     title: "Vacancy",
     description:
       "How much of each building is leased, and every vacant unit with the day it became vacant.",
-    dateLabel: "As on",
+    filter: "asOf",
     load: (s, p) => vacancyReport(s, p.asOf),
+  },
+  {
+    slug: "collections",
+    title: "Collections",
+    description:
+      "Money received between two dates, with TDS, by payment and by tenant.",
+    filter: "range",
+    load: (s, p) => collectionsReport(s, p.from, p.to),
+  },
+  {
+    slug: "ageing",
+    title: "Unpaid and ageing",
+    description:
+      "What each tenant hasn't paid today, by how long it is overdue, and every unpaid invoice.",
+    filter: "today",
+    load: (s, p) => ageingReport(s, p.today),
   },
 ];
 
@@ -53,17 +90,28 @@ function realDate(value: unknown): PlainDate | null {
   }
 }
 
-/** The report's filters from the address, falling back to today. */
+/** The report's filters from the address, falling back to today and this month. */
 export function reportParams(
   search: Record<string, string | string[] | undefined>,
   today: PlainDate,
 ): ReportParams {
-  const asOf = realDate(search.asOf) ?? today;
   // Ten years either side is more than any lease; anything else is a typo.
-  const tooFar =
-    compareDates(asOf, `${Number(today.slice(0, 4)) - 10}-01-01`) < 0 ||
-    compareDates(asOf, `${Number(today.slice(0, 4)) + 10}-12-31`) > 0;
-  return { asOf: tooFar ? today : asOf };
+  const year = Number(today.slice(0, 4));
+  const sane = (value: unknown, fallback: PlainDate) => {
+    const d = realDate(value);
+    return d &&
+      compareDates(d, `${year - 10}-01-01`) >= 0 &&
+      compareDates(d, `${year + 10}-12-31`) <= 0
+      ? d
+      : fallback;
+  };
+  const from = sane(search.from, startOfMonth(monthOf(today)));
+  const to = sane(search.to, today);
+  return {
+    today,
+    asOf: sane(search.asOf, today),
+    ...(compareDates(from, to) <= 0 ? { from, to } : { from: to, to: from }),
+  };
 }
 
 /** Rows whose words contain `query` (any case); the totals row is dropped when filtered. */

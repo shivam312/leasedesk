@@ -61,11 +61,18 @@ function Card({
   return (
     <li className={cn("rounded-lg border p-4", total && "bg-muted")}>
       <p className="font-medium break-words">
-        {first ? cellText(first.kind, row[first.key] ?? null) : ""}
+        {total
+          ? "Total"
+          : first
+            ? cellText(first.kind, row[first.key] ?? null)
+            : ""}
       </p>
       <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {rest
-          .filter((c) => cellText(c.kind, row[c.key] ?? null) !== "")
+          .filter(
+            (c) =>
+              !["", "Total"].includes(cellText(c.kind, row[c.key] ?? null)),
+          )
           .map((c) => (
             <div key={c.key} className="contents">
               <dt className="text-muted-foreground">{c.label}</dt>

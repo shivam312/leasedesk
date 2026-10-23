@@ -42,15 +42,15 @@ export function terminationPlan(input: TerminationInput): TerminationPlan {
   const { lease, exitDate, today } = input;
   if (lease.status !== "active" && lease.status !== "in_notice") {
     throw new Error(
-      "Only an active lease, or one in notice, can be ended early.",
+      "Only a current lease, or one where the tenant is leaving, can be ended early.",
     );
   }
   if (compareDates(exitDate, lease.startDate) < 0) {
-    throw new Error("The exit date can't be before the lease starts.");
+    throw new Error("The tenant's last day can't be before the lease starts.");
   }
   if (compareDates(exitDate, lease.endDate) > 0) {
     throw new Error(
-      "The exit date can't be after the lease ends; renew it instead.",
+      "The tenant's last day can't be after the lease ends. Renew the lease instead.",
     );
   }
 

@@ -42,10 +42,10 @@ describe("terminationPlan", () => {
 
   it("refuses an exit outside the lease, and a lease that isn't running", () => {
     expect(() => terminationPlan(input({ exitDate: "2026-03-31" }))).toThrow(
-      "before the lease starts",
+      "The tenant's last day can't be before the lease starts.",
     );
     expect(() => terminationPlan(input({ exitDate: "2029-04-01" }))).toThrow(
-      "after the lease ends",
+      "The tenant's last day can't be after the lease ends. Renew the lease instead.",
     );
     expect(() =>
       terminationPlan(
@@ -57,6 +57,8 @@ describe("terminationPlan", () => {
           },
         }),
       ),
-    ).toThrow("Only an active lease");
+    ).toThrow(
+      "Only a current lease, or one where the tenant is leaving, can be ended early.",
+    );
   });
 });

@@ -85,9 +85,11 @@ async function setUp(page: Page) {
     .setInputFiles(
       join(process.cwd(), "tests/fixtures/bank/synthetic/hdfc-like.csv"),
     );
-  await page.getByRole("button", { name: "Import 3 credits" }).click();
+  await page
+    .getByRole("button", { name: "Import 3 payments received" })
+    .click();
   await expect(
-    page.getByText("Imported 3 credits.", { exact: false }),
+    page.getByText("Imported 3 payments received.", { exact: false }),
   ).toBeVisible();
 }
 

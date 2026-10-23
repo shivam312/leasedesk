@@ -64,7 +64,8 @@ async function Import({ params }: { params: Promise<{ id: string }> }) {
         />
       </div>
       <p className="max-w-2xl text-sm">
-        Imported {imp.lineCount} {imp.lineCount === 1 ? "credit" : "credits"}.
+        Imported {imp.lineCount} {imp.lineCount === 1 ? "payment" : "payments"}{" "}
+        received.
         {skipped.length > 0 && ` Left out: ${skipped.join(", ")}.`}
       </p>
       {lines.some(

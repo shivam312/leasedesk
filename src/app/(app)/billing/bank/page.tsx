@@ -139,7 +139,7 @@ async function Bank() {
               <li key={i.import.id} className="border-b py-2">
                 <Link
                   href={`/billing/bank/imports/${i.import.id}`}
-                  className="underline"
+                  className="inline-flex min-h-11 items-center underline md:min-h-0"
                 >
                   {i.import.fileName}
                 </Link>{" "}
@@ -149,7 +149,7 @@ async function Bank() {
                     ? `, ${formatDate(i.import.periodStart)} to ${formatDate(i.import.periodEnd)}`
                     : ""}
                   , {i.import.lineCount}{" "}
-                  {i.import.lineCount === 1 ? "credit" : "credits"}
+                  {i.import.lineCount === 1 ? "payment" : "payments"} received
                 </span>
               </li>
             ))}

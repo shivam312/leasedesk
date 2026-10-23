@@ -46,7 +46,7 @@ export async function addBankAccountAction(
   );
 }
 
-/** "Import N credits": save the statement's new credit lines. */
+/** "Import N payments received": save the statement's new credit lines. */
 export async function importStatementAction(
   _prev: FormState,
   form: FormData,

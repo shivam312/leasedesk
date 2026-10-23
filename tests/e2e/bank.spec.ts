@@ -28,15 +28,19 @@ test("an owner imports a bank statement; the columns are remembered", async ({
     page.getByLabel("Money received (credit or deposit) (optional)"),
   ).toHaveValue("Deposit Amt.");
   await expect(
-    page.getByText("3 credits from 01-11-2026 to 05-11-2026", { exact: false }),
+    page.getByText("3 payments received from 01-11-2026 to 05-11-2026", {
+      exact: false,
+    }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Import 3 credits" }).click();
+  await page
+    .getByRole("button", { name: "Import 3 payments received" })
+    .click();
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Statement, 01-11-2026 to 05-11-2026",
   );
   await expect(
-    page.getByText("Imported 3 credits.", { exact: false }),
+    page.getByText("Imported 3 payments received.", { exact: false }),
   ).toBeVisible();
   await expect(page.getByText("Not matched yet").first()).toBeVisible();
 
@@ -50,7 +54,9 @@ test("an owner imports a bank statement; the columns are remembered", async ({
   await expect(
     page.getByText(/Using this account's saved columns/),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Import 3 credits" }).click();
+  await page
+    .getByRole("button", { name: "Import 3 payments received" })
+    .click();
   await expect(page.getByText("Nothing new in this statement.")).toBeVisible();
 
   // Nobody owes anything yet, so nothing is suggested; set one line aside.

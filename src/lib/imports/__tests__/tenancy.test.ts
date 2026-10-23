@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { utils, write } from "xlsx";
+import { parseWorkbookSheets } from "@/lib/bank/xlsx";
 import { DEFAULT_SETTINGS } from "@/lib/billing/__tests__/billing-settings";
 import type { LeaseInput } from "@/lib/billing/schedule";
 import type { Charge } from "@/lib/billing/types";
 import { parseLeaseForm } from "@/lib/leases/draft";
+import { readRows } from "../sheets";
 import {
   rentTodayProblem,
   threeMonths,
@@ -366,5 +369,44 @@ describe("rentTodayProblem", () => {
     expect(
       rentTodayProblem(fixed, DEFAULT_SETTINGS, "about 1 lakh", "2026-11-01"),
     ).toBe("Rent today (₹): type an amount in rupees, like 1,05,000 or 89.50.");
+  });
+});
+
+describe("amounts with more than two decimals in the Excel file", () => {
+  it("are refused on their row, not rounded to the paisa", () => {
+    // ₹85.505 per sq ft and a ₹6,00,000.005 deposit aren't whole paise.
+    // Rounding them to ₹85.51 and ₹6,00,000.01 would bill and hold amounts
+    // nobody typed, so the row is refused and names the column.
+    const values = (rent: unknown, deposit: unknown) =>
+      LEASE_COLUMNS.map((c) =>
+        c.key === "rent"
+          ? rent
+          : c.key === "deposit"
+            ? deposit
+            : (leaseExample[c.key] ?? ""),
+      );
+    const book = utils.book_new();
+    utils.book_append_sheet(
+      book,
+      utils.aoa_to_sheet([
+        LEASE_COLUMNS.map((c) => c.heading),
+        values(85.505, 600000),
+        values(85.5, 600000.005),
+      ]),
+      "Leases",
+    );
+    const bytes = write(book, { type: "buffer", bookType: "xlsx" });
+    const read = readRows(parseWorkbookSheets(bytes)[0]!, LEASE_COLUMNS);
+    if ("error" in read) throw new Error(read.error.message);
+    const messages = read.rows.map(({ values: v }) => {
+      const mapped = leaseRowInput(v, lookup);
+      if ("error" in mapped) return mapped.error;
+      const form = parseLeaseForm(mapped.input);
+      return form.ok
+        ? "accepted"
+        : leaseErrorMessage(form.errors, mapped.sources);
+    });
+    expect(messages[0]).toMatch(/^Rent: /);
+    expect(messages[1]).toMatch(/^Deposit \(₹\): /);
   });
 });

@@ -352,3 +352,35 @@ describe("percent cells", () => {
     ]);
   });
 });
+
+describe("areas with more than two decimals", () => {
+  it("are refused on their row, not rounded to the hundredth", () => {
+    // 1250.505 sq ft is typed with three decimals; areas are kept in
+    // hundredths of a sq ft, so it can't be saved as typed. Rounding it to
+    // 1250.51 would silently change the area that per sq ft rent is billed on.
+    const book = utils.book_new();
+    utils.book_append_sheet(
+      book,
+      utils.aoa_to_sheet([BUILDING_COLUMNS.map((c) => c.heading), orchid]),
+      "Buildings",
+    );
+    utils.book_append_sheet(
+      book,
+      utils.aoa_to_sheet([
+        UNIT_COLUMNS.map((c) => c.heading),
+        ["Orchid Towers", "", "301", 1250.505, ""],
+        ["Orchid Towers", "", "302", 900, 1625.255],
+      ]),
+      "Units",
+    );
+    const bytes = write(book, { type: "buffer", bookType: "xlsx" });
+    const result = planPropertyImport(parseWorkbookSheets(bytes), none);
+    expect(
+      "errors" in result &&
+        result.errors.map((e) => `${e.sheet} ${e.row}: ${e.message}`),
+    ).toEqual([
+      "Units 2: Enter the carpet area in sq ft, like 1250 or 1250.50.",
+      "Units 3: Enter the billed area in sq ft, like 1625 or 1625.50.",
+    ]);
+  });
+});

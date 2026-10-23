@@ -1,18 +1,25 @@
 // Excel bank statements (.xlsx and old .xls) read with SheetJS into the same
 // rows of strings as `parseCsv`, so `statement.ts` reads both alike. Date
 // cells become DD-MM-YYYY from their serial number (no Date, no time zone);
-// number cells become plain text, whole numbers as they are (cheque numbers)
-// and others rounded to two decimals (paise). Pure: bytes in, rows out.
+// number cells become plain text, whole numbers as they are (cheque numbers),
+// others with two decimals (paise), and never rounded to fit: ₹100.005 stays
+// "100.005" so the reader refuses it rather than taking ₹100.01. Pure: bytes
+// in, rows out.
 
 import { read, SSF, utils, type CellObject, type WorkSheet } from "xlsx";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
+/**
+ * The number as Excel shows it, to 15 significant digits, so float noise
+ * (0.1 + 0.2) is dropped but typed decimals aren't: "3.30", "100.005".
+ */
 function numberText(v: number): string {
-  if (Number.isInteger(v)) return String(v);
-  const paise = Math.round(Math.abs(v) * 100);
-  const sign = v < 0 ? "-" : "";
-  return `${sign}${Math.floor(paise / 100)}.${pad(paise % 100)}`;
+  const shown = Number(v.toPrecision(15));
+  if (Number.isInteger(shown)) return String(shown);
+  // Shortest form; a tiny 1e-7 keeps its exponent, which no reader accepts.
+  const text = String(shown);
+  return /\.\d$/.test(text) ? `${text}0` : text;
 }
 
 function cellText(cell: CellObject | undefined, date1904: boolean): string {

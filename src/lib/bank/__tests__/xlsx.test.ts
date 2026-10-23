@@ -85,6 +85,17 @@ describe("parseSpreadsheet", () => {
     expect(rows).toEqual([["0.30"], ["-45000.50"]]);
   });
 
+  it("keeps an amount with more than two decimals as typed, for the import to refuse", () => {
+    // ₹100.005 is not a whole number of paise: rounding it to ₹100.01 would
+    // accept a different amount than the one typed. 1250.505 sq ft likewise.
+    // A float sum (1.1 × 3 = 3.3000000000000003) is still ₹3.30: Excel itself
+    // shows 15 significant digits, and so do we.
+    const rows = parseSpreadsheet(
+      book([[num(100.005)], [num(-1250.505)], [num(1.1 * 3)]]),
+    );
+    expect(rows).toEqual([["100.005"], ["-1250.505"], ["3.30"]]);
+  });
+
   it("reads an old .xls file the same way", () => {
     expect(parseSpreadsheet(book(hdfc, "biff8"))).toEqual(
       parseSpreadsheet(book(hdfc)),

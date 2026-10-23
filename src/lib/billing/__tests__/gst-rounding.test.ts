@@ -108,6 +108,45 @@ describe("gst.rounding per_invoice: edge cases", () => {
     ).toEqual([-900, -1801]);
   });
 
+  it("equal-sized lines: the line key decides, so a credit note in another order matches", () => {
+    // Invoice ₹200.05 (A) + ₹200.05 (B) + ₹100.05 (C) at 18%, same state.
+    // Per line: 18.0045 → 18.00, 18.00, 9.0045 → 9.00 = ₹45.00.
+    // Total: 9% of ₹500.15 = 45.0135 → ₹45.01, so +₹0.01 on one ₹200.05 line:
+    // A and B tie on size, the lower key (A) takes it.
+    const keyed = (sign: 1 | -1, keys: string[], amounts: number[]) =>
+      invoiceTax(
+        amounts.map((a, i) => ({
+          taxablePaise: sign * a,
+          gstRateBp: 1800,
+          key: keys[i],
+        })),
+        "intra_state",
+        withSettings({ gstRounding: "per_invoice" }),
+      ).map((t) => t.cgst);
+    expect(keyed(1, ["A", "B", "C"], [20_005, 20_005, 10_005])).toEqual([
+      1801, 1800, 900,
+    ]);
+    // Credit note with the lines listed C, B, A: −₹0.01 still lands on A.
+    expect(keyed(-1, ["C", "B", "A"], [10_005, 20_005, 20_005])).toEqual([
+      -900, -1800, -1801,
+    ]);
+  });
+
+  it("a tie between keyed and unkeyed lines doesn't depend on order", () => {
+    // Three ₹200.05 lines: per line 18.0045 → 18.00 each = ₹54.00; total 9% of
+    // ₹600.15 = 54.0135 → ₹54.01. Keyed lines first, then the lower key: A.
+    const lines = [
+      { taxablePaise: 20_005, gstRateBp: 1800, key: "B" },
+      { taxablePaise: 20_005, gstRateBp: 1800 },
+      { taxablePaise: 20_005, gstRateBp: 1800, key: "A" },
+    ];
+    const winner = (order: typeof lines) =>
+      order[cgst(order).findIndex((c) => c === 1801)]!.key;
+    expect(winner(lines)).toBe("A");
+    expect(winner([lines[1]!, lines[2]!, lines[0]!])).toBe("A");
+    expect(winner([lines[2]!, lines[0]!, lines[1]!])).toBe("A");
+  });
+
   it("positive and negative lines at one rate: no difference, no change", () => {
     // 9% of ₹200.05 = 18.0045 → 18.00; 9% of −₹100.05 → −9.00; sum ₹9.00.
     // Total 9% of ₹100.00 = ₹9.00.

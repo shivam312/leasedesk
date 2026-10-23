@@ -121,10 +121,16 @@ type LineTax = ReturnType<typeof lineTax>;
  *   taxable total of the lines at that rate. The lines still carry their own
  *   tax, so the printed lines add up: the difference between the total and
  *   the sum of the line-rounded taxes goes on the largest line at that rate
- *   (the first, if several are equal).
+ *   (if several are equal, the one with the lowest `key`, else the first;
+ *   give every line a key, or none).
  */
 export function invoiceTax(
-  lines: readonly { taxablePaise: Paise; gstRateBp: BasisPoints }[],
+  lines: readonly {
+    taxablePaise: Paise;
+    gstRateBp: BasisPoints;
+    /** Stable line identity (charge and period) that breaks a tie on size. */
+    key?: string;
+  }[],
   supply: SupplyType,
   settings: Pick<BillingSettings, "gstRounding">,
 ): LineTax[] {
@@ -136,13 +142,22 @@ export function invoiceTax(
     const indexes = lines.flatMap((l, i) => (l.gstRateBp === rate ? [i] : []));
     const taxable = sumPaise(indexes.map((i) => lines[i]!.taxablePaise));
     const total = lineTax(taxable, rate, supply);
-    const largest = indexes.reduce((best, i) =>
-      // By size, so a credit note (negative lines) carries the difference on
-      // the same line as its invoice did (section 12).
-      Math.abs(lines[i]!.taxablePaise) > Math.abs(lines[best]!.taxablePaise)
-        ? i
-        : best,
-    );
+    // By size, so a credit note (negative lines) carries the difference on
+    // the same line as its invoice did (section 12); equal sizes go to the
+    // lower key, so the order the lines are listed in doesn't matter.
+    const largest = indexes.reduce((best, i) => {
+      const [a, b] = [lines[i]!, lines[best]!];
+      const [sizeA, sizeB] = [
+        Math.abs(a.taxablePaise),
+        Math.abs(b.taxablePaise),
+      ];
+      if (sizeA !== sizeB) return sizeA > sizeB ? i : best;
+      // Then a line with a key before one without, then the lower key, then
+      // the earlier line: one fixed order, whichever line `reduce` meets first.
+      if ((a.key === undefined) !== (b.key === undefined))
+        return a.key !== undefined ? i : best;
+      return a.key !== undefined && a.key < b.key! ? i : best;
+    });
     const target = taxes[largest]!;
     const adjust = (key: "cgst" | "sgst" | "igst") =>
       total[key] - sumPaise(indexes.map((i) => taxes[i]![key]));

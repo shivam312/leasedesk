@@ -58,6 +58,25 @@ describe.skipIf(skipDbTests)("payments", () => {
     ...over,
   });
 
+  it("counts a payment 50 paise short, with TDS, as paid (tds.tolerancePaise ₹1)", async () => {
+    await inRollback(async (tx) => {
+      const { a, ctx, invoice } = await sentInvoice(tx);
+      // ₹1,26,359.50 received + ₹11,700 TDS = ₹1,38,059.50 of ₹1,38,060.
+      await runScoped(asDb(tx), ctx, (s) =>
+        recordPayment(
+          s,
+          pay({ tenantId: a.tenant.id, amountReceivedPaise: 12_635_950 }),
+          "2026-11-10",
+        ),
+      );
+      expect(await status(tx, invoice.id)).toBe("paid");
+      const open = await runScoped(asDb(tx), ctx, async (s) =>
+        unpaidInvoices(s, a.tenant.id, await paymentSettings(s, a.tenant.id)),
+      );
+      expect(open).toEqual([]);
+    });
+  });
+
   it("records a payment with TDS: invoice paid, TDS record in Q3", async () => {
     await inRollback(async (tx) => {
       const { a, ctx, invoice } = await sentInvoice(tx);

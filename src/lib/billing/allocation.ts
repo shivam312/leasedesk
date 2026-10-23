@@ -274,22 +274,35 @@ export function checkAllocation({
 /**
  * Where an invoice stands: paid once payments (with TDS) and credit notes
  * cover its total (DATA_MODEL invariant), part paid if a payment is applied,
- * otherwise unpaid. Nothing left to pay is never negative.
+ * otherwise unpaid. Nothing left to pay is never negative. An invoice with
+ * TDS recorded against it that is short by no more than `tolerancePaise`
+ * is paid with TDS (section 10, [CA]): nothing is left to ask for; the
+ * ledger still shows the paise short.
  */
 export function invoiceSettlement({
   grandTotalPaise,
   allocatedPaise,
   creditedPaise,
+  tdsRecordedPaise = 0,
+  tolerancePaise = 0,
 }: {
   grandTotalPaise: Paise;
   allocatedPaise: Paise;
   creditedPaise: Paise;
+  /** TDS recorded against it by active payments. */
+  tdsRecordedPaise?: Paise;
+  /** `tds.tolerancePaise`. */
+  tolerancePaise?: Paise;
 }): { status: "paid" | "part_paid" | "unpaid"; outstandingPaise: Paise } {
   const outstanding = Math.max(
     0,
     grandTotalPaise - creditedPaise - allocatedPaise,
   );
-  if (outstanding === 0) return { status: "paid", outstandingPaise: 0 };
+  if (
+    outstanding === 0 ||
+    (tdsRecordedPaise > 0 && outstanding <= tolerancePaise)
+  )
+    return { status: "paid", outstandingPaise: 0 };
   return {
     status: allocatedPaise > 0 ? "part_paid" : "unpaid",
     outstandingPaise: outstanding,

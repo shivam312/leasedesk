@@ -31,6 +31,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-019 | Credit notes against an invoice that's already paid | product | no | open |
 | D-020 | TDS on a payment reversed in a later quarter | ca | no | open |
 | D-021 | TDS certificate name and due dates under the new Income-tax Act | ca | no | open |
+| D-022 | A few paise left after a payment with TDS | ca | no | open |
 
 ## Human tasks
 
@@ -313,6 +314,19 @@ Things only a person can do. Tick them when done.
   - B) Use the new Act's form name and dates (tell us what they are)
 - Recommendation: A until your CA confirms; it's one line each to change in `src/lib/config/tax-labels.ts`.
 - Done meanwhile: A, all in `src/lib/config/tax-labels.ts`.
+- Answer:
+
+### D-022: A few paise left after a payment with TDS
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: The accountant types the TDS from the tenant's certificate (say ₹10,000), but the money received is a few paise off (₹1,07,999.50 against a ₹1,18,000 invoice), so ₹0.50 is left. Our rules say a payment within `tds.tolerancePaise` (₹1 per invoice) counts as "paid with TDS". The app now marks such an invoice Paid and never sends a reminder for it, but it doesn't book the ₹0.50 anywhere: the tenant's ledger still shows ₹0.50 due.
+- Options:
+  - A) Leave it as now: Paid, no reminder, the paise stay visible on the ledger (the accountant writes them off in Tally)
+  - B) Book the gap as extra TDS on that invoice (TDS becomes ₹10,000.50, which won't match the certificate)
+  - C) Book the gap as a small write-off entry so the ledger shows ₹0
+- Recommendation: A, because it never asks the tenant for more, doesn't change the TDS the certificate shows, and adds no new kind of entry; C can come with the Tally export (M7) if accountants want the ledger to read ₹0.
+- Done meanwhile: A, in `invoiceSettlement` (`src/lib/billing/allocation.ts`), using `tds.tolerancePaise`.
 - Answer:
 
 ## Applied

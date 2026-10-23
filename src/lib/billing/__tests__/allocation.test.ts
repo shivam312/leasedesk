@@ -579,4 +579,35 @@ describe("invoiceSettlement", () => {
       }),
     ).toEqual({ status: "paid", outstandingPaise: 0 });
   });
+
+  it("counts a few paise short as paid with TDS, within the tolerance (section 10)", () => {
+    // ₹1,07,999.50 received + ₹10,000 TDS = ₹1,17,999.50 applied to
+    // ₹1,18,000: ₹0.50 short, ≤ ₹1 tolerance, TDS recorded → paid.
+    const short = (left: number, tdsRecordedPaise = 1_000_000) =>
+      invoiceSettlement({
+        grandTotalPaise: 11_800_000,
+        allocatedPaise: 11_800_000 - left,
+        creditedPaise: 0,
+        tdsRecordedPaise,
+        tolerancePaise: 100,
+      });
+    expect(short(50)).toEqual({ status: "paid", outstandingPaise: 0 });
+    // Exactly ₹1 short still counts (inclusive).
+    expect(short(100)).toEqual({ status: "paid", outstandingPaise: 0 });
+    // ₹1.01 short is part paid.
+    expect(short(101)).toEqual({ status: "part_paid", outstandingPaise: 101 });
+    // No TDS recorded on it: a payment short by 50 paise is still owed.
+    expect(short(50, 0)).toEqual({ status: "part_paid", outstandingPaise: 50 });
+  });
+
+  it("has no tolerance unless one is given", () => {
+    expect(
+      invoiceSettlement({
+        grandTotalPaise: 11_800_000,
+        allocatedPaise: 11_799_950,
+        creditedPaise: 0,
+        tdsRecordedPaise: 1_000_000,
+      }),
+    ).toEqual({ status: "part_paid", outstandingPaise: 50 });
+  });
 });

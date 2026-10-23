@@ -186,7 +186,7 @@ export async function lockTenantMoney(s: Scoped, tenantId: string) {
 export async function unpaidInvoices(
   s: Scoped,
   tenantId: string,
-  settings: Pick<BillingSettings, "tdsRounding">,
+  settings: Pick<BillingSettings, "tdsRounding" | "tdsTolerancePaise">,
   { lock = false }: { lock?: boolean } = {},
 ): Promise<UnpaidInvoice[]> {
   const query = s.tx
@@ -221,6 +221,8 @@ export async function unpaidInvoices(
       grandTotalPaise: r.grandTotal,
       allocatedPaise: v?.allocated ?? 0,
       creditedPaise: v?.credited ?? 0,
+      tdsRecordedPaise: v?.tds ?? 0,
+      tolerancePaise: settings.tdsTolerancePaise,
     });
     return {
       id: r.id,
@@ -248,7 +250,8 @@ export async function unpaidInvoices(
 
 /**
  * Set each invoice's status from what is applied to it: paid, part paid, or
- * back to sent (an overdue invoice stays overdue). A fully credited invoice
+ * back to sent (an overdue invoice stays overdue); within the tenant's TDS
+ * tolerance of nothing left counts as paid. A fully credited invoice
  * keeps "Credit note issued".
  */
 export async function refreshInvoiceStatus(s: Scoped, invoiceIds: string[]) {
@@ -259,6 +262,12 @@ export async function refreshInvoiceStatus(s: Scoped, invoiceIds: string[]) {
     .from(invoices)
     .where(s.where(invoices, inArray(invoices.id, ids)));
   const settled = await settledBy(s, ids);
+  const tolerance = new Map<string, number>();
+  for (const tenantId of new Set(rows.map((r) => r.tenantId)))
+    tolerance.set(
+      tenantId,
+      (await paymentSettings(s, tenantId)).tdsTolerancePaise,
+    );
   for (const r of rows) {
     if (r.status === "draft" || r.status === "cancelled") continue;
     const v = settled.get(r.id);
@@ -266,6 +275,8 @@ export async function refreshInvoiceStatus(s: Scoped, invoiceIds: string[]) {
       grandTotalPaise: r.grandTotal,
       allocatedPaise: v?.allocated ?? 0,
       creditedPaise: v?.credited ?? 0,
+      tdsRecordedPaise: v?.tds ?? 0,
+      tolerancePaise: tolerance.get(r.tenantId) ?? 0,
     });
     const next =
       status === "unpaid"

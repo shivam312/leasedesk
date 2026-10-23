@@ -41,7 +41,7 @@ TDS is set per charge type on the tenant: `rent`, `cam`, `parking` and `other` (
 | [x] | `tds.rateBp` | tenant, per charge type | basis points | `1000` for every type | basic | Rate depends on the tenant and the law [CA] (D-003) | `TenantTds[type].tdsRateBp` in `tds.ts`; defaults in `tenantTdsDefaults` |
 | [x] | `tds.appliesTo` | tenant | on/off per charge type | on for every type (companies), off for every type otherwise | advanced | Tenants treat CAM, parking and utilities differently [CA] (D-003) | `TenantTds[type].deductsTds` in `tds.ts`; defaults in `tenantTdsDefaults` |
 | [x] | `tds.rounding` | organization, tenant | `paisa`, `rupee` | `rupee` | advanced | Most deductors round to the rupee [CA] (D-003) | `BillingSettings.tdsRounding`, used by `expectedTds` in `tds.ts` (`sumOfPercentsToRupee` or `sumOfPercentsToPaisa` in `money.ts`) |
-| [x] | `tds.tolerancePaise` | organization | paise | `100` (₹1) | advanced | How far a short payment can be from expected TDS and still count as "paid with TDS" | `BillingSettings.tdsTolerancePaise`, used by `settlePayment` in `tds.ts` |
+| [x] | `tds.tolerancePaise` | organization | paise | `100` (₹1) | advanced | How far a short payment can be from expected TDS and still count as "paid with TDS" | `BillingSettings.tdsTolerancePaise`, used by `suggestTds` and `invoiceSettlement` in `allocation.ts` and `amountFit` in `src/lib/bank/matching.ts` |
 | [x] | `tds.quarterBasis` | organization | `payment_date`, `invoice_date` | `payment_date` | advanced | Which quarter a TDS amount is tracked under [CA] (D-003) | `BillingSettings.tdsQuarterBasis`, used by `tdsQuarter` in `tds.ts` |
 
 ## Invoices

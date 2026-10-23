@@ -63,6 +63,7 @@ async function send(tx: TestTx, a: Org, invoiceId: string) {
         gstin: null,
         billingAddress: "Mumbai",
         stateCode: "27",
+        property: "Tower A, Mumbai · Unit 101",
       },
     })
     .where(eq(schema.invoices.id, invoiceId));

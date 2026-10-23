@@ -158,3 +158,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - It only makes drafts (`runBilling` through `runAsSystem`); nothing is sent automatically. The Billing page's "Make invoices" button calls the same `runBilling`, so billing works with no job server at all.
 - Without `INNGEST_SIGNING_KEY` the client is in dev mode and talks to the local dev server (`pnpm jobs:dev`). `/api/inngest` is outside the login proxy because Inngest signs its own requests; creating the Inngest account is a human task (M8).
 - An invoice is still dated the 1st of its month whatever the run day; `invoice.runDay` decides only when the drafts are made.
+
+## D24. The invoice PDF asks for the total less expected TDS, and its UPI QR stays under UPI's limit (2026-10-23)
+
+**Why:** Tenants who deduct TDS pay the total less TDS, and bank matching already looks for that amount (india-compliance skill). A QR asking for the full total would make them edit the amount every month, and many UPI apps lock the amount in a QR.
+**Consequences:**
+- `invoiceDocument` (`src/lib/invoices/document.ts`) prints "Amount to pay: ₹1,08,000 (total ₹1,18,000 less TDS ₹10,000)", and the UPI QR asks for the same amount, with the invoice number as its note. A tenant who pays the full total is fine: the extra becomes TDS not deducted, handled with payments (M5).
+- UPI allows ₹1,00,000 per payment for most payers. Above that the QR leaves the amount out (`UPI_AMOUNT_LIMIT_PAISE`), so the tenant types it or pays by bank transfer; the bank details are always printed.
+- Drafts show the amount to pay but no QR (no invoice number yet). Cancelled and paid invoices show a notice and ask for nothing; part-paid ones have a QR without an amount until payments (M5) know the balance.
+- A sent invoice prints only from the copies made when it was sent (D18), now including the property line (building, address, units) in `invoices.recipient.property`; printing one without its copies is an error, never a silent fall back to current details.
+

@@ -92,6 +92,9 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 - Default format `{prefix}/{fy}/{seq}`, e.g. `B1/26-27/0001` (13 characters). Prefix is a building setting.
 - Numbers are assigned when an invoice is sent, inside a database transaction with a row lock on the series.
 - Credit notes use their own series in the same format with a different prefix, e.g. `CN/26-27/0001`.
+- The invoice PDF carries everything in the india-compliance skill's "GST tax invoice: required content" list, marked "Original for recipient", with an empty "Authorised signatory" line and "This is a computer-generated invoice." **[CA]** (D-013)
+- No e-invoicing (IRN) in v1: a landlord with turnover over ₹5 crore must register invoices on the portal themselves. **[CA]** (D-012)
+- CGST and SGST rates are printed as half the line's GST rate (18% → 9% each).
 
 ## 10. TDS **[CA]**
 

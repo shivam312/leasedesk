@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { INVOICE_STATUS } from "@/components/invoices/status";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import { runScoped } from "@/lib/db/scoped";
@@ -68,6 +69,18 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
             with any lease changes.
           </p>
         )}
+        <a
+          href={`/billing/invoices/${invoice.id}/pdf`}
+          target="_blank"
+          rel="noopener"
+          download={invoice.status === "draft" ? undefined : true}
+          className={buttonVariants({
+            variant: "outline",
+            className: "self-start",
+          })}
+        >
+          {invoice.status === "draft" ? "Preview PDF" : "Download PDF"}
+        </a>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
           <div>
             <dt className="text-muted-foreground">Status</dt>

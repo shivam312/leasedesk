@@ -6,9 +6,12 @@ import {
   buildings,
   invoiceLines,
   invoices,
+  leaseUnits,
   tenants,
+  units,
 } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
+import { invoiceDocument } from "./document";
 
 export async function getInvoice(s: Scoped, id: string) {
   const [row] = await s.tx
@@ -36,3 +39,21 @@ export async function getInvoice(s: Scoped, id: string) {
 }
 
 export type SavedInvoice = NonNullable<Awaited<ReturnType<typeof getInvoice>>>;
+
+/** Unit codes of a lease, for the invoice's property line. */
+export async function leaseUnitCodes(s: Scoped, leaseId: string) {
+  const rows = await s.tx
+    .select({ code: units.code })
+    .from(leaseUnits)
+    .innerJoin(units, eq(units.id, leaseUnits.unitId))
+    .where(s.where(leaseUnits, eq(leaseUnits.leaseId, leaseId)));
+  return rows.map((r) => r.code);
+}
+
+/** What the invoice PDF prints, or null when there's no such invoice. */
+export async function getInvoiceDocument(s: Scoped, id: string) {
+  const saved = await getInvoice(s, id);
+  if (!saved) return null;
+  const unitCodes = await leaseUnitCodes(s, saved.invoice.leaseId);
+  return invoiceDocument({ ...saved, unitCodes });
+}

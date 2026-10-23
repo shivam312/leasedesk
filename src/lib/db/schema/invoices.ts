@@ -93,6 +93,8 @@ export type RecipientCopy = {
   gstin: string | null;
   billingAddress: string;
   stateCode: string;
+  /** The property line: building, address and units (propertyLine). */
+  property: string;
 };
 
 export const invoices = pgTable(

@@ -4,6 +4,8 @@ Improvements found during reviews that weren't urgent enough to fix in the miles
 
 | Added | Area | File | Problem | Suggested fix |
 | --- | --- | --- | --- | --- |
+| 2026-10-23 | billing | `src/app/(app)/billing/invoices/[id]/page.tsx` | With no UPI ID set, the PDF quietly has no QR code (UX review). | A short note on the invoice page: "No UPI ID, so no QR code on the PDF. Add one in Settings → Business details." |
+| 2026-10-23 | invoices | `src/lib/invoices/document.ts` | A part-paid invoice's PDF asks for no amount, because the balance isn't known until payments exist. | With payments (M5), print the balance less any TDS still expected, and put it in the QR. |
 | 2026-10-23 | settings | `src/app/(app)/settings/business/entities/[id]/page.tsx` | `invoice.numberFormat` and `invoice.startingNumber` are built (`src/lib/invoices/number.ts`) but can't be set on screen, so a landlord joining mid-year starts at 0001. | On the GSTIN page, under "More options": "Invoice number format" with a live example, and "First invoice number for FY 2026-27". |
 | 2026-10-23 | billing | `src/app/(app)/billing/invoices/[id]/page.tsx` | The invoice page says "CGST", "SGST", "IGST" and "SAC"; an owner may not know them (UX review). They are the words printed on the invoice itself, so changing them makes the screen harder to match to the PDF (as D19). | Keep the words, add a one-line hint on tap ("GST split between the centre and the state"); move SAC under "More details". |
 | 2026-10-23 | billing | `src/components/invoices/InvoiceList.tsx` | No search on a month's invoices; with 40+ tenants an accountant scrolls to find one. | A tenant/building search box like the lease list, with the "Send all" selection (M4). |

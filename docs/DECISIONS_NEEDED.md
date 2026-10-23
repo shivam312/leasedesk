@@ -21,6 +21,8 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-009 | GST on a month split by a rent increase, shown as one line | ca | no | open |
 | D-010 | Building GST rates other than 18%, and 0% invoices | ca | no | open |
 | D-011 | Billing from a business with no GSTIN | ca | no | open |
+| D-012 | E-invoicing (IRN) for landlords over ₹5 crore turnover | ca | no | open |
+| D-013 | Signature and "Original for recipient" on emailed invoices | ca | no | open |
 
 ## Human tasks
 
@@ -177,6 +179,31 @@ Things only a person can do. Tick them when done.
   - B) Make bills of supply with no GST for those buildings
 - Recommendation: A for now. A landlord with 20–100 commercial tenants is above the GST threshold, so almost every one is registered; B can follow if a pilot needs it.
 - Done meanwhile: A. `runBilling` (`src/lib/invoices/run.ts`) skips the lease and reports "Add the GSTIN for … in Settings → Business details, then run billing again."
+- Answer:
+
+### D-012: E-invoicing (IRN) for landlords over ₹5 crore turnover
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: A business whose yearly turnover is over ₹5 crore must register each invoice to a GST-registered tenant on the government e-invoice portal, which returns an IRN and a signed QR code to print on the invoice. 100 tenants at about ₹1 lakh a month is about ₹12 crore a year, so some of our target landlords will be above the limit. Without the IRN those invoices aren't valid for the tenant's input tax credit. Connecting to the portal (through a GST Suvidha Provider) is a new outside service and may cost money.
+- Options:
+  - A) v1 doesn't do e-invoicing; landlords above ₹5 crore enter our invoices on the portal themselves (or through their accountant's software) until we add it
+  - B) Add e-invoicing through a GST Suvidha Provider before launch (needs a vendor, an account and an API key)
+- Recommendation: A for the pilot, if the pilot landlords are under ₹5 crore; ask your CA, and plan B before selling to larger landlords.
+- Done meanwhile: A. Invoices print without an IRN; recorded as **[CA]** in `docs/BILLING_RULES.md` section 9.
+- Answer:
+
+### D-013: Signature and "Original for recipient" on emailed invoices
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: GST rules ask for an invoice to be signed (or digitally signed) by the supplier, and for service invoices to be made in two copies, marked "Original for recipient" and "Duplicate for supplier". Our PDF has an empty "Authorised signatory" line with "This is a computer-generated invoice." and is marked "Original for recipient". Many businesses email invoices like this, but practice varies.
+- Options:
+  - A) Keep the "computer-generated" line and the empty signatory line
+  - B) Print an uploaded signature image above "Authorised signatory"
+  - C) Sign each PDF with a digital signature certificate (needs a certificate and a signing service)
+- Recommendation: A for the pilot; B is small to add if your CA prefers it.
+- Done meanwhile: A, with "Original for recipient" printed under the title. The landlord keeps the sent PDF as their copy.
 - Answer:
 
 ## Applied

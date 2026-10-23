@@ -69,7 +69,7 @@ src/
       rows.ts                small helpers for reading query results
     auth/                    roles and PERMISSIONS (roles.ts), memberships, invites, sign-up form schemas
     supabase/                Supabase Auth clients for server code (cookie sessions)
-    india/                   GSTIN, PAN, IFSC, UPI and phone checks
+    india/                   GSTIN, PAN, IFSC, UPI and phone checks; amount in words; UPI payment links
     property/                buildings, floors, units: form schemas, queries, stacking plan
     tenants/                 tenant form schemas and queries
     leases/                  lease form steps and validation (forms.ts, charges-form.ts), form -> engine input (draft.ts, D20),
@@ -82,7 +82,9 @@ src/
                              Billing rules labels and form (labels.ts, rules-form.ts); docs/SETTINGS.md
     email/                   email adapter: emailDriver() picks resend (RESEND_API_KEY + EMAIL_FROM) or console (.local-outbox/); the only way code sends email
     jobs/                    Inngest client and background jobs (daily billing run, D23), served at /api/inngest
-    invoices/                monthly run (run.ts), number format (number.ts) and gap-free assignment (numbering.ts), queries, PDF templates, sending
+    invoices/                monthly run (run.ts), number format (number.ts) and gap-free assignment (numbering.ts), queries,
+                             what a PDF prints (document.ts, pure), the React-PDF layout (pdf.tsx, font in assets/fonts/),
+                             supplier and tenant copies (copies.ts, D18), sending
     payments/                allocation, bank statement parsing and matching
     imports/                 Excel import for buildings, units, tenants, leases
     exports/                 Tally XML, Excel, PDF reports

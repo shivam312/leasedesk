@@ -28,16 +28,16 @@
             "taxable": 28317900
           },
           {
-            "type": "cam",
-            "description": "Maintenance (CAM) for Oct 2026",
-            "quantityLabel": "2,718 sq ft",
-            "taxable": 4892400
-          },
-          {
             "type": "parking",
             "description": "Parking for Oct 2026",
             "quantityLabel": "1 slot",
             "taxable": 400000
+          },
+          {
+            "type": "cam",
+            "description": "Maintenance (CAM) for Oct 2026",
+            "quantityLabel": "2,718 sq ft",
+            "taxable": 4892400
           }
         ]
       }

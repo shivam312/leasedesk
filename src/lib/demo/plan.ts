@@ -15,6 +15,7 @@ import {
   type PlainDate,
   type YearMonth,
 } from "@/lib/billing/dates";
+import { formatINR } from "@/lib/format";
 import { makeGstin } from "@/lib/india/identifiers";
 import { certificateDue } from "@/lib/tds/tracker";
 
@@ -489,6 +490,8 @@ export const SPOTLIGHT = {
     "Gulmohar Interiors Pvt Ltd": 2,
     "Mysore Silk Emporium Pvt Ltd": 1,
   } as Record<string, number>,
+  /** Their unpaid invoices are paid in the demo bank statement. */
+  paysByBank: ["Gulmohar Interiors Pvt Ltd", "Mysore Silk Emporium Pvt Ltd"],
   /** Paid with TDS, but their certificate for a quarter that's past due isn't in. */
   missingCertificates: [
     "Tarang Telecom Pvt Ltd",
@@ -681,4 +684,41 @@ const MODES = ["neft", "neft", "rtgs", "neft", "cheque", "imps"] as const;
 
 export function paymentMode(tenantIndex: number) {
   return MODES[tenantIndex % MODES.length]!;
+}
+
+export type StatementCredit = {
+  tenant: string;
+  invoiceNumber: string;
+  /** What reached the bank: the invoice less the TDS kept back. */
+  amountPaise: number;
+};
+
+/** 39726100 paise → "3,97,261.00", as banks print amounts. */
+const rupeesText = (paise: number) => {
+  const text = formatINR(paise).slice(1);
+  return text.includes(".") ? text : `${text}.00`;
+};
+
+/**
+ * A made-up HDFC Bank CSV export dated `today`: one NEFT credit per invoice,
+ * naming the tenant and invoice as tenants' banks do, and one electricity
+ * bill paid out (which the import skips).
+ */
+export function demoStatementCsv(
+  today: PlainDate,
+  credits: StatementCredit[],
+): string {
+  const [y, m, d] = today.split("-") as [string, string, string];
+  const date = `${d}/${m}/${y.slice(2)}`;
+  const rows = credits.map(
+    (c, i) =>
+      `${date},"NEFT CR-HDFC0001098-${c.tenant.toUpperCase()}-INV ${c.invoiceNumber}",N${y}${m}${d}${1000 + i},${date},,"${rupeesText(c.amountPaise)}",`,
+  );
+  return (
+    [
+      "Date,Narration,Chq./Ref.No.,Value Dt,Withdrawal Amt.,Deposit Amt.,Closing Balance",
+      `${date},DHBVN ELECTRICITY BILL GURUGRAM,000000004821,${date},"1,84,350.00",,`,
+      ...rows,
+    ].join("\n") + "\n"
+  );
 }

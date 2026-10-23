@@ -30,3 +30,5 @@ supabase.env
 
 # pnpm walkthrough: videos are large and made fresh each run; the screenshots are kept
 /docs/walkthrough/videos/
+# pnpm db:seed:demo: the demo bank statement for the meeting
+/.local-demo/

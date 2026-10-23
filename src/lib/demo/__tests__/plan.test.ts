@@ -7,6 +7,7 @@ import {
   DEMO_TENANTS,
   SPOTLIGHT,
   demoLeases,
+  demoStatementCsv,
   historyMonths,
   paymentDate,
 } from "../plan";
@@ -162,5 +163,30 @@ describe("paymentDate", () => {
     expect(paymentDate("2026-09-01", 0, TODAY)).toBe("2026-09-04");
     expect(paymentDate("2026-09-01", 2, TODAY)).toBe("2026-09-10");
     expect(paymentDate("2026-10-01", 2, "2026-10-05")).toBe("2026-10-05");
+  });
+});
+
+describe("demoStatementCsv", () => {
+  it("writes an HDFC-style CSV with one credit per invoice and one bill paid out", () => {
+    const csv = demoStatementCsv(TODAY, [
+      // ₹4,34,044 invoice less ₹36,783 TDS = ₹3,97,261.
+      {
+        tenant: "Gulmohar Interiors Pvt Ltd",
+        invoiceNumber: "SCT/26-27/0066",
+        amountPaise: 39726100,
+      },
+      {
+        tenant: "Mysore Silk Emporium Pvt Ltd",
+        invoiceNumber: "SA/26-27/0055",
+        amountPaise: 16925250,
+      },
+    ]);
+    expect(csv.split("\n")).toEqual([
+      "Date,Narration,Chq./Ref.No.,Value Dt,Withdrawal Amt.,Deposit Amt.,Closing Balance",
+      '24/10/26,DHBVN ELECTRICITY BILL GURUGRAM,000000004821,24/10/26,"1,84,350.00",,',
+      '24/10/26,"NEFT CR-HDFC0001098-GULMOHAR INTERIORS PVT LTD-INV SCT/26-27/0066",N202610241000,24/10/26,,"3,97,261.00",',
+      '24/10/26,"NEFT CR-HDFC0001098-MYSORE SILK EMPORIUM PVT LTD-INV SA/26-27/0055",N202610241001,24/10/26,,"1,69,252.50",',
+      "",
+    ]);
   });
 });

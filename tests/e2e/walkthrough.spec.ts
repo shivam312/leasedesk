@@ -221,19 +221,9 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await page.waitForURL(/\/billing\/payments\/[0-9a-f-]{36}/);
   await shot(page, "5", "payment-recorded");
 
-  // 6. A bank statement with Gulmohar's and Mysore Silk's overdue invoices
-  // paid (this month's are not due yet).
-  const overdue = await readDemo(demo.organizationId, async (q) => [
-    ...(await q.unpaidInvoices("Gulmohar Interiors Pvt Ltd")).map((i) => ({
-      ...i,
-      from: "GULMOHAR INTERIORS PVT LTD",
-    })),
-    ...(await q.unpaidInvoices("Mysore Silk Emporium Pvt Ltd")).map((i) => ({
-      ...i,
-      from: "MYSORE SILK EMPORIUM PVT LTD",
-    })),
-  ]);
-  const statement = overdue.filter((i) => i.invoiceDate < thisMonth);
+  // 6. The demo bank statement: Gulmohar's and Mysore Silk's overdue
+  // invoices paid, less their TDS, and one bill paid out.
+  const statement = demo.statement.credits;
   expect(statement).toHaveLength(3);
   await page.goto("/billing/bank");
   const account = page.getByLabel("Bank account");
@@ -244,7 +234,7 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await page.getByLabel("Statement file").setInputFiles({
     name: "hdfc-statement.csv",
     mimeType: "text/csv",
-    buffer: Buffer.from(bankCsv(today, statement)),
+    buffer: Buffer.from(demo.statement.csv),
   });
   await expect(
     visible(page, `Import ${statement.length} payments received`),
@@ -299,8 +289,8 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     },
     statement: {
       count: statement.length,
-      received: statement.reduce((s, i) => s + i.grandTotal - i.expectedTds, 0),
-      tenants: ["Gulmohar Interiors Pvt Ltd", "Mysore Silk Emporium Pvt Ltd"],
+      received: statement.reduce((s, c) => s + c.amountPaise, 0),
+      tenants: [...new Set(statement.map((c) => c.tenant))],
     },
   };
   writeFileSync(join(OUT, "index.html"), walkthroughPage({ facts, shots }));
@@ -309,26 +299,3 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     JSON.stringify({ facts, shots }, null, 2) + "\n",
   );
 });
-
-/** An HDFC-style CSV: one credit per invoice, dated today, naming the tenant and invoice, net of TDS. */
-function bankCsv(
-  today: string,
-  lines: {
-    number: string | null;
-    grandTotal: number;
-    expectedTds: number;
-    from: string;
-  }[],
-) {
-  const [y, m, d] = today.split("-");
-  const date = `${d}/${m}/${y!.slice(2)}`;
-  const rupees = (paise: number) => formatINR(paise).slice(1);
-  const rows = lines.map(
-    (l, i) =>
-      `${date},"NEFT CR-HDFC0001098-${l.from}-INV ${l.number}",N${y}${m}${d}${String(1000 + i)},${date},,"${rupees(l.grandTotal - l.expectedTds)}",`,
-  );
-  return [
-    "Date,Narration,Chq./Ref.No.,Value Dt,Withdrawal Amt.,Deposit Amt.,Closing Balance",
-    ...rows,
-  ].join("\n");
-}

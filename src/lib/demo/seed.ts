@@ -40,10 +40,12 @@ import {
   DEMO_TENANTS,
   SPOTLIGHT,
   demoLeases,
+  demoStatementCsv,
   historyMonths,
   paymentDate,
   paymentMode,
   type BuildingKey,
+  type StatementCredit,
 } from "./plan";
 
 export type DemoResult = {
@@ -56,6 +58,15 @@ export type DemoResult = {
   payments: number;
   unpaid: number;
   certificatesMissing: number;
+  /** The demo bank statement (CSV), dated today. */
+  statement: { csv: string; credits: StatementCredit[] };
+  /** Rangoli Media Labs' oldest unpaid invoice, for the payment step. */
+  oldestUnpaid: {
+    tenant: string;
+    number: string;
+    totalPaise: number;
+    tdsPaise: number;
+  };
 };
 
 /** A password that's easy to read out in a meeting: "sharma-" and 8 letters and digits. */
@@ -322,6 +333,27 @@ export async function seedDemo(
   }
   await supabase.auth.signOut();
 
+  // A bank statement in which two of the unpaid tenants pay, for the
+  // walkthrough and the demo meeting to import.
+  const rangoli = Object.keys(SPOTLIGHT.unpaid)[0]!;
+  const rangoliId = tenantIds.get(rangoli)!;
+  const [oldest] = await asUser(async (s) =>
+    unpaidInvoices(s, rangoliId, await paymentSettings(s, rangoliId)),
+  );
+  const credits: StatementCredit[] = [];
+  for (const name of SPOTLIGHT.paysByBank) {
+    const tenantId = tenantIds.get(name)!;
+    const open = await asUser(async (s) =>
+      unpaidInvoices(s, tenantId, await paymentSettings(s, tenantId)),
+    );
+    for (const i of open)
+      credits.push({
+        tenant: name,
+        invoiceNumber: i.number,
+        amountPaise: i.outstandingPaise - i.expectedTdsPaise,
+      });
+  }
+
   const unpaid = await asUser(
     async (s) =>
       (
@@ -346,6 +378,13 @@ export async function seedDemo(
     payments: paymentCount,
     unpaid,
     certificatesMissing,
+    statement: { csv: demoStatementCsv(today, credits), credits },
+    oldestUnpaid: {
+      tenant: rangoli,
+      number: oldest!.number,
+      totalPaise: oldest!.outstandingPaise,
+      tdsPaise: oldest!.expectedTdsPaise,
+    },
   };
 }
 

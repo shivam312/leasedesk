@@ -357,6 +357,7 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - History is the last three months, reaching back to the latest quarter whose TDS certificates are already due (June, on 24 Oct 2026), so "TDS certificates missing" shows on Today.
 - This month is left unbilled, so the walkthrough can make, check and send it.
 - Running it again removes the demo organization first. Sent invoices, payments and the activity log refuse deletes (D4), so `removeDemo` sets `session_replication_role = replica` for its own transaction and deletes every row with the demo organization's id. It's the only code that does this; the script refuses non-local databases even with `ALLOW_REMOTE_DB=yes`. Uploaded certificate files stay in local Storage (harmless; paths have random ids).
+- The seed also returns, and `pnpm db:seed:demo` writes to `.local-demo/hdfc-statement.csv` (git-ignored), an HDFC-style bank statement dated today in which Gulmohar and Mysore Silk pay their overdue invoices less TDS, plus one bill paid out; the walkthrough imports the same file, so the demo meeting (`docs/DEMO_SCRIPT.md`) and the test can't drift apart. It also prints the figures for the hand-recorded payment (Rangoli's oldest invoice).
 - The login is made through Supabase Auth's sign-up (the local stack doesn't confirm emails), with a new readable password each run, printed by the script.
 
 ## D44. The walkthrough is one Playwright test, run two ways (2026-10-24)

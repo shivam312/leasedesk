@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  creditApplicationVoucher,
   creditNoteVoucher,
   receiptVoucher,
   salesVoucher,
@@ -59,6 +60,7 @@ describe("salesVoucher", () => {
     expect(v.entries).toEqual([
       {
         ledger: "Acme Software Pvt Ltd",
+        isParty: true,
         amount: 12_980_000,
         bills: [{ name: "OT/26-27/0007", type: "New Ref", amount: 12_980_000 }],
       },
@@ -107,6 +109,7 @@ describe("creditNoteVoucher", () => {
     expect(v.entries).toEqual([
       {
         ledger: "Acme Software Pvt Ltd",
+        isParty: true,
         amount: -1_180_000,
         bills: [
           { name: "OT/26-27/0007", type: "Agst Ref", amount: -1_180_000 },
@@ -143,6 +146,7 @@ describe("receiptVoucher", () => {
       { ledger: "TDS Receivable", amount: 1_000_000 },
       {
         ledger: "Acme Software Pvt Ltd",
+        isParty: true,
         amount: -13_000_000,
         bills: [
           { name: "OT/26-27/0007", type: "Agst Ref", amount: -12_980_000 },
@@ -236,5 +240,40 @@ describe("tallyXml", () => {
       L,
     );
     expect(vs.map((v) => v.type)).toEqual(["Sales", "Receipt"]);
+  });
+});
+
+describe("creditApplicationVoucher", () => {
+  it("moves credit from On Account to the invoices; the party nets to nil", () => {
+    // ₹1,00,000 paid in September with nothing open, applied on 01-10 to
+    // a ₹60,000 and a ₹40,000 invoice
+    const v = creditApplicationVoucher({
+      id: "alloc-1",
+      date: "2026-10-01",
+      party: "Acme Software Pvt Ltd",
+      narration: "Credit on account applied to invoices",
+      allocations: [
+        { invoiceNumber: "OT/26-27/0010", amount: 6_000_000 },
+        { invoiceNumber: "OT/26-27/0011", amount: 4_000_000 },
+      ],
+    });
+    expect(v.type).toBe("Journal");
+    expect(v.entries).toEqual([
+      {
+        ledger: "Acme Software Pvt Ltd",
+        isParty: true,
+        amount: 10_000_000,
+        bills: [{ name: "", type: "On Account", amount: 10_000_000 }],
+      },
+      {
+        ledger: "Acme Software Pvt Ltd",
+        isParty: true,
+        amount: -10_000_000,
+        bills: [
+          { name: "OT/26-27/0010", type: "Agst Ref", amount: -6_000_000 },
+          { name: "OT/26-27/0011", type: "Agst Ref", amount: -4_000_000 },
+        ],
+      },
+    ]);
   });
 });

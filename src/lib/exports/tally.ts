@@ -79,7 +79,13 @@ export type BillRef = {
 };
 
 /** Positive is a debit, negative a credit. */
-export type TallyEntry = { ledger: string; amount: Paise; bills?: BillRef[] };
+export type TallyEntry = {
+  ledger: string;
+  amount: Paise;
+  bills?: BillRef[];
+  /** The tenant's own ledger (Tally's ISPARTYLEDGER). */
+  isParty?: boolean;
+};
 
 export type TallyVoucher = {
   /** Our document id, so Tally can tell a voucher it already has. */
@@ -141,6 +147,7 @@ export function salesVoucher(inv: TallyInvoice, l: TallyLedgers): TallyVoucher {
     entries: [
       {
         ledger: inv.party,
+        isParty: true,
         amount: inv.grandTotal,
         bills: [{ name: inv.number, type: "New Ref", amount: inv.grandTotal }],
       },
@@ -168,6 +175,7 @@ export function creditNoteVoucher(
     entries: [
       {
         ledger: cn.party,
+        isParty: true,
         amount: neg(cn.total),
         bills: [
           { name: cn.invoiceNumber, type: "Agst Ref", amount: neg(cn.total) },
@@ -218,7 +226,54 @@ export function receiptVoucher(p: TallyPayment, l: TallyLedgers): TallyVoucher {
       ...(p.tdsDeducted !== 0
         ? [{ ledger: l.tds, amount: p.tdsDeducted }]
         : []),
-      { ledger: p.party, amount: neg(settled), bills },
+      { ledger: p.party, isParty: true, amount: neg(settled), bills },
+    ],
+  });
+}
+
+/**
+ * Credit a tenant had on account, applied to invoices later ("Apply
+ * credit"): a Journal moving it from On Account to each invoice. The party
+ * ledger is debited and credited the same amount, so only the bills change.
+ */
+export type TallyCreditApplication = {
+  id: string;
+  /** The India date it was applied. */
+  date: PlainDate;
+  party: string;
+  narration: string;
+  allocations: { invoiceNumber: string; amount: Paise }[];
+};
+
+export function creditApplicationVoucher(
+  c: TallyCreditApplication,
+): TallyVoucher {
+  const total = sumPaise(c.allocations.map((a) => a.amount));
+  return checkBalanced({
+    id: c.id,
+    type: "Journal",
+    date: c.date,
+    number: "",
+    party: c.party,
+    reference: "",
+    narration: c.narration,
+    entries: [
+      {
+        ledger: c.party,
+        isParty: true,
+        amount: total,
+        bills: [{ name: "", type: "On Account", amount: total }],
+      },
+      {
+        ledger: c.party,
+        isParty: true,
+        amount: neg(total),
+        bills: c.allocations.map((a) => ({
+          name: a.invoiceNumber,
+          type: "Agst Ref" as const,
+          amount: neg(a.amount),
+        })),
+      },
     ],
   });
 }
@@ -229,6 +284,7 @@ export function tallyVouchers(
     invoices: readonly TallyInvoice[];
     creditNotes: readonly TallyCreditNote[];
     payments: readonly TallyPayment[];
+    creditApplications?: readonly TallyCreditApplication[];
   },
   ledgers: TallyLedgers,
 ): TallyVoucher[] {
@@ -237,6 +293,7 @@ export function tallyVouchers(
     ...docs.invoices.map((i) => salesVoucher(i, ledgers)),
     ...docs.creditNotes.map((c) => creditNoteVoucher(c, ledgers)),
     ...docs.payments.map((p) => receiptVoucher(p, ledgers)),
+    ...(docs.creditApplications ?? []).map(creditApplicationVoucher),
   ].sort(
     (a, b) =>
       a.date.localeCompare(b.date) ||
@@ -268,7 +325,7 @@ export function tallyAmount(paise: Paise): string {
  * Tally's sign convention: a debit is ISDEEMEDPOSITIVE Yes with a negative
  * AMOUNT; a credit is No with a positive AMOUNT.
  */
-function entryXml(e: TallyEntry, party: string): string {
+function entryXml(e: TallyEntry): string {
   const debit = e.amount > 0;
   const amount = tallyAmount(neg(e.amount));
   const bills = (e.bills ?? [])
@@ -277,7 +334,7 @@ function entryXml(e: TallyEntry, party: string): string {
         `<BILLALLOCATIONS.LIST>${b.name ? `<NAME>${escapeXml(b.name)}</NAME>` : ""}<BILLTYPE>${b.type}</BILLTYPE><AMOUNT>${tallyAmount(neg(b.amount))}</AMOUNT></BILLALLOCATIONS.LIST>`,
     )
     .join("");
-  return `<ALLLEDGERENTRIES.LIST><LEDGERNAME>${escapeXml(e.ledger)}</LEDGERNAME><ISDEEMEDPOSITIVE>${debit ? "Yes" : "No"}</ISDEEMEDPOSITIVE><ISPARTYLEDGER>${e.ledger === party ? "Yes" : "No"}</ISPARTYLEDGER><AMOUNT>${amount}</AMOUNT>${bills}</ALLLEDGERENTRIES.LIST>`;
+  return `<ALLLEDGERENTRIES.LIST><LEDGERNAME>${escapeXml(e.ledger)}</LEDGERNAME><ISDEEMEDPOSITIVE>${debit ? "Yes" : "No"}</ISDEEMEDPOSITIVE><ISPARTYLEDGER>${e.isParty ? "Yes" : "No"}</ISPARTYLEDGER><AMOUNT>${amount}</AMOUNT>${bills}</ALLLEDGERENTRIES.LIST>`;
 }
 
 function voucherXml(v: TallyVoucher): string {
@@ -292,7 +349,7 @@ function voucherXml(v: TallyVoucher): string {
     tag("REFERENCE", v.reference),
     tag("NARRATION", v.narration),
     `<EFFECTIVEDATE>${v.date.replace(/-/g, "")}</EFFECTIVEDATE>`,
-    ...v.entries.map((e) => entryXml(e, v.party)),
+    ...v.entries.map(entryXml),
     `</VOUCHER></TALLYMESSAGE>`,
   ].join("");
 }

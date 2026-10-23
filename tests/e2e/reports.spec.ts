@@ -125,7 +125,7 @@ test("an owner reads unpaid rent and collections", async ({ page }) => {
   await page.getByLabel("From").fill(`${today.slice(0, 7)}-01`);
   await page.getByLabel("To").fill(today);
   await page.getByRole("button", { name: "Show" }).click();
-  await expect(page.getByText(/1 invoice \(Sales vouchers\)/)).toBeVisible();
+  await expect(page.getByText(/^1 invoice, ₹1,18,000 in all$/)).toBeVisible();
   const tally = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download Tally file" }).click();
   expect((await tally).suggestedFilename()).toMatch(/^tally-.+\.xml$/);

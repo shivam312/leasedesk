@@ -15,6 +15,9 @@ import { todayInIndia } from "@/lib/today";
 
 export const metadata: Metadata = { title: "Tally export" };
 
+const plural = (n: number, one: string, many = `${one}s`) =>
+  `${n} ${n === 1 ? one : many}`;
+
 export default function TallyPage({
   searchParams,
 }: PageProps<"/reports/tally">) {
@@ -101,37 +104,36 @@ async function Body({
       ) : (
         <>
           <ul className="flex flex-col gap-1 text-sm">
-            <li>
-              {count("Sales")} {count("Sales") === 1 ? "invoice" : "invoices"}{" "}
-              (Sales vouchers), {formatINR(sales)} in all
+            <li title="Sales vouchers">
+              {plural(count("Sales"), "invoice")}, {formatINR(sales)} in all
             </li>
-            <li>
-              {count("Credit Note")}{" "}
-              {count("Credit Note") === 1 ? "credit note" : "credit notes"}
+            <li title="Credit Note vouchers">
+              {plural(count("Credit Note"), "credit note")}
             </li>
-            <li>
-              {count("Receipt")}{" "}
-              {count("Receipt") === 1 ? "payment" : "payments"} (Receipt
-              vouchers, TDS on its own ledger)
+            <li title="Receipt vouchers, with TDS on its own ledger">
+              {plural(count("Receipt"), "payment")}
             </li>
             {count("Journal") > 0 && (
-              <li>
-                {count("Journal")}{" "}
-                {count("Journal") === 1
-                  ? "reversed payment"
-                  : "reversed payments"}{" "}
-                (Journal vouchers)
+              <li title="Journal vouchers">
+                {plural(
+                  count("Journal"),
+                  "reversed payment or credit applied",
+                  "reversed payments or credit applied",
+                )}
               </li>
             )}
           </ul>
+          <p className="text-xs text-muted-foreground">
+            In Tally these are Sales, Credit Note, Receipt and Journal vouchers.
+          </p>
           {earlier.length > 0 && (
             <p
               role="status"
               className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200"
             >
               {repeated} of these were already in a Tally file made on{" "}
-              {formatDate(earlier[0]!.createdAt.toISOString().slice(0, 10))}{" "}
-              (for {formatDate(earlier[0]!.periodStart)} to{" "}
+              {formatDate(todayInIndia(earlier[0]!.createdAt))} (for{" "}
+              {formatDate(earlier[0]!.periodStart)} to{" "}
               {formatDate(earlier[0]!.periodEnd)}). Importing them again makes
               duplicates in Tally, unless your accountant deletes the earlier
               ones first.

@@ -17,6 +17,7 @@ import {
 } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
 import { formatDate } from "@/lib/format";
+import { todayInIndia } from "@/lib/today";
 import { parseStoredSettings, type Settings } from "@/lib/settings/schema";
 import { loadSettings } from "@/lib/settings/store";
 import { tallyVouchers, type TallyLedgers, type TallyVoucher } from "./tally";
@@ -82,7 +83,11 @@ export async function tallyExportData(
 ): Promise<{ vouchers: TallyVoucher[]; documentIds: string[] }> {
   const ledgers = tallyLedgers(await loadSettings(s));
   const parties = await partyLedgers(s);
-  const party = (tenantId: string) => parties.get(tenantId) ?? "";
+  const party = (tenantId: string) => {
+    const name = parties.get(tenantId);
+    if (!name) throw new Error(`Tenant ${tenantId} has no party ledger`);
+    return name;
+  };
   const [invoiceRows, noteRows, paymentRows] = await Promise.all([
     s.tx
       .select()
@@ -116,6 +121,7 @@ export async function tallyExportData(
         ),
       ),
   ]);
+  const applications = await laterCreditApplications(s, from, to);
   const invoiceIds = invoiceRows.map((i) => i.id);
   const noteIds = noteRows.map((n) => n.note.id);
   const paymentIds = paymentRows.map((p) => p.id);
@@ -157,6 +163,7 @@ export async function tallyExportData(
             paymentId: paymentAllocations.paymentId,
             amount: paymentAllocations.amountSettled,
             number: invoices.number,
+            createdAt: paymentAllocations.createdAt,
           })
           .from(paymentAllocations)
           .innerJoin(invoices, eq(invoices.id, paymentAllocations.invoiceId))
@@ -210,14 +217,89 @@ export async function tallyExportData(
             : `${MODES[p.mode] ?? "Payment"}${p.reference ? ` ${p.reference}` : ""}`,
         amountReceived: p.amountReceived,
         tdsDeducted: p.tdsDeducted,
+        // Only what it settled when recorded (the same transaction, so the
+        // same created_at); credit applied later is its own Journal.
         allocations: allocations
-          .filter((a) => a.paymentId === p.id)
+          .filter(
+            (a) =>
+              a.paymentId === p.id &&
+              a.createdAt.getTime() === p.createdAt.getTime(),
+          )
           .map((a) => ({ invoiceNumber: a.number ?? "", amount: a.amount })),
+      })),
+      creditApplications: applications.map((c) => ({
+        ...c,
+        party: party(c.tenantId),
       })),
     },
     ledgers,
   );
-  return { vouchers, documentIds: [...invoiceIds, ...noteIds, ...paymentIds] };
+  return {
+    vouchers,
+    documentIds: [
+      ...invoiceIds,
+      ...noteIds,
+      ...paymentIds,
+      ...applications.map((c) => c.id),
+    ],
+  };
+}
+
+/**
+ * Credit applied to invoices after its payment was recorded ("Apply
+ * credit"), on an India date in `from`–`to`: one per payment and moment,
+ * identified by its first allocation's id.
+ */
+async function laterCreditApplications(
+  s: Scoped,
+  from: PlainDate,
+  to: PlainDate,
+) {
+  const india = sql`(${paymentAllocations.createdAt} at time zone 'Asia/Kolkata')::date`;
+  const rows = await s.tx
+    .select({
+      id: paymentAllocations.id,
+      paymentId: paymentAllocations.paymentId,
+      tenantId: paymentAllocations.tenantId,
+      amount: paymentAllocations.amountSettled,
+      createdAt: paymentAllocations.createdAt,
+      number: invoices.number,
+    })
+    .from(paymentAllocations)
+    .innerJoin(payments, eq(payments.id, paymentAllocations.paymentId))
+    .innerJoin(invoices, eq(invoices.id, paymentAllocations.invoiceId))
+    .where(
+      s.where(
+        paymentAllocations,
+        eq(payments.kind, "payment"),
+        ne(paymentAllocations.createdAt, payments.createdAt),
+        sql`${india} >= ${from}::date and ${india} <= ${to}::date`,
+      ),
+    )
+    .orderBy(paymentAllocations.createdAt, paymentAllocations.id);
+  const groups = new Map<
+    string,
+    {
+      id: string;
+      tenantId: string;
+      date: PlainDate;
+      narration: string;
+      allocations: { invoiceNumber: string; amount: number }[];
+    }
+  >();
+  for (const r of rows) {
+    const k = `${r.paymentId}|${r.createdAt.getTime()}`;
+    const g = groups.get(k) ?? {
+      id: r.id,
+      tenantId: r.tenantId,
+      date: todayInIndia(r.createdAt),
+      narration: "Credit on account applied to invoices",
+      allocations: [],
+    };
+    groups.set(k, g);
+    g.allocations.push({ invoiceNumber: r.number ?? "", amount: r.amount });
+  }
+  return [...groups.values()];
 }
 
 /** Earlier Tally files that carried any of these documents, newest first. */

@@ -106,7 +106,7 @@ export const tenantSchema = z
     deductsTdsRent: z.enum(["yes", "no"]),
     tdsRateRent: rate("rent"),
     deductsTdsCam: yesNo,
-    tdsRateCam: rate("CAM"),
+    tdsRateCam: rate("maintenance (CAM)"),
     deductsTdsParking: yesNo,
     tdsRateParking: rate("parking"),
     deductsTdsOther: yesNo,

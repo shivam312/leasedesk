@@ -88,12 +88,13 @@ export function TenantList({ tenants }: { tenants: TenantRow[] }) {
                     {t.companyName}
                   </span>
                   <span className="block text-sm text-muted-foreground">
-                    {t.contactName ?? "No contact"}
+                    {t.contactName ?? "No contact added"}
                     {t.contactPhone ? ` · ${t.contactPhone}` : ""}
                   </span>
                   <span className="mt-1 flex flex-wrap gap-1">
                     {!t.gstin && <Badge>No GSTIN</Badge>}
                     {!t.contactEmail && <Badge tone="warn">No email</Badge>}
+                    <Badge>{t.deductsTdsRent ? "Deducts TDS" : "No TDS"}</Badge>
                   </span>
                 </Link>
               </li>
@@ -130,7 +131,7 @@ export function TenantList({ tenants }: { tenants: TenantRow[] }) {
                     )}
                   </td>
                   <td className="py-2">
-                    {t.deductsTdsRent ? "Deducts" : "No"}
+                    {t.deductsTdsRent ? "Deducts TDS" : "No TDS"}
                   </td>
                 </tr>
               ))}

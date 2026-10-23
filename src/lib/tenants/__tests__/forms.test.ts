@@ -94,6 +94,16 @@ describe("tenant form: TDS per charge type (D10)", () => {
       "Enter the TDS rate on rent as a percentage, like 10.",
     );
   });
+
+  it("names maintenance in plain words (glossary: Maintenance (CAM))", () => {
+    const result = parseForm(
+      tenantSchema,
+      form({ ...tenant, deductsTdsCam: "yes", tdsRateCam: "two" }),
+    );
+    expect("state" in result && result.state.fieldErrors?.tdsRateCam).toBe(
+      "Enter the TDS rate on maintenance (CAM) as a percentage, like 10.",
+    );
+  });
 });
 
 describe("contacts", () => {

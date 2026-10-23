@@ -9,7 +9,7 @@ import {
   type PlainDate,
   type YearMonth,
 } from "@/lib/billing/dates";
-import type { Paise } from "@/lib/billing/money";
+import { sumPaise, type Paise } from "@/lib/billing/money";
 import { amountToAsk } from "@/lib/reminders/schedule";
 
 /** A sent invoice with something left on it (from unpaidInvoices). */
@@ -166,7 +166,7 @@ export function overdueByTenant(
       });
       continue;
     }
-    item.amountPaise += ask;
+    item.amountPaise = sumPaise([item.amountPaise, ask]);
     item.invoiceCount += 1;
     if (compareDates(inv.dueDate, item.oldestDueDate) < 0) {
       item.oldestInvoiceId = inv.id;
@@ -255,11 +255,11 @@ export function unpaidTotals(
   open: readonly OpenInvoiceRow[],
   today: PlainDate,
 ): { unpaidPaise: Paise; overduePaise: Paise } {
-  let unpaidPaise = 0;
-  for (const inv of open) unpaidPaise += inv.outstandingPaise;
-  const overduePaise = overdueByTenant(open, today).reduce(
-    (sum, t) => sum + t.amountPaise,
-    0,
+  // Checked sums: a total past the safe integer range throws rather than
+  // showing a rounded amount.
+  const unpaidPaise = sumPaise(open.map((inv) => inv.outstandingPaise));
+  const overduePaise = sumPaise(
+    overdueByTenant(open, today).map((t) => t.amountPaise),
   );
   return { unpaidPaise, overduePaise };
 }

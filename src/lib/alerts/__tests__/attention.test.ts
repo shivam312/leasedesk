@@ -121,6 +121,19 @@ describe("overdueByTenant", () => {
       ),
     ).toEqual([]);
   });
+
+  it("refuses a tenant's overdue amount too large to add up safely", () => {
+    // 2^52 + 2^52 = 2^53 paise, past Number.MAX_SAFE_INTEGER.
+    expect(() =>
+      overdueByTenant(
+        [
+          inv({ id: "a", outstandingPaise: 2 ** 52 }),
+          inv({ id: "b", dueDate: "2026-09-08", outstandingPaise: 2 ** 52 }),
+        ],
+        today,
+      ),
+    ).toThrow(RangeError);
+  });
 });
 
 describe("unpaidTotals", () => {
@@ -136,6 +149,24 @@ describe("unpaidTotals", () => {
         today,
       ),
     ).toEqual({ unpaidPaise: 168_000_00, overduePaise: 108_000_00 });
+  });
+
+  // Half of 2^53 is 4,503,599,627,370,496 paise. Each amount on its own is
+  // safe, but two of them add up to 9,007,199,254,740,992 = 2^53, one more
+  // than Number.MAX_SAFE_INTEGER (9,007,199,254,740,991), so the sum can't be
+  // held exactly and must be refused rather than shown rounded.
+  const half = 2 ** 52;
+
+  it("refuses an unpaid total too large to add up safely", () => {
+    expect(() =>
+      unpaidTotals(
+        [
+          inv({ id: "a", dueDate: "2026-11-08", outstandingPaise: half }),
+          inv({ id: "b", dueDate: "2026-11-08", outstandingPaise: half }),
+        ],
+        today,
+      ),
+    ).toThrow(RangeError);
   });
 });
 

@@ -118,6 +118,15 @@ describe("digestsFor", () => {
       digestsFor([owner, manager], [gone], today).map((r) => r.member.role),
     ).toEqual(["owner", "property_manager"]);
   });
+
+  it("never emails a viewer, even a date assigned to them", () => {
+    const toViewer = dateItem(7, { assignedTo: viewer.userId });
+    expect(
+      digestsFor([owner, manager, viewer], [toViewer], today).map(
+        (r) => r.member.role,
+      ),
+    ).toEqual(["owner", "property_manager"]);
+  });
 });
 
 describe("digestEmail", () => {

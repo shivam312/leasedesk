@@ -40,7 +40,7 @@ export function remindsToday(
  * Each member's items, in the list's order. Money (unpaid tenants, invoices
  * to make or send, bank lines, TDS certificates) goes to those who can act
  * on billing; a lease date to the person it is assigned to, or, if nobody
- * (still on the team) is, to those who can change leases. Viewers get
+ * (still on the team, and not a viewer) is, to those who can change leases. Viewers get
  * nothing. Members with no items are left out: nobody gets an empty email.
  */
 export function digestsFor(
@@ -48,7 +48,11 @@ export function digestsFor(
   items: readonly AttentionItem[],
   today: PlainDate,
 ): { member: DigestMember; items: AttentionItem[] }[] {
-  const onTeam = new Set(members.map((m) => m.userId));
+  // Someone who can change nothing (a viewer) can't act on a date, so an
+  // assignment to them counts as no assignment.
+  const canAct = (m: DigestMember) =>
+    can(m.role, "manage_billing") || can(m.role, "manage_leases");
+  const onTeam = new Set(members.filter(canAct).map((m) => m.userId));
   return members
     .map((member) => ({
       member,

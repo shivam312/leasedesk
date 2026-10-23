@@ -91,6 +91,10 @@ export type BillingSettings = {
   roundIncreasedRent: "none" | "rupee";
   /** billing.roundInvoiceTotal: round the invoice total with a round-off line (section 2). */
   roundInvoiceTotal: "none" | "rupee";
+  /** billing.partPeriodMethod: how a part quarter is pro-rated (section 7, D-001). */
+  partPeriodMethod: "month_by_month" | "days_in_period";
+  /** billing.monthEndRule: what 31 Jan + 1 month is (section 1). */
+  monthEndRule: "roll_forward" | "last_day";
   /** invoice.dueDays: due date = invoice date + this many days (section 7). */
   dueDays: number;
 };

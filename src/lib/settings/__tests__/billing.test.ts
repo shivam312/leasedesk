@@ -8,6 +8,8 @@ describe("billingSettings", () => {
     expect(billingSettings(resolveSettings({}))).toEqual({
       roundIncreasedRent: "rupee",
       roundInvoiceTotal: "rupee",
+      partPeriodMethod: "month_by_month",
+      monthEndRule: "roll_forward",
       dueDays: 7,
     });
   });
@@ -24,6 +26,8 @@ describe("billingSettings", () => {
     ).toEqual({
       roundIncreasedRent: "none",
       roundInvoiceTotal: "none",
+      partPeriodMethod: "month_by_month",
+      monthEndRule: "roll_forward",
       dueDays: 10,
     });
   });

@@ -2,13 +2,16 @@ import { addDays, addMonths, compareDates, maxDate, minDate } from "./dates";
 import type { PlainDate } from "./dates";
 import { formatDate } from "@/lib/format";
 import { withChargeDefaults } from "./charges";
-import type { Charge, LeaseTerms } from "./types";
+import type { BillingSettings, Charge, LeaseTerms } from "./types";
 
 /**
  * Rent commencement = lease start + rent-free period
  * (docs/BILLING_RULES.md, section 4).
  */
-export function rentCommencement(lease: LeaseTerms): {
+export function rentCommencement(
+  lease: LeaseTerms,
+  settings: Pick<BillingSettings, "monthEndRule">,
+): {
   date: PlainDate;
   steps: string[];
 } {
@@ -24,7 +27,7 @@ export function rentCommencement(lease: LeaseTerms): {
   const steps = [`Lease starts on ${formatDate(lease.startDate)}`];
   let date = lease.startDate;
   if (rentFreeMonths) {
-    date = addMonths(lease.startDate, rentFreeMonths);
+    date = addMonths(lease.startDate, rentFreeMonths, settings.monthEndRule);
     steps.push(
       `${rentFreeMonths} rent-free ${rentFreeMonths === 1 ? "month" : "months"}`,
     );
@@ -46,13 +49,15 @@ export function rentCommencement(lease: LeaseTerms): {
 export function chargeBillingWindow(
   charge: Charge,
   lease: LeaseTerms,
+  settings: Pick<BillingSettings, "monthEndRule">,
 ): { from: PlainDate; to: PlainDate } | null {
   if (compareDates(lease.endDate, lease.startDate) < 0) {
     throw new Error(`Lease ${lease.id} ends before it starts`);
   }
   const { waivedDuringRentFree } = withChargeDefaults(charge);
   let from = maxDate(lease.startDate, charge.startDate);
-  if (waivedDuringRentFree) from = maxDate(from, rentCommencement(lease).date);
+  if (waivedDuringRentFree)
+    from = maxDate(from, rentCommencement(lease, settings).date);
   const to = charge.endDate
     ? minDate(charge.endDate, lease.endDate)
     : lease.endDate;

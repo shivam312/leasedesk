@@ -33,7 +33,7 @@ export function amountSteps({
   lease: LeaseTerms;
   rules?: EscalationRule[];
   custom?: CustomEscalation[];
-  settings: Pick<BillingSettings, "roundIncreasedRent">;
+  settings: Pick<BillingSettings, "roundIncreasedRent" | "monthEndRule">;
 }): AmountStep[] {
   const base = chargeBaseAmount(charge);
   const noun =
@@ -65,14 +65,18 @@ export function amountSteps({
   let ruleIntro: string | undefined;
   if (rule) {
     validateRule(rule, lease);
-    const anchor = ruleAnchor(rule, lease);
+    const anchor = ruleAnchor(rule, lease, settings);
     const compounding = rule.compounding ?? true;
     ruleIntro = compounding
       ? `${noun} goes up ${percent(rule.percentBp)} every ${rule.everyMonths} months from ${formatDate(anchor)}`
       : `${noun} goes up ${percent(rule.percentBp)} of the starting amount every ${rule.everyMonths} months from ${formatDate(anchor)}`;
     let count = 0;
     for (let k = 1; ; k++) {
-      const date = addMonths(anchor, k * rule.everyMonths);
+      const date = addMonths(
+        anchor,
+        k * rule.everyMonths,
+        settings.monthEndRule,
+      );
       if (!inForce(date)) break;
       if (firstCustom && compareDates(date, firstCustom) >= 0) break;
       if (compareDates(date, charge.startDate) <= 0) continue;
@@ -167,12 +171,16 @@ function ruleApplies(rule: EscalationRule, charge: Charge): boolean {
     : appliesTo.includes(charge.id);
 }
 
-function ruleAnchor(rule: EscalationRule, lease: LeaseTerms): PlainDate {
+function ruleAnchor(
+  rule: EscalationRule,
+  lease: LeaseTerms,
+  settings: Pick<BillingSettings, "monthEndRule">,
+): PlainDate {
   switch (rule.anchor) {
     case "lease_start":
       return lease.startDate;
     case "rent_commencement":
-      return rentCommencement(lease).date;
+      return rentCommencement(lease, settings).date;
     case "custom":
       if (!rule.anchorDate) {
         throw new Error(

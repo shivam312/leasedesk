@@ -10,7 +10,7 @@ This is the specification for the billing engine in `src/lib/billing/`. If code 
 - **Rates per sq ft:** paise per sq ft per month. ₹85.50/sq ft = `8550`.
 - **Dates:** `YYYY-MM-DD` strings or a plain-date type. Never `Date` objects with times.
 - **Financial year:** 1 April to 31 March. FY label `2026-27`.
-- **Adding months:** same day in the target month. If that day doesn't exist there, roll forward to the 1st of the next month: 31 Jan + 1 month = 1 Mar; 29 Feb 2028 + 12 months = 1 Mar 2029. Applies to rent-free months and escalation dates.
+- **Adding months:** same day in the target month. If that day doesn't exist there, roll forward to the 1st of the next month: 31 Jan + 1 month = 1 Mar; 29 Feb 2028 + 12 months = 1 Mar 2029. Applies to rent-free months and escalation dates. Setting `billing.monthEndRule` (organization or lease): `roll_forward` (default, never bills a day early) or `last_day` (31 Jan + 1 month = 28 Feb; an increase that lands on the lease's last day still applies, section 5). `last_day` can start rent up to 3 days earlier than `roll_forward`: a lease starting on 29, 30 or 31 Jan with 1 rent-free month starts rent on 28 Feb in every case, so a 31 Jan start gets 28 free days. Counting months backwards, `last_day` gives the last day of the month (31 Mar − 1 month = 28 Feb), while `roll_forward` has no rule and refuses.
 
 ## 2. Rounding
 
@@ -68,7 +68,7 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 ## 7. Billing periods
 
 - Monthly charges are billed per calendar month.
-- Quarterly charges are billed for April–June, July–September, October–December, January–March. A part quarter (a charge starting or ending mid-quarter, or a quarter split by an increase) is billed month by month: monthly equivalent = quarterly amount ÷ 3; full months at that amount; part months by actual days in that month. Each month is rounded to the paisa once: quarterly × days ÷ (3 × days in month). **[Pilot]**
+- Quarterly charges are billed for April–June, July–September, October–December, January–March. A part quarter (a charge starting or ending mid-quarter, or a quarter split by an increase) is billed month by month: monthly equivalent = quarterly amount ÷ 3; full months at that amount; part months by actual days in that month. Each month is rounded to the paisa once: quarterly × days ÷ (3 × days in month). **[Pilot]** With setting `billing.partPeriodMethod` = `days_in_period` (organization or lease, D-001), a part quarter is instead quarterly × billable days ÷ days in that quarter, rounded once: ₹30,000 a quarter from 15 May = 30,000 × 47 ÷ 91 = ₹15,494.51 (month by month: ₹15,483.87). Monthly charges are always pro-rated by days in the month.
 - `advance`: the invoice for a period is generated in that period's monthly run (dated the 1st). `arrears`: in the run after the period ends. When the lease ends mid-period, an arrears charge's final bill is in the first monthly run after the lease ends (lease ends 20 Nov → the December run, not January for an Oct–Dec quarter).
 - An invoice line's period is the dates actually billed: it never starts before the lease, the charge or rent commencement (for waived charges), and never ends after the lease or charge ends.
 - Invoice due date = invoice date + `invoice.dueDays` (building or tenant setting, default 7).

@@ -14,7 +14,7 @@ import type { PlainDate } from "./dates";
 import { rupees } from "./explain";
 import { formatDate, formatMonth } from "@/lib/format";
 import { mulDiv, prorate, sumPaise } from "./money";
-import type { AmountStep, Explanation } from "./types";
+import type { AmountStep, BillingSettings, Explanation } from "./types";
 
 export type Segment = {
   from: PlainDate;
@@ -37,16 +37,19 @@ export type Segment = {
  *
  * A segment covering the whole period is billed at the full amount. Any
  * other segment of a month is amount × days ÷ days in the month. Any other
- * segment of a quarter is billed month by month (section 7) [Pilot].
+ * segment of a quarter follows `billing.partPeriodMethod` (section 7, D-001)
+ * [Pilot]: month by month (default), or amount × days ÷ days in the quarter.
  */
 export function segmentsForPeriod({
   steps,
   window,
   period,
+  settings,
 }: {
   steps: readonly AmountStep[];
   window: { from: PlainDate; to: PlainDate };
   period: { start: PlainDate; end: PlainDate };
+  settings: Pick<BillingSettings, "partPeriodMethod">;
 }): Segment[] {
   const periodDays = daysBetweenInclusive(period.start, period.end);
   const lo = maxDate(period.start, window.from);
@@ -76,7 +79,7 @@ export function segmentsForPeriod({
     if (full) {
       amount = step.amount;
       last = [`Full ${quarter ? "quarter" : "month"}: ${rupees(amount)}`];
-    } else if (quarter) {
+    } else if (quarter && settings.partPeriodMethod === "month_by_month") {
       ({ amount, steps: last } = partQuarterByMonth(step.amount, from, to));
     } else {
       amount = prorate(step.amount, days, periodDays);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "./billing-settings";
 import { segmentsForPeriod } from "../proration";
 import type { AmountStep } from "../types";
 
@@ -25,6 +26,7 @@ const september = { start: "2026-09-01", end: "2026-09-30" };
 describe("segmentsForPeriod", () => {
   it("bills a full month at the monthly amount, without rounding", () => {
     const segments = segmentsForPeriod({
+      settings: DEFAULT_SETTINGS,
       steps: [step("2026-04-01", 10_691_775)],
       window: { from: "2026-04-01", to: "2029-03-31" },
       period: september,
@@ -45,6 +47,7 @@ describe("segmentsForPeriod", () => {
 
   it("golden 4: rent starting 16 Sep is pro-rated 15/30", () => {
     const segments = segmentsForPeriod({
+      settings: DEFAULT_SETTINGS,
       steps: [step("2026-09-16", 9_000_000)],
       window: { from: "2026-09-16", to: "2029-09-15" },
       period: september,
@@ -66,6 +69,7 @@ describe("segmentsForPeriod", () => {
 
   it("golden 5: an increase on 15 Mar splits March into 14 + 17 days", () => {
     const segments = segmentsForPeriod({
+      settings: DEFAULT_SETTINGS,
       steps: [step("2025-03-15", 8_000_000), step("2026-03-15", 8_400_000)],
       window: { from: "2025-03-15", to: "2028-03-14" },
       period: { start: "2026-03-01", end: "2026-03-31" },
@@ -93,6 +97,7 @@ describe("segmentsForPeriod", () => {
 
   it("an increase on the 1st doesn't split the month", () => {
     const segments = segmentsForPeriod({
+      settings: DEFAULT_SETTINGS,
       steps: [step("2026-04-01", 10_000_000), step("2027-04-01", 10_500_000)],
       window: { from: "2026-04-01", to: "2029-03-31" },
       period: { start: "2027-04-01", end: "2027-04-30" },
@@ -110,6 +115,7 @@ describe("segmentsForPeriod", () => {
 
   it("golden 11: a lease ending 20 Nov bills 20 days of November", () => {
     const segments = segmentsForPeriod({
+      settings: DEFAULT_SETTINGS,
       steps: [step("2024-11-21", 9_000_000)],
       window: { from: "2024-11-21", to: "2026-11-20" },
       period: { start: "2026-11-01", end: "2026-11-30" },
@@ -128,6 +134,7 @@ describe("segmentsForPeriod", () => {
 
   it("uses 29 days for February in a leap year", () => {
     const segments = segmentsForPeriod({
+      settings: DEFAULT_SETTINGS,
       steps: [step("2028-02-15", 8_700_000)],
       window: { from: "2028-02-15", to: "2031-02-14" },
       period: { start: "2028-02-01", end: "2028-02-29" },
@@ -142,6 +149,7 @@ describe("segmentsForPeriod", () => {
 
   it("golden 10: quarterly ₹30,000 from 15 May is billed month by month", () => {
     const segments = segmentsForPeriod({
+      settings: DEFAULT_SETTINGS,
       steps: [step("2026-05-15", 3_000_000)],
       window: { from: "2026-05-15", to: "2029-05-14" },
       period: { start: "2026-04-01", end: "2026-06-30" },
@@ -167,6 +175,7 @@ describe("segmentsForPeriod", () => {
   it("is empty when the period is outside the billing window", () => {
     expect(
       segmentsForPeriod({
+        settings: DEFAULT_SETTINGS,
         steps: [step("2027-04-01", 20_000_000)],
         window: { from: "2027-04-01", to: "2029-12-31" },
         period: { start: "2027-03-01", end: "2027-03-31" },
@@ -177,6 +186,7 @@ describe("segmentsForPeriod", () => {
   it("refuses a window that starts before the first amount", () => {
     expect(() =>
       segmentsForPeriod({
+        settings: DEFAULT_SETTINGS,
         steps: [step("2026-09-16", 9_000_000)],
         window: { from: "2026-09-01", to: "2027-09-15" },
         period: september,
@@ -189,6 +199,7 @@ describe("segmentsForPeriod", () => {
 
     it("bills a full quarter at the quarterly amount", () => {
       const segments = segmentsForPeriod({
+        settings: DEFAULT_SETTINGS,
         steps: [step("2026-04-01", 3_000_000)],
         window: { from: "2026-04-01", to: "2029-03-31" },
         period: octDec,
@@ -206,6 +217,7 @@ describe("segmentsForPeriod", () => {
 
     it("lease ending 20 Nov: October whole, November by days in November", () => {
       const segments = segmentsForPeriod({
+        settings: DEFAULT_SETTINGS,
         steps: [step("2026-04-01", 3_000_000)],
         window: { from: "2026-04-01", to: "2026-11-20" },
         period: octDec,
@@ -232,6 +244,7 @@ describe("segmentsForPeriod", () => {
 
     it("an increase mid-quarter splits it, each part month by month", () => {
       const segments = segmentsForPeriod({
+        settings: DEFAULT_SETTINGS,
         steps: [step("2026-04-01", 3_000_000), step("2026-11-15", 3_150_000)],
         window: { from: "2026-04-01", to: "2029-03-31" },
         period: octDec,

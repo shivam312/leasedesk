@@ -41,7 +41,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [x] Settings system: Zod schema in `src/lib/settings/schema.ts` with every key and default in `docs/SETTINGS.md`
 - [x] Settings system: jsonb storage on organizations, billing entities, buildings, tenants and leases, and the resolution order in `src/lib/settings/resolve.ts` (lease → tenant → building → organization → default), with tests
 - [x] Billing engine takes a resolved `BillingSettings` object in place of its separate `roundEscalatedRentToRupee`, `roundInvoiceTotal` and `dueDays` inputs; golden tests unchanged
-- [ ] Billing settings, a test for each option: `billing.partPeriodMethod`, `billing.monthEndRule`
+- [x] Billing settings, a test for each option: `billing.partPeriodMethod`, `billing.monthEndRule`
 - [ ] Billing settings, a test for each option: `billing.midMonthIncreaseLines`, `billing.afterCustomIncrease`, `billing.skipZeroInvoices`
 - [ ] Billing settings, a test for each option: building defaults for `billing.defaultTiming`, `gst.defaultRateBp` and `gst.defaultSac`
 - [ ] GST setting, a test for each option: `gst.rounding` (per line or per invoice)

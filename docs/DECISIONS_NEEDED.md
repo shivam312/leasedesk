@@ -44,7 +44,7 @@ Things only a person can do. Tick them when done.
   - A) Month by month: the quarterly amount ÷ 3 per month, part months by days in that month
   - B) Days across the whole quarter
 - Recommendation: A. It matches how monthly charges are pro-rated and how most people would do it in Excel.
-- Done meanwhile: A built as the only method (`partQuarterByMonth` in `src/lib/billing/proration.ts`, golden case 10). B isn't built yet; it's planned for M2 as setting `billing.partPeriodMethod`, default A.
+- Done meanwhile: A built as the only method (`partQuarterByMonth` in `src/lib/billing/proration.ts`, golden case 10). B is built too, as setting `billing.partPeriodMethod` (organization or lease), default A.
 - Answer:
 
 ### D-002: Should automatic increases resume after a custom increase?

@@ -6,6 +6,8 @@ import type { BillingSettings } from "../types";
 export const DEFAULT_SETTINGS: BillingSettings = {
   roundIncreasedRent: "rupee",
   roundInvoiceTotal: "rupee",
+  partPeriodMethod: "month_by_month",
+  monthEndRule: "roll_forward",
   dueDays: 7,
 };
 

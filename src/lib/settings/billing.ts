@@ -9,6 +9,8 @@ export function billingSettings(settings: Settings): BillingSettings {
   return {
     roundIncreasedRent: settings["billing.roundIncreasedRent"],
     roundInvoiceTotal: settings["billing.roundInvoiceTotal"],
+    partPeriodMethod: settings["billing.partPeriodMethod"],
+    monthEndRule: settings["billing.monthEndRule"],
     dueDays: settings["invoice.dueDays"],
   };
 }

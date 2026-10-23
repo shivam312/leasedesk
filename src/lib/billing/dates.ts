@@ -100,19 +100,32 @@ export function maxDate(a: PlainDate, b: PlainDate): PlainDate {
   return compareDates(a, b) >= 0 ? a : b;
 }
 
+/** What a day that doesn't exist becomes, e.g. 31 Jan + 1 month (setting billing.monthEndRule). */
+export type MonthEndRule = "roll_forward" | "last_day";
+
 /**
- * Same day `months` later. When that day doesn't exist in the target month,
- * rolls forward to the 1st of the next month (docs/BILLING_RULES.md,
- * section 1): 31 Jan + 1 month = 1 Mar; 29 Feb 2028 + 12 months = 1 Mar 2029.
- * Going backwards to a day that doesn't exist has no rule, so it throws.
+ * Same day `months` later (docs/BILLING_RULES.md, section 1). When that day
+ * doesn't exist in the target month:
+ * - `roll_forward` (the default setting): the 1st of the next month, so nothing is billed
+ *   a day early: 31 Jan + 1 month = 1 Mar; 29 Feb 2028 + 12 months = 1 Mar 2029.
+ *   Going backwards has no such rule, so it throws.
+ * - `last_day`: the last day of the target month: 31 Jan + 1 month = 28 Feb;
+ *   31 Mar − 1 month = 28 Feb.
  */
-export function addMonths(date: PlainDate, months: number): PlainDate {
+export function addMonths(
+  date: PlainDate,
+  months: number,
+  rule: MonthEndRule,
+): PlainDate {
   const { year, month, day } = parseDate(date);
   const index = year * 12 + (month - 1) + months;
   const newYear = Math.floor(index / 12);
   const newMonth = (index % 12) + 1;
   if (day <= daysInMonth(newYear, newMonth)) {
     return toPlainDate(newYear, newMonth, day);
+  }
+  if (rule === "last_day") {
+    return toPlainDate(newYear, newMonth, daysInMonth(newYear, newMonth));
   }
   if (months < 0) {
     throw new RangeError(
@@ -154,7 +167,7 @@ export function daysInYearMonth(month: YearMonth): number {
 }
 
 export function addMonthsToMonth(month: YearMonth, months: number): YearMonth {
-  return monthOf(addMonths(startOfMonth(month), months));
+  return monthOf(addMonths(startOfMonth(month), months, "roll_forward"));
 }
 
 /** Every calendar month that the range touches, in order. */
@@ -197,7 +210,12 @@ export function fyQuarter(date: PlainDate): {
   const firstMonth = (((quarter - 1) * 3 + 3) % 12) + 1; // 4, 7, 10, 1
   const startYear = quarter === 4 ? fyStartYear + 1 : fyStartYear;
   const start = toPlainDate(startYear, firstMonth, 1);
-  return { fyStartYear, quarter, start, end: addDays(addMonths(start, 3), -1) };
+  return {
+    fyStartYear,
+    quarter,
+    start,
+    end: addDays(addMonths(start, 3, "roll_forward"), -1),
+  };
 }
 
 function pad2(n: number): string {

@@ -53,7 +53,7 @@ export function chargePeriods(
   lease: LeaseInput,
   settings: BillingSettings,
 ): ChargePeriod[] {
-  const window = chargeBillingWindow(charge, lease);
+  const window = chargeBillingWindow(charge, lease, settings);
   if (!window) return [];
   const steps = amountSteps({
     charge,
@@ -75,6 +75,7 @@ export function chargePeriods(
       steps,
       window,
       period: calendarPeriod,
+      settings,
     });
     const first = segments[0];
     const last = segments.at(-1);
@@ -131,7 +132,7 @@ export function rentSchedule(
     totals.set(p.billedIn, [...(totals.get(p.billedIn) ?? []), p.amount]);
   }
   return {
-    rentStartsOn: rentCommencement(lease).date,
+    rentStartsOn: rentCommencement(lease, settings).date,
     periods,
     totalsByMonth: [...totals.entries()]
       .sort(([a], [b]) => a.localeCompare(b))

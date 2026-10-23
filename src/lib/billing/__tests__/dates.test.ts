@@ -80,27 +80,29 @@ describe("day arithmetic", () => {
 
 describe("addMonths", () => {
   it("keeps the day when it exists", () => {
-    expect(addMonths("2026-04-01", 12)).toBe("2027-04-01");
-    expect(addMonths("2026-11-15", 3)).toBe("2027-02-15");
+    expect(addMonths("2026-04-01", 12, "roll_forward")).toBe("2027-04-01");
+    expect(addMonths("2026-11-15", 3, "roll_forward")).toBe("2027-02-15");
   });
 
   it("rolls forward to the 1st of the next month when the day doesn't exist", () => {
     // 31 Jan + 1 month: there is no 31 Feb → 1 Mar
-    expect(addMonths("2026-01-31", 1)).toBe("2026-03-01");
+    expect(addMonths("2026-01-31", 1, "roll_forward")).toBe("2026-03-01");
     // 31 Jan 2028 + 1 month: no 31 Feb in a leap year either → 1 Mar
-    expect(addMonths("2028-01-31", 1)).toBe("2028-03-01");
+    expect(addMonths("2028-01-31", 1, "roll_forward")).toBe("2028-03-01");
     // 29 Feb 2028 + 12 months: 2029 isn't a leap year → 1 Mar 2029
-    expect(addMonths("2028-02-29", 12)).toBe("2029-03-01");
+    expect(addMonths("2028-02-29", 12, "roll_forward")).toBe("2029-03-01");
     // 31 Aug + 1 month: no 31 Sep → 1 Oct
-    expect(addMonths("2026-08-31", 1)).toBe("2026-10-01");
+    expect(addMonths("2026-08-31", 1, "roll_forward")).toBe("2026-10-01");
     // 29 Jan 2028 + 1 month: 29 Feb 2028 exists
-    expect(addMonths("2028-01-29", 1)).toBe("2028-02-29");
+    expect(addMonths("2028-01-29", 1, "roll_forward")).toBe("2028-02-29");
   });
 
   it("goes backwards, refusing a day that doesn't exist", () => {
-    expect(addMonths("2027-01-15", -12)).toBe("2026-01-15");
-    expect(addMonths("2027-03-31", -2)).toBe("2027-01-31");
-    expect(() => addMonths("2027-03-31", -1)).toThrow(RangeError);
+    expect(addMonths("2027-01-15", -12, "roll_forward")).toBe("2026-01-15");
+    expect(addMonths("2027-03-31", -2, "roll_forward")).toBe("2027-01-31");
+    expect(() => addMonths("2027-03-31", -1, "roll_forward")).toThrow(
+      RangeError,
+    );
   });
 });
 

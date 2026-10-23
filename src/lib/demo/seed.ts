@@ -40,6 +40,7 @@ import {
   DEMO_ORG_NAME,
   DEMO_TENANTS,
   SPOTLIGHT,
+  demoDeposit,
   demoLeases,
   demoStatementCsv,
   historyMonths,
@@ -165,13 +166,9 @@ export async function seedDemo(
       rentFree: plan.rentFreeMonths ? "months" : "none",
       rentFreeLength: plan.rentFreeMonths ? String(plan.rentFreeMonths) : "",
       deposit: paiseText(
-        Math.round(
-          (plan.rentRate *
-            (plan.areaBasis === "carpet"
-              ? unit.carpetArea
-              : unit.chargeableArea) *
-            plan.depositMonths) /
-            100,
+        demoDeposit(
+          plan,
+          plan.areaBasis === "carpet" ? unit.carpetArea : unit.chargeableArea,
         ),
       ),
       charges: [

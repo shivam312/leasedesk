@@ -11,6 +11,7 @@ import {
   DEMO_ENTITIES,
   DEMO_TENANTS,
   SPOTLIGHT,
+  demoDeposit,
   demoLeases,
   demoStatementCsv,
   demoTdsQuarters,
@@ -234,5 +235,29 @@ describe("demoStatementCsv", () => {
       '24/10/26,"NEFT CR-HDFC0001098-MYSORE SILK EMPORIUM PVT LTD-INV SA/26-27/0055",N202610241001,24/10/26,,"1,69,252.50",',
       "",
     ]);
+  });
+});
+
+describe("demo deposits", () => {
+  const plan = { rentRate: 8551, depositMonths: 6 };
+
+  it("is six months of the starting monthly rent, in integer paise rounded half up", () => {
+    // ₹85.51/sq ft × 1,250.50 sq ft = 8551 × 125050 ÷ 100 = 1,06,93,025.5 paise,
+    // half up to 1,06,93,026 paise (₹1,06,930.26) a month;
+    // × 6 months = 6,41,58,156 paise (₹6,41,581.56).
+    // (The old float formula, 8551 × 125050 × 6 ÷ 100, gave 6,41,58,153.)
+    expect(demoDeposit(plan, 125050)).toBe(64_158_156);
+  });
+
+  it("matches the seeded leases' rent for a round area", () => {
+    // ₹90/sq ft × 2,718 sq ft = 9000 × 271800 ÷ 100 = 2,44,62,000 paise a month;
+    // × 6 = 14,67,72,000 paise (₹14,67,720).
+    expect(demoDeposit({ rentRate: 9000, depositMonths: 6 }, 271800)).toBe(
+      146_772_000,
+    );
+  });
+
+  it("refuses an area that isn't whole hundredths of a sq ft", () => {
+    expect(() => demoDeposit(plan, 1250.5)).toThrow(RangeError);
   });
 });

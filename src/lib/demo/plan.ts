@@ -15,6 +15,7 @@ import {
   type PlainDate,
   type YearMonth,
 } from "@/lib/billing/dates";
+import { mulDiv, perUnitMonthly } from "@/lib/billing/money";
 import { formatINR } from "@/lib/format";
 import { makeGstin } from "@/lib/india/identifiers";
 import { certificateDue, type Quarter } from "@/lib/tds/tracker";
@@ -645,6 +646,22 @@ export function demoLeases(today: PlainDate): DemoLease[] {
       depositMonths: 6,
     };
   });
+}
+
+/**
+ * The lease's security deposit in paise: its starting monthly rent (rate ×
+ * area, rounded half up to the paisa like the billing engine) times
+ * `depositMonths`. Integer arithmetic throughout (CLAUDE.md rule 1).
+ */
+export function demoDeposit(
+  plan: Pick<DemoLease, "rentRate" | "depositMonths">,
+  areaHundredths: number,
+): number {
+  return mulDiv(
+    perUnitMonthly(plan.rentRate, areaHundredths),
+    plan.depositMonths,
+    1,
+  );
 }
 
 export type DemoTdsQuarter = {

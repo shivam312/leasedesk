@@ -52,6 +52,24 @@ Useful options:
 | `node scripts/pipeline.mjs --codex-rounds 3` | More Codex review/fix rounds per milestone (default 2) |
 | `node scripts/pipeline.mjs --no-codex` | Skip the Codex stages |
 
+## Audit everything at the end
+
+Once the build is through M7, run:
+
+```
+node scripts/pipeline.mjs --audit
+```
+
+Codex audits each milestone against the code as it stands today (every ticked task must actually work; figures recomputed by hand), Claude fixes what it finds, Codex re-checks. Then Codex and Claude each write an independent gap analysis against the product plan and the pilot goal, without seeing each other's. Claude merges them into a new roadmap milestone, `M9. Audit findings`, and writes `docs/audit/SUMMARY.md` for you: demo-ready or not, pilot-ready or not, top three things to do, and where the two reviewers disagreed.
+
+Then run `node scripts/pipeline.mjs` again to build M9. To do both without coming back:
+
+```
+node scripts/pipeline.mjs --to M7 && node scripts/pipeline.mjs --audit && node scripts/pipeline.mjs
+```
+
+`--audit --from M4 --to M5` audits only those milestones.
+
 ## Check on it
 
 - **`.pipeline/status.md`**: a running log of every stage, how long it took, and a one-line summary

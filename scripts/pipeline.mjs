@@ -12,6 +12,7 @@
 //   node scripts/pipeline.mjs --from M3 --to M3   run one milestone
 //   node scripts/pipeline.mjs --dry-run           show what would run
 //   node scripts/pipeline.mjs --fix-model sonnet  use a faster model for fix and review stages
+//   node scripts/pipeline.mjs --audit             after the build: Codex + Claude audit every milestone, then a gap analysis
 //   node scripts/pipeline.mjs --no-codex          skip the Codex review stages
 //   node scripts/pipeline.mjs --codex-model gpt-5 pick the Codex model
 //
@@ -60,7 +61,9 @@ const cfg = {
   skipE2e: Boolean(args["skip-e2e"]),
   noReview: Boolean(args["no-review"]),
   dryRun: Boolean(args["dry-run"]),
+  audit: Boolean(args["audit"]),
 };
+const AUDIT_DIR = "docs/audit";
 
 // ---------- main ----------
 
@@ -74,6 +77,11 @@ function main() {
 
   preflight();
   const state = readState();
+
+  if (cfg.audit) {
+    runAudit();
+    finish("finished", "Audit complete. Read docs/audit/SUMMARY.md, then run the pipeline normally to build the audit milestone.");
+  }
 
   applyAnswers(state);
 
@@ -220,6 +228,111 @@ function applyAnswers(state) {
   const r = runClaude("answers", { id: "D", title: "decisions" }, answersPrompt(), cfg.fixModel);
   if (!r.ok) finish("failed", `Applying answers failed: ${short(r.result, 300)}`);
   commitLeftovers({ id: "decisions" });
+}
+
+// ---------- Audit mode ----------
+
+function runAudit() {
+  if (!codexEnabled()) finish("failed", "Audit mode needs the Codex CLI (two independent reviewers). Install it, or run with --no-codex to get a Claude-only audit of lower value.");
+  fs.mkdirSync(AUDIT_DIR, { recursive: true });
+  if (needsDatabase({ id: "M2", tasks: [] }) && !databaseReady()) finish("stopped", "The audit needs the local database running.");
+  log("\n# Audit: every milestone, then a gap analysis\n");
+
+  const milestones = readRoadmap().filter((m) => {
+    const n = mNum(m.id);
+    if (cfg.from && n < mNum(cfg.from)) return false;
+    if (cfg.to && n > mNum(cfg.to)) return false;
+    return m.tasks.some((t) => t.done);
+  });
+
+  // 1. Milestone by milestone.
+  for (const m of milestones) {
+    log(`\n## Audit ${m.id}. ${m.title}\n`);
+    const r = runCodex(`audit-${m.id}`, m, auditMilestonePrompt(m));
+    if (!r.ok) finish("failed", `Codex audit of ${m.id} failed.`);
+    const mdFile = path.join(AUDIT_DIR, `${m.id}-codex-audit.md`);
+    fs.writeFileSync(mdFile, reportToMarkdown(`Audit of ${m.id}: ${m.title}`, r.report));
+    if (r.report.must_fix.length) {
+      log(`- Codex found ${r.report.must_fix.length} must-fix item(s) in ${m.id}; asking Claude to fix.`);
+      const f = runClaude(`audit-fix-${m.id}`, m, codexFixPrompt(m, mdFile), cfg.fixModel);
+      if (!f.ok) finish("failed", `Audit fixes for ${m.id} failed.`);
+      if (!checksWithFixes(m, `after audit fixes for ${m.id}`)) finish("failed", `Checks failing after audit fixes for ${m.id}.`);
+      const r2 = runCodex(`audit-${m.id}-recheck`, m, auditMilestonePrompt(m, mdFile));
+      if (r2.ok) fs.writeFileSync(path.join(AUDIT_DIR, `${m.id}-codex-recheck.md`), reportToMarkdown(`Re-check of ${m.id}`, r2.report));
+      if (r2.ok && r2.report.must_fix.length) log(`- ⚠ ${m.id} still has ${r2.report.must_fix.length} must-fix item(s) after fixes; they go into the audit milestone.`);
+    } else if (r.report.should_fix.length) {
+      const f = runClaude(`audit-triage-${m.id}`, m, codexTriagePrompt(m, mdFile), cfg.fixModel);
+      if (f.ok) checksWithFixes(m, `after audit triage for ${m.id}`);
+    }
+    commitAll(`docs: audit of ${m.id}`);
+  }
+
+  // 2. Two independent gap analyses.
+  const all = { id: "ALL", title: "whole product" };
+  log("\n## Gap analysis\n");
+  const g = runCodex("gaps", all, gapPromptCodex());
+  if (!g.ok) finish("failed", "Codex gap analysis failed.");
+  fs.writeFileSync(path.join(AUDIT_DIR, "codex-gaps.md"), reportToMarkdown("Gap analysis (Codex)", g.report));
+  const c = runClaude("gaps", all, gapPromptClaude(), cfg.reviewModel);
+  if (!c.ok) finish("failed", "Claude gap analysis failed.");
+  commitAll("docs: gap analyses");
+
+  // 3. Merge into a roadmap milestone and a founder summary.
+  const mrg = runClaude("audit-merge", all, auditMergePrompt(milestones), cfg.reviewModel);
+  if (!mrg.ok) finish("failed", "Audit merge failed.");
+  commitAll("docs: audit summary");
+  if (!cfg.dryRun) {
+    git(["tag", "-f", "audit-done"]);
+    log("- Tagged audit-done");
+  }
+}
+
+function auditMilestonePrompt(m, previousReport) {
+  const tasks = m.tasks.filter((t) => t.done).map((t) => `- ${t.text}`).join("\n");
+  return [
+    `You are an independent auditor for LeaseDesk, a lease and rent billing product for Indian commercial landlords, built mostly by another AI agent (Claude Code). The build is finished through several milestones. Audit milestone ${m.id} (${m.title}) against the code AS IT IS NOW, not against old diffs: later milestones may have changed it, and what matters is whether it works today.`,
+    "",
+    "Tasks ticked as done in this milestone:",
+    tasks || "(none)",
+    "",
+    "Read first: CLAUDE.md, docs/BILLING_RULES.md, docs/DATA_MODEL.md, docs/UX_PRINCIPLES.md, docs/SETTINGS.md, docs/ROADMAP.md, and docs/milestones/" + m.id + ".md if it exists. You are read-only; you may run read-only commands such as pnpm test, pnpm typecheck and git log.",
+    "",
+    "For every ticked task: find the code and tests that implement it, and say whether it works as described. A ticked task with no working implementation, or with tests that don't exercise it, is a must_fix. Then check, in priority order: money correctness (recompute at least three figures by hand against BILLING_RULES.md), spec drift between docs and code, weakened or skipped tests, multi-tenancy and role checks in server actions, immutability of sent invoices and payments, and UX rules from UX_PRINCIPLES.md.",
+    previousReport ? `\nA previous audit report is at ${previousReport}; Claude has since fixed its must_fix items. Re-verify each one and report only what is still wrong.` : "",
+    "",
+    "Report rules: must_fix = wrong number, rule violation, security hole, or a ticked task that doesn't work. should_fix = everything else worth doing. For each finding: file, problem, concrete evidence (quote the line or calculation), fix. Don't pad. In `verified`, list what you checked by hand and found correct, task by task.",
+  ].join("\n");
+}
+
+function gapPromptCodex() {
+  return [
+    "You are an independent product and engineering auditor for LeaseDesk, a lease and rent billing product for Indian commercial landlords with 20–100 tenants, built mostly by another AI agent. The planned v1 build is finished. Decide what is still missing before (a) a convincing demo to a landlord and (b) a paid pilot where a real landlord's monthly billing runs through it.",
+    "",
+    "Read: docs/PRODUCT_PLAN.md (the v1 scope and the 'Keeping it simple' rules), docs/UX_PRINCIPLES.md, docs/ROADMAP.md (M8 is pilot readiness), docs/BACKLOG.md, docs/DECISIONS_NEEDED.md, docs/milestones/*.md, docs/audit/*.md (today's per-milestone audits), and then the code: src/app, src/lib, src/server, tests. Run pnpm test and pnpm test:e2e if you can; read-only otherwise.",
+    "",
+    "Look for: v1 features in PRODUCT_PLAN.md that don't exist or are half-built; flows that work in tests but not end to end in the browser; things a landlord or accountant would hit in the first week (import of real data, invoice PDF correctness, Tally export matching a real accountant's ledgers, reminders, TDS tracking); security and data-safety gaps (multi-tenancy, backups, audit log, secrets); operational gaps (migrations, seed, error reporting, logging); performance at 100 tenants and 3 years of history; UX rules broken; and anything that would make a demo look amateurish.",
+    "",
+    "Use must_fix for things that would break a pilot or embarrass a demo, should_fix for everything else, ordered by importance. Each finding: area in `file` (a path or a feature name), the gap in `problem`, evidence of why you believe it's missing in `evidence`, and a concrete task in `fix`. In `summary`, give a founder three to five sentences: is this ready to demo, is it ready for a pilot, and what are the top three things to do. In `verified`, list the v1 features you confirmed are complete.",
+  ].join("\n");
+}
+
+function gapPromptClaude() {
+  return `${header("gap-analysis", null)}
+
+The v1 build is finished and an independent auditor (Codex) has reviewed each milestone (reports in docs/audit/). Do NOT read docs/audit/codex-gaps.md: your gap analysis must be independent of Codex's.
+
+Write docs/audit/claude-gaps.md: compare the product as it exists now against docs/PRODUCT_PLAN.md (v1 scope, Keeping it simple), docs/UX_PRINCIPLES.md and the pilot-readiness goal in docs/ROADMAP.md (M8). Start the dev server, log in with the demo data and click through every flow yourself before writing. Sections: (1) Demo readiness: what would look wrong or break in a 10-minute landlord demo. (2) Pilot readiness: what a real landlord's first month would hit (data import, PDF correctness, Tally export, reminders, TDS, reports). (3) Missing or half-built v1 features. (4) Security, data safety and operations. (5) Simplicity: UX rules broken, jargon, screens with more than one primary action. (6) Technical debt that will bite within 3 months. Each item: one line, concrete, with the file or screen. Order by importance within each section. End with a verdict in plain words for a non-technical founder. Commit as "docs: Claude gap analysis".`;
+}
+
+function auditMergePrompt(milestones) {
+  return `${header("audit-merge", null)}
+
+Two independent gap analyses exist: docs/audit/codex-gaps.md (Codex) and docs/audit/claude-gaps.md (yours), plus per-milestone audit reports in docs/audit/. Merge them:
+1. Where both agree, that's high confidence. Where only one raised it, verify it in the code before keeping it; note disagreements honestly.
+2. Add a milestone "## M9. Audit findings" to docs/ROADMAP.md after M8, one task per item, ordered: demo blockers, then pilot blockers, then the rest. Each task small enough for one commit; tag (human) and (blocked: D-xxx) as usual. Don't duplicate tasks already in M8 or docs/BACKLOG.md; move backlog items in if they matter.
+3. Anything that needs the founder (scope, spend, tax) goes into docs/DECISIONS_NEEDED.md with options and a recommendation.
+4. Write docs/audit/SUMMARY.md for the founder: a one-paragraph verdict (demo-ready? pilot-ready?), the three most important things to do next, a table of all audited milestones (${milestones.map((m) => m.id).join(", ")}) with Codex's verdict and what was fixed today, where the two reviewers disagreed, and the count of M9 tasks and new decisions.
+5. Set "Current milestone" in docs/ROADMAP.md to M8 or M9, whichever has the first unfinished buildable task. Run pnpm typecheck and pnpm test. Commit as "docs: audit summary and M9 audit milestone".`;
 }
 
 // ---------- Codex (independent reviewer) ----------
@@ -709,6 +822,11 @@ function commitLeftovers(m) {
   log(`- ⚠ ${m.id} left uncommitted changes; committing them as a wrap-up commit.`);
   git(["add", "-A"]);
   git(["commit", "-m", `chore: pipeline wrap-up for ${m.id}`]);
+}
+function commitAll(message) {
+  if (cfg.dryRun || gitClean()) return;
+  git(["add", "-A"]);
+  git(["commit", "-m", message]);
 }
 function tagMilestone(m) {
   if (cfg.dryRun) return;

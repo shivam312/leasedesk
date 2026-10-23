@@ -67,7 +67,7 @@ test("an owner imports a bank statement; the columns are remembered", async ({
     page.getByRole("button", { name: "Record 0 payments" }),
   ).toBeDisabled();
   await page.getByRole("checkbox").first().check();
-  await page.getByRole("button", { name: "Not rent (1)" }).click();
+  await page.getByRole("button", { name: "Mark 1 as not rent" }).click();
   await page.getByRole("button", { name: "Set aside 1 line" }).click();
   await expect(page.getByText("Set aside 1 line as not rent.")).toBeVisible();
   await expect(page.getByText("No match found")).toHaveCount(2);

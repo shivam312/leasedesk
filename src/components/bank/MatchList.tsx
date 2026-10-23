@@ -103,15 +103,20 @@ export function MatchList({
           className="h-11 md:h-9"
           onClick={() => setAskIgnore(true)}
         >
-          Not rent ({count})
+          Mark {count} as not rent
         </Button>
         <button
           type="button"
           className="min-h-11 text-sm underline md:min-h-0"
           onClick={() => toggleAll(count < rows.length)}
         >
-          {count < rows.length ? "Tick all" : "Untick all"}
+          {count < rows.length ? `Tick all ${rows.length}` : "Untick all"}
         </button>
+        {count === 0 && (
+          <p className="w-full text-sm text-muted-foreground">
+            Tick the lines you want to record.
+          </p>
+        )}
         {missingTenant && (
           <p className="w-full text-sm text-destructive">
             Choose the tenant for every ticked line (marked below).

@@ -141,7 +141,7 @@ async function Tracker({
         {all.length > 0 && (
           <Link
             href={`/billing/tds?fy=${fy}${onlyMissing ? "" : "&missing=1"}`}
-            aria-pressed={onlyMissing}
+            aria-current={onlyMissing ? "true" : undefined}
             className={cn(
               "inline-flex min-h-11 items-center rounded-full border px-4 text-sm md:min-h-9",
               onlyMissing && "bg-primary text-primary-foreground",

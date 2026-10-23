@@ -134,7 +134,9 @@ export function StatementImport({
       }
     } else next = parseCsv(await file.text());
     if (next.length === 0) {
-      setFileError("That file is empty.");
+      setFileError(
+        "That file is empty. Download the statement again from net banking and choose it here.",
+      );
       return;
     }
     setRows(next);

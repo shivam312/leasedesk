@@ -33,6 +33,9 @@ export const seriesKind = pgEnum("series_kind", ["invoice", "credit_note"]);
 /**
  * One numbering series per billing GSTIN, kind, financial year and prefix
  * (docs/BILLING_RULES.md section 9). Row-locked while a number is taken.
+ * Keyed by the GSTIN, not the billing entity: two billing entities with the
+ * same GSTIN share their series, so a number is never given out twice under
+ * one GSTIN (Codex review M4). `billingEntityId` is the entity that opened it.
  */
 export const invoiceSeries = pgTable(
   "invoice_series",
@@ -40,6 +43,8 @@ export const invoiceSeries = pgTable(
     id: id(),
     organizationId: uuid().notNull(),
     billingEntityId: uuid().notNull(),
+    // Upper case, no spaces (normalizeId), as printed on the invoice.
+    gstin: text().notNull(),
     kind: seriesKind().notNull(),
     // Short financial year, as printed in the number: "26-27".
     financialYear: text().notNull(),
@@ -49,7 +54,7 @@ export const invoiceSeries = pgTable(
   },
   (t) => [
     index().on(t.organizationId),
-    unique().on(t.billingEntityId, t.kind, t.financialYear, t.prefix),
+    unique().on(t.organizationId, t.gstin, t.kind, t.financialYear, t.prefix),
     unique().on(t.organizationId, t.id),
     foreignKey({
       columns: [t.organizationId, t.billingEntityId],

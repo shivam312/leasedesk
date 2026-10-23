@@ -21,6 +21,7 @@ async function series(tx: TestTx, a: Org, kind: "invoice" | "credit_note") {
       .values({
         organizationId: a.org.id,
         billingEntityId: a.entity.id,
+        gstin: "27AAACT2727Q1ZW",
         kind,
         financialYear: "26-27",
         prefix: kind === "invoice" ? "T" : "TCN",

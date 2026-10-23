@@ -54,3 +54,27 @@ export async function billingEntityOptions(s: Scoped) {
     .where(s.where(billingEntities))
     .orderBy(asc(billingEntities.createdAt));
 }
+
+/**
+ * The billing entities sharing this one's GSTIN, itself included. Their
+ * buildings share number series (BILLING_RULES section 9), so prefixes are
+ * checked across all of them. An entity without a GSTIN is on its own.
+ */
+export async function sameGstinEntityIds(
+  s: Scoped,
+  billingEntityId: string,
+): Promise<string[]> {
+  const [entity] = await s.tx
+    .select({ gstin: billingEntities.gstin })
+    .from(billingEntities)
+    .where(s.where(billingEntities, eq(billingEntities.id, billingEntityId)));
+  if (!entity?.gstin) return [billingEntityId];
+  const rows = await s.tx
+    .select({ id: billingEntities.id })
+    .from(billingEntities)
+    .where(s.where(billingEntities, eq(billingEntities.gstin, entity.gstin)));
+  return [
+    billingEntityId,
+    ...rows.map((r) => r.id).filter((id) => id !== billingEntityId),
+  ];
+}

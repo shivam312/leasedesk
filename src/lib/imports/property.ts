@@ -116,13 +116,18 @@ export function planPropertyImport(
   const newBuildings: NewBuilding[] = [];
   // Buildings whose own row has an error: their units wait for that fix.
   const failed = new Set<string>();
-  const prefixesByEntity = new Map<
+  // Prefixes in use per GSTIN (section 9: numbers are unique per GSTIN, and
+  // billing entities with the same GSTIN share their series). An entity
+  // without a GSTIN is its own group.
+  const gstinKey = (entityId: string) =>
+    existing.entities.find((e) => e.id === entityId)?.gstin ?? entityId;
+  const prefixesByGstin = new Map<
     string,
     { invoicePrefix: string; creditNotePrefix: string }[]
   >();
   for (const b of existing.buildings)
-    prefixesByEntity.set(b.billingEntityId, [
-      ...(prefixesByEntity.get(b.billingEntityId) ?? []),
+    prefixesByGstin.set(gstinKey(b.billingEntityId), [
+      ...(prefixesByGstin.get(gstinKey(b.billingEntityId)) ?? []),
       b,
     ]);
   if (buildingSheet) {
@@ -181,13 +186,13 @@ export function planPropertyImport(
           err(firstMessage(parsed.error));
           continue;
         }
-        const others = prefixesByEntity.get(entity.id) ?? [];
+        const others = prefixesByGstin.get(gstinKey(entity.id)) ?? [];
         const clash = prefixClash(parsed.data, others);
         if (clash) {
           err(Object.values(clash)[0]!);
           continue;
         }
-        prefixesByEntity.set(entity.id, [...others, parsed.data]);
+        prefixesByGstin.set(gstinKey(entity.id), [...others, parsed.data]);
         newBuildings.push({
           key: `new:${newBuildings.length}`,
           row,

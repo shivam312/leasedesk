@@ -151,6 +151,7 @@ export async function issueInvoice(
   try {
     taken = await takeNumber(s, {
       billingEntityId: entity.id,
+      gstin: entity.gstin,
       kind: "invoice",
       prefix: building.invoicePrefix,
       date: invoice.invoiceDate,

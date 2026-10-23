@@ -7,6 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { financialYear, type PlainDate } from "@/lib/billing/dates";
 import { logActivity, updateLogged } from "@/lib/db/activity-log";
 import { invoiceSeries } from "@/lib/db/schema";
+import { normalizeId } from "@/lib/india/identifiers";
 import type { Scoped } from "@/lib/db/scoped";
 import { firstNumber, invoiceNumber } from "./number";
 
@@ -14,6 +15,7 @@ export async function takeNumber(
   s: Scoped,
   {
     billingEntityId,
+    gstin,
     kind,
     prefix,
     date,
@@ -21,6 +23,11 @@ export async function takeNumber(
     startingNumber,
   }: {
     billingEntityId: string;
+    /**
+     * The supplier GSTIN printed on the document. The series belongs to the
+     * GSTIN, so billing entities sharing one share their numbers.
+     */
+    gstin: string;
     kind: "invoice" | "credit_note";
     prefix: string;
     /** The invoice or credit-note date: decides the financial year. */
@@ -31,10 +38,12 @@ export async function takeNumber(
   },
 ): Promise<{ seriesId: string; number: string }> {
   const fy = financialYear(date).short;
+  const seriesGstin = normalizeId(gstin);
+  if (!seriesGstin) throw new Error("A number needs the supplier's GSTIN");
   const match = s.where(
     invoiceSeries,
     and(
-      eq(invoiceSeries.billingEntityId, billingEntityId),
+      eq(invoiceSeries.gstin, seriesGstin),
       eq(invoiceSeries.kind, kind),
       eq(invoiceSeries.financialYear, fy),
       eq(invoiceSeries.prefix, prefix),
@@ -52,6 +61,7 @@ export async function takeNumber(
       .values(
         s.values({
           billingEntityId,
+          gstin: seriesGstin,
           kind,
           financialYear: fy,
           prefix,

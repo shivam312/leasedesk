@@ -190,6 +190,13 @@
       "when": 1792776245049,
       "tag": "0026_exports_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792793904776,
+      "tag": "0027_series_by_gstin",
+      "breakpoints": true
     }
   ]
 }

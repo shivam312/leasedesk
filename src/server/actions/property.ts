@@ -2,7 +2,7 @@
 
 // Buildings, floors and units.
 
-import { eq, ne } from "drizzle-orm";
+import { eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { appDb } from "@/lib/auth";
@@ -10,6 +10,7 @@ import type { FormState } from "@/lib/auth/forms";
 import { insertLogged, updateLogged } from "@/lib/db/activity-log";
 import { buildings, floors, units } from "@/lib/db/schema";
 import { runScoped } from "@/lib/db/scoped";
+import { sameGstinEntityIds } from "@/lib/property/queries";
 import {
   buildingSchema,
   floorSchema,
@@ -36,6 +37,9 @@ export async function saveBuilding(
     form,
     (member, data) =>
       runScoped(appDb, member, async (s) => {
+        // Every other building under the same GSTIN, whichever billing
+        // entity carries it: numbers are unique per GSTIN (section 9).
+        const sameGstin = await sameGstinEntityIds(s, data.billingEntityId);
         const others = await s.tx
           .select({
             invoicePrefix: buildings.invoicePrefix,
@@ -45,7 +49,7 @@ export async function saveBuilding(
           .where(
             s.where(
               buildings,
-              eq(buildings.billingEntityId, data.billingEntityId),
+              inArray(buildings.billingEntityId, sameGstin),
               id ? ne(buildings.id, id) : undefined,
             ),
           );

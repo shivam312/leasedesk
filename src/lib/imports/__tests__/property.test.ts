@@ -240,6 +240,56 @@ describe("planPropertyImport", () => {
     ]);
   });
 
+  // Numbers are unique per GSTIN (BILLING_RULES section 9), so a prefix is
+  // checked against every building under the same GSTIN, even one saved
+  // under another billing entity carrying that GSTIN (Codex review M4).
+  // Saved: Orchid Towers bills from e3 (GSTIN 27AAPFU0939F1ZV) with invoice
+  // prefix OT. New: Rose Court names that GSTIN (found as e1) and wants OT
+  // for credit notes, which would print OT/26-27/0001 a second time.
+  it("checks prefixes against buildings under the same GSTIN on another billing entity", () => {
+    const shared: ExistingProperty = {
+      entities: [
+        entity,
+        {
+          id: "00000000-0000-4000-8000-0000000000e3",
+          gstin: entity.gstin,
+          legalName: "Orchid LLP (second account)",
+        },
+      ],
+      buildings: [
+        {
+          id: "00000000-0000-4000-8000-0000000000b1",
+          name: "Orchid Towers",
+          billingEntityId: "00000000-0000-4000-8000-0000000000e3",
+          invoicePrefix: "OT",
+          creditNotePrefix: "OTCN",
+          floors: [],
+          unitCodes: [],
+        },
+      ],
+    };
+    const result = planPropertyImport(
+      [
+        buildingsSheet([
+          "Rose Court",
+          "Linking Road, Bandra",
+          "Mumbai",
+          "27",
+          "RC",
+          "OT",
+          entity.gstin,
+        ]),
+      ],
+      shared,
+    );
+    expect(
+      "errors" in result &&
+        result.errors.map((e) => `${e.sheet} ${e.row}: ${e.message}`),
+    ).toEqual([
+      "Buildings 2: Another building billing from this GSTIN uses OT for invoices. Choose a different credit note prefix.",
+    ]);
+  });
+
   it("refuses a file without the sheets, or with no rows", () => {
     expect(
       planPropertyImport([{ name: "Sheet1", rows: [["a"]] }], none),

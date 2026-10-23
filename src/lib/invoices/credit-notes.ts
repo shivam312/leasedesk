@@ -179,10 +179,18 @@ export async function issueCreditNote(s: Scoped, input: IssueCreditNote) {
   const settings = await loadSettings(s, {
     billingEntityId: invoice.billingEntityId,
   });
+  // The GSTIN printed on the invoice, even if the billing entity's GSTIN
+  // was changed since: the credit note is numbered under the same GSTIN.
+  const gstin = invoice.supplier?.gstin;
+  if (!gstin)
+    throw new SendError(
+      "This invoice has no GSTIN on it, so a credit note can't be numbered.",
+    );
   let taken;
   try {
     taken = await takeNumber(s, {
       billingEntityId: invoice.billingEntityId,
+      gstin,
       kind: "credit_note",
       prefix: building.prefix,
       date: input.date,

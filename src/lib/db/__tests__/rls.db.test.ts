@@ -17,6 +17,10 @@ const orgTables = {
   tenantContacts: schema.tenantContacts,
   leases: schema.leases,
   leaseUnits: schema.leaseUnits,
+  leaseCharges: schema.leaseCharges,
+  escalationRules: schema.escalationRules,
+  customEscalations: schema.customEscalations,
+  criticalDates: schema.criticalDates,
 };
 
 const asDb = (tx: TestTx) => tx as unknown as Transactional;

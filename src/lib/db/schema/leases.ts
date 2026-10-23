@@ -5,6 +5,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   date,
   foreignKey,
@@ -12,6 +13,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  text,
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -126,5 +128,205 @@ export const leaseUnits = pgTable(
       foreignColumns: [units.organizationId, units.buildingId, units.id],
     }).onDelete("restrict"),
     check("lease_units_area_positive", sql`${t.area} > 0`),
+  ],
+).enableRLS();
+
+// Charges, rent increases and critical dates. Each references its lease
+// together with organization_id; a custom increase also names the lease, so
+// it can only change a charge of the same lease.
+
+export const chargeType = pgEnum("charge_type", [
+  "rent",
+  "cam",
+  "parking",
+  "utilities",
+  "signage",
+  "other",
+]);
+
+export const chargeBasis = pgEnum("charge_basis", [
+  "fixed",
+  "per_sqft",
+  "per_slot",
+]);
+
+export const chargeFrequency = pgEnum("charge_frequency", [
+  "monthly",
+  "quarterly",
+]);
+
+export const chargeTiming = pgEnum("charge_timing", ["advance", "arrears"]);
+
+export const leaseCharges = pgTable(
+  "lease_charges",
+  {
+    id: id(),
+    organizationId: uuid().notNull(),
+    leaseId: uuid().notNull(),
+    type: chargeType().notNull(),
+    basis: chargeBasis().notNull(),
+    // Paise: the amount per period for `fixed`, the monthly rate per sq ft
+    // for `per_sqft`, per slot for `per_slot` (docs/BILLING_RULES.md section 3).
+    rateOrAmount: bigint({ mode: "number" }).notNull(),
+    // Number of slots; only for `per_slot`.
+    quantity: integer(),
+    startDate: date().notNull(),
+    endDate: date(),
+    frequency: chargeFrequency().notNull().default("monthly"),
+    // Timing, GST rate and SAC are copied from the building defaults when
+    // the lease is saved (D16), so they're never blank here.
+    timing: chargeTiming().notNull(),
+    gstRateBp: integer().notNull(),
+    sacCode: text().notNull(),
+    waivedDuringRentFree: boolean().notNull(),
+    label: text(),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.organizationId),
+    index().on(t.leaseId),
+    unique().on(t.organizationId, t.leaseId, t.id),
+    foreignKey({
+      columns: [t.organizationId, t.leaseId],
+      foreignColumns: [leases.organizationId, leases.id],
+    }).onDelete("restrict"),
+    check("lease_charges_amount_not_negative", sql`${t.rateOrAmount} >= 0`),
+    check(
+      "lease_charges_slots_only_per_slot",
+      sql`(${t.basis} = 'per_slot') = (${t.quantity} is not null) and (${t.quantity} is null or ${t.quantity} > 0)`,
+    ),
+    check(
+      "lease_charges_end_after_start",
+      sql`${t.endDate} is null or ${t.endDate} >= ${t.startDate}`,
+    ),
+    check(
+      "lease_charges_gst_rate",
+      sql`${t.gstRateBp} >= 0 and ${t.gstRateBp} <= 10000`,
+    ),
+  ],
+).enableRLS();
+
+export const escalationAnchor = pgEnum("escalation_anchor", [
+  "lease_start",
+  "rent_commencement",
+  "custom",
+]);
+
+export const escalationRules = pgTable(
+  "escalation_rules",
+  {
+    id: id(),
+    organizationId: uuid().notNull(),
+    leaseId: uuid().notNull(),
+    // The lease's charge ids this rule increases; null means every rent charge.
+    chargeIds: uuid().array(),
+    percentBp: integer().notNull(),
+    everyMonths: integer().notNull(),
+    anchor: escalationAnchor().notNull().default("lease_start"),
+    // Only for a `custom` anchor.
+    anchorDate: date(),
+    compounding: boolean().notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.organizationId),
+    index().on(t.leaseId),
+    foreignKey({
+      columns: [t.organizationId, t.leaseId],
+      foreignColumns: [leases.organizationId, leases.id],
+    }).onDelete("restrict"),
+    check("escalation_rules_percent_positive", sql`${t.percentBp} > 0`),
+    check("escalation_rules_every_positive", sql`${t.everyMonths} > 0`),
+    check(
+      "escalation_rules_anchor_date",
+      sql`(${t.anchor} = 'custom') = (${t.anchorDate} is not null)`,
+    ),
+  ],
+).enableRLS();
+
+export const customEscalations = pgTable(
+  "custom_escalations",
+  {
+    id: id(),
+    organizationId: uuid().notNull(),
+    leaseId: uuid().notNull(),
+    chargeId: uuid().notNull(),
+    effectiveDate: date().notNull(),
+    // Exactly one of a new amount (paise, as rate_or_amount) or a percentage.
+    newAmount: bigint({ mode: "number" }),
+    percentBp: integer(),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.organizationId),
+    index().on(t.leaseId),
+    unique().on(t.chargeId, t.effectiveDate),
+    foreignKey({
+      columns: [t.organizationId, t.leaseId, t.chargeId],
+      foreignColumns: [
+        leaseCharges.organizationId,
+        leaseCharges.leaseId,
+        leaseCharges.id,
+      ],
+    }).onDelete("restrict"),
+    check(
+      "custom_escalations_amount_or_percent",
+      sql`(${t.newAmount} is null) <> (${t.percentBp} is null) and (${t.newAmount} is null or ${t.newAmount} >= 0)`,
+    ),
+  ],
+).enableRLS();
+
+export const criticalDateType = pgEnum("critical_date_type", [
+  "expiry",
+  "lock_in_end",
+  "escalation",
+  "renewal_option",
+  "notice_deadline",
+  "custom",
+]);
+
+export const criticalDateStatus = pgEnum("critical_date_status", [
+  "open",
+  "done",
+  "snoozed",
+]);
+
+export const criticalDates = pgTable(
+  "critical_dates",
+  {
+    id: id(),
+    organizationId: uuid().notNull(),
+    leaseId: uuid().notNull(),
+    type: criticalDateType().notNull(),
+    date: date().notNull(),
+    // Days before `date` to remind, e.g. {180,90,30}.
+    remindDays: integer()
+      .array()
+      .notNull()
+      .default(sql`'{}'::integer[]`),
+    // A Supabase auth user; no foreign key into the auth schema (D12).
+    assignedTo: uuid(),
+    status: criticalDateStatus().notNull().default("open"),
+    snoozedUntil: date(),
+    // What a `custom` date is, in the user's words.
+    label: text(),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.organizationId),
+    index().on(t.leaseId),
+    index().on(t.organizationId, t.status, t.date),
+    foreignKey({
+      columns: [t.organizationId, t.leaseId],
+      foreignColumns: [leases.organizationId, leases.id],
+    }).onDelete("restrict"),
+    check(
+      "critical_dates_snoozed_until",
+      sql`(${t.status} = 'snoozed') = (${t.snoozedUntil} is not null)`,
+    ),
+    check(
+      "critical_dates_custom_label",
+      sql`${t.type} <> 'custom' or ${t.label} is not null`,
+    ),
   ],
 ).enableRLS();

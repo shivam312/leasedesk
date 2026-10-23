@@ -322,6 +322,79 @@ async function seedLeases(
       unitId: unit.id,
       area: areaBasis === "carpet" ? unit.carpetArea : unit.chargeableArea,
     });
+    // Rent per sq ft (₹80–₹120), CAM per sq ft, and parking for every third
+    // lease; building defaults (18% GST, SAC 997212, in advance) copied on (D16).
+    const chargeDefaults = {
+      organizationId: unit.organizationId,
+      leaseId: lease.id,
+      startDate,
+      timing: "advance" as const,
+      gstRateBp: 1800,
+      sacCode: "997212",
+    };
+    const charges = await tx
+      .insert(schema.leaseCharges)
+      .values([
+        {
+          ...chargeDefaults,
+          type: "rent" as const,
+          basis: "per_sqft" as const,
+          rateOrAmount: 8000 + ((i * 1000) % 4000) + (i % 2) * 50,
+          waivedDuringRentFree: true,
+        },
+        {
+          ...chargeDefaults,
+          type: "cam" as const,
+          basis: "per_sqft" as const,
+          rateOrAmount: 1500,
+          // A quarterly CAM charge in arrears on a few leases.
+          ...(i % 8 === 2
+            ? { frequency: "quarterly" as const, timing: "arrears" as const }
+            : {}),
+          waivedDuringRentFree: false,
+        },
+        ...(i % 3 === 1
+          ? [
+              {
+                ...chargeDefaults,
+                type: "parking" as const,
+                basis: "per_slot" as const,
+                rateOrAmount: 300000,
+                quantity: 1 + (i % 4),
+                waivedDuringRentFree: false,
+              },
+            ]
+          : []),
+      ])
+      .returning();
+    // Most leases: 5% every 12 months; some 15% every 36 months; one with
+    // a custom increase on a set date.
+    await tx.insert(schema.escalationRules).values(
+      i % 5 === 3
+        ? {
+            organizationId: unit.organizationId,
+            leaseId: lease.id,
+            percentBp: 1500,
+            everyMonths: 36,
+          }
+        : {
+            organizationId: unit.organizationId,
+            leaseId: lease.id,
+            percentBp: 500,
+            everyMonths: 12,
+            anchor: rentFreeMonths ? "rent_commencement" : "lease_start",
+          },
+    );
+    const rent = charges[0];
+    if (i === 10 && rent) {
+      await tx.insert(schema.customEscalations).values({
+        organizationId: unit.organizationId,
+        leaseId: lease.id,
+        chargeId: rent.id,
+        effectiveDate: addMonths(startDate, 18, "roll_forward"),
+        percentBp: 750,
+      });
+    }
     if (status !== "draft") {
       await tx
         .update(schema.units)

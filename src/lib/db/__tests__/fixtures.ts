@@ -99,5 +99,42 @@ export async function seedOrg(tx: TestTx, name: string, role: Role = "owner") {
     unitId: unit.id,
     area: unit.chargeableArea,
   });
-  return { userId, org, entity, building, unit, tenant, lease };
+  const charge = only(
+    await tx
+      .insert(schema.leaseCharges)
+      .values({
+        organizationId: org.id,
+        leaseId: lease.id,
+        type: "rent",
+        basis: "per_sqft",
+        rateOrAmount: 9000,
+        startDate: "2026-04-01",
+        timing: "advance",
+        gstRateBp: 1800,
+        sacCode: "997212",
+        waivedDuringRentFree: true,
+      })
+      .returning(),
+  );
+  await tx.insert(schema.escalationRules).values({
+    organizationId: org.id,
+    leaseId: lease.id,
+    percentBp: 500,
+    everyMonths: 12,
+  });
+  await tx.insert(schema.customEscalations).values({
+    organizationId: org.id,
+    leaseId: lease.id,
+    chargeId: charge.id,
+    effectiveDate: "2027-10-01",
+    newAmount: 10000,
+  });
+  await tx.insert(schema.criticalDates).values({
+    organizationId: org.id,
+    leaseId: lease.id,
+    type: "expiry",
+    date: "2029-03-31",
+    remindDays: [180, 90, 30],
+  });
+  return { userId, org, entity, building, unit, tenant, lease, charge };
 }

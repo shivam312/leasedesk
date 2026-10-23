@@ -71,6 +71,20 @@
       "when": 1792738248339,
       "tag": "0009_leases_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792738482252,
+      "tag": "0010_lease_terms",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792738490922,
+      "tag": "0011_lease_terms_rls",
+      "breakpoints": true
     }
   ]
 }

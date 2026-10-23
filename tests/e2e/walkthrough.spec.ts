@@ -201,13 +201,23 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     await expect(
       page.locator("details summary").filter({ hasText: l.description }),
     ).toContainText(formatINR(l.taxablePaise));
-  for (const amount of [
-    kalinga.totals.taxable,
-    kalinga.totals.cgst,
-    kalinga.totals.roundOff,
-    kalinga.expectedTds.amount,
-  ])
-    await expect(visible(page, formatINR(amount))).toBeVisible();
+  // Each total on its own labelled row, so CGST and SGST (the same amount)
+  // are both checked, not one match found twice.
+  for (const [label, amount] of [
+    ["Before GST", kalinga.totals.taxable],
+    ["CGST", kalinga.totals.cgst],
+    ["SGST", kalinga.totals.sgst],
+    ["Round off", kalinga.totals.roundOff],
+  ] as const)
+    await expect(
+      page
+        .locator("p")
+        .filter({ visible: true })
+        .filter({ has: page.getByText(label, { exact: true }) }),
+    ).toHaveText(`${label}${formatINR(amount)}`);
+  await expect(
+    visible(page, formatINR(kalinga.expectedTds.amount)),
+  ).toBeVisible();
   await expect(
     page.locator("details summary").filter({ hasText: /^Total/ }),
   ).toContainText(formatINR(kalinga.totals.grandTotal));

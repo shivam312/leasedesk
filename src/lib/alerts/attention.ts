@@ -234,12 +234,86 @@ export function needsAttention(input: AttentionInput): AttentionItem[] {
   );
 }
 
+/** How many unpaid tenants Today lists one by one, oldest first. */
+export const TODAY_UNPAID_SHOWN = 5;
+
+export type TodayItem =
+  | AttentionItem
+  /** After the 5 oldest: every unpaid tenant's count and total, linking to all of them. */
+  | {
+      kind: "overdue_all";
+      key: string;
+      sortDate: PlainDate;
+      count: number;
+      totalPaise: Paise;
+    }
+  /** Two or more rent increases due on the same day. */
+  | {
+      kind: "increases";
+      key: string;
+      sortDate: PlainDate;
+      dates: CriticalDateRow[];
+      daysAway: number;
+    };
+
+/**
+ * The Today screen's list, kept short: the 5 oldest unpaid tenants, then one
+ * card with every unpaid tenant's count and total; rent increases due on the
+ * same day share one card. The daily email keeps the full list.
+ */
+export function todayList(items: readonly AttentionItem[]): TodayItem[] {
+  const overdue = items.filter((i) => i.kind === "overdue");
+  const increases = new Map<PlainDate, CriticalDateRow[]>();
+  for (const i of items)
+    if (i.kind === "date" && i.date.type === "escalation")
+      increases.set(i.date.date, [
+        ...(increases.get(i.date.date) ?? []),
+        i.date,
+      ]);
+  const out: TodayItem[] = [];
+  let shown = 0;
+  for (const item of items) {
+    if (item.kind === "overdue") {
+      shown++;
+      if (shown <= TODAY_UNPAID_SHOWN) out.push(item);
+      if (shown === TODAY_UNPAID_SHOWN && overdue.length > TODAY_UNPAID_SHOWN)
+        out.push({
+          kind: "overdue_all",
+          key: "overdue_all",
+          sortDate: item.sortDate,
+          count: overdue.length,
+          totalPaise: sumPaise(overdue.map((o) => o.amountPaise)),
+        });
+      continue;
+    }
+    if (item.kind === "date" && item.date.type === "escalation") {
+      const same = increases.get(item.date.date)!;
+      if (same.length > 1) {
+        // The first of the day's increases stands for all of them.
+        if (same[0] === item.date)
+          out.push({
+            kind: "increases",
+            key: `increases:${item.date.date}`,
+            sortDate: item.sortDate,
+            dates: same,
+            daysAway: item.daysAway,
+          });
+        continue;
+      }
+    }
+    out.push(item);
+  }
+  return out;
+}
+
 /**
  * The item whose button is the screen's one filled (main) button: the first
  * on the list that makes or sends invoices. The rest are outlined
  * (docs/UX_PRINCIPLES.md, screen checklist).
  */
-export function mainActionKey(items: readonly AttentionItem[]): string | null {
+export function mainActionKey(
+  items: readonly { kind: string; key: string }[],
+): string | null {
   return (
     items.find((i) => i.kind === "not_made" || i.kind === "not_sent")?.key ??
     null

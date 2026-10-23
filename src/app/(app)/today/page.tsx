@@ -19,8 +19,9 @@ import {
   mainActionKey,
   needsAttention,
   SNOOZE_DAYS,
+  todayList,
   unpaidTotals,
-  type AttentionItem,
+  type TodayItem,
 } from "@/lib/alerts/attention";
 import { attentionInput, hasLeases, monthTotals } from "@/lib/alerts/queries";
 import { appDb, requireMember } from "@/lib/auth";
@@ -69,7 +70,7 @@ async function Today() {
   const data = await runScoped(appDb, member, async (s) => {
     const input = await attentionInput(s, today);
     const totals = await monthTotals(s, today);
-    const items = needsAttention(input);
+    const items = todayList(needsAttention(input));
     // The one-tap WhatsApp reminder for each tenant's oldest late invoice,
     // and who has no email for each month waiting to be sent.
     const whatsapp = new Map<string, WhatsappReminder>();
@@ -261,7 +262,7 @@ function Item({
   whatsapp,
   noEmail,
 }: {
-  item: AttentionItem;
+  item: TodayItem;
   canBill: boolean;
   canLease: boolean;
   /** This item's button is the screen's one filled button. */
@@ -309,6 +310,18 @@ function Item({
         </>
       );
     }
+    case "overdue_all":
+      return (
+        <>
+          <Heading
+            title={`${item.count} tenants haven't paid ${formatINR(item.totalPaise)} in all`}
+            detail="The oldest five are above. Each amount is what they're asked to pay, after the TDS they may keep back."
+          />
+          <Link href="/reports/ageing" className={linkButton}>
+            See all {item.count}
+          </Link>
+        </>
+      );
     case "not_made": {
       const label = formatMonth(item.month);
       return (
@@ -387,6 +400,44 @@ function Item({
           >
             See missing certificates
           </Link>
+        </>
+      );
+    case "increases":
+      return (
+        <>
+          <Heading
+            title={`${item.dates.length} rent increases ${inDays(item.daysAway)}`}
+            badge={
+              item.daysAway <= 7 ? (
+                <Badge tone="warn">This week</Badge>
+              ) : undefined
+            }
+            detail={`All on ${formatDate(item.sortDate)}.`}
+          />
+          <ul className="flex flex-col divide-y text-sm">
+            {item.dates.map((d) => (
+              <li
+                key={d.id}
+                className="flex flex-wrap items-center justify-between gap-2 py-2"
+              >
+                <Link
+                  href={`/leases/${d.leaseId}`}
+                  className="inline-flex min-h-11 items-center font-medium break-words hover:underline md:min-h-0"
+                >
+                  {d.tenantName} · {d.buildingName}
+                </Link>
+                {canLease && (
+                  <DateActions
+                    dateId={d.id}
+                    what={`Rent increase for ${d.tenantName}`}
+                    markDone={markDateDoneAction}
+                    snooze={snoozeDateAction}
+                    snoozeDays={SNOOZE_DAYS}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
         </>
       );
     case "date": {

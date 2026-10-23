@@ -22,7 +22,7 @@ const asDb = (tx: TestTx) => tx as unknown as Transactional;
 
 // November's invoice T/26-27/0001: ₹1,38,060 with ₹11,700 TDS expected,
 // so the tenant pays ₹1,26,360.
-async function imported(tx: TestTx) {
+async function imported(tx: TestTx, deposit = "1,26,360.00") {
   const { a, ctx, invoice } = await madeDraft(tx);
   await runScoped(asDb(tx), ctx, async (s) => {
     await issueInvoice(s, invoice.id, new Date("2026-11-01T04:30:00Z"));
@@ -36,7 +36,7 @@ async function imported(tx: TestTx) {
       fileName: "nov.csv",
       rows: [
         ["Date", "Narration", "Deposit"],
-        ["10/11/2026", "NEFT CR-A TENANT-INV T/26-27/0001", "1,26,360.00"],
+        ["10/11/2026", "NEFT CR-A TENANT-INV T/26-27/0001", deposit],
         ["12/11/2026", "INTEREST CREDIT", "123.45"],
       ],
       mapping: {
@@ -145,6 +145,40 @@ describe.skipIf(skipDbTests)("bank matching", () => {
           "2026-11-20",
         ),
       );
+      await expect(
+        runScoped(asDb(tx), ctx, (s) =>
+          confirmLine(s, lines[0]!.line.id, a.tenant.id, "2026-11-20"),
+        ),
+      ).rejects.toThrow(/has changed since this was suggested/);
+    });
+  });
+
+  it("refuses when the suggested invoice was paid by hand, even with no TDS", async () => {
+    await inRollback(async (tx) => {
+      // ₹1,38,060 in full: suggested for T/26-27/0001 with no TDS.
+      const { a, ctx, invoice, lines } = await imported(tx, "1,38,060.00");
+      expect(lines[0]!.line).toMatchObject({
+        suggestedInvoiceIds: [invoice.id],
+        suggestedTdsAmount: 0,
+      });
+      await runScoped(asDb(tx), ctx, (s) =>
+        recordPayment(
+          s,
+          {
+            tenantId: a.tenant.id,
+            receivedDate: "2026-11-09",
+            amountReceivedPaise: 13_806_000,
+            tdsPaise: 0,
+            mode: "cheque",
+            reference: null,
+            note: null,
+            allocations: "auto",
+          },
+          "2026-11-20",
+        ),
+      );
+      // Still TDS ₹0, but nothing for it to pay: look again, don't record
+      // ₹1,38,060 as credit without asking.
       await expect(
         runScoped(asDb(tx), ctx, (s) =>
           confirmLine(s, lines[0]!.line.id, a.tenant.id, "2026-11-20"),

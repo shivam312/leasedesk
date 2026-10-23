@@ -221,12 +221,16 @@ export async function confirmLine(
     settings,
   });
   const tdsPaise = m?.tdsPaise ?? 0;
-  // The user confirmed the TDS shown with the suggestion; if it has
-  // changed since (another payment, a credit note), they must look again.
+  // The user confirmed the invoices and TDS shown with the suggestion; if
+  // either has changed since (another payment, a credit note), they must
+  // look again.
+  const sameInvoices =
+    JSON.stringify(m?.invoiceIds ?? []) ===
+    JSON.stringify(line.suggestedInvoiceIds ?? []);
   if (
     tenantId === line.suggestedTenantId &&
     line.suggestedTdsAmount !== null &&
-    tdsPaise !== line.suggestedTdsAmount
+    (tdsPaise !== line.suggestedTdsAmount || !sameInvoices)
   )
     throw new PaymentError(
       `What ${tenant.name} owes has changed since this was suggested. Check the line again before recording it.`,

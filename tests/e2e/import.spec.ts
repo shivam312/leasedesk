@@ -1,19 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { utils, write } from "xlsx";
-import { addGstin, signUpNewOwner } from "./helpers";
-
-/** An .xlsx file with these sheets, for setInputFiles. */
-function workbook(sheets: Record<string, string[][]>) {
-  const book = utils.book_new();
-  for (const [name, rows] of Object.entries(sheets))
-    utils.book_append_sheet(book, utils.aoa_to_sheet(rows), name);
-  return {
-    name: "import.xlsx",
-    mimeType:
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    buffer: write(book, { type: "buffer", bookType: "xlsx" }) as Buffer,
-  };
-}
+import { addGstin, signUpNewOwner, workbook } from "./helpers";
 
 const BUILDINGS = [
   "Building name",

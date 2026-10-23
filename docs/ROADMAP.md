@@ -131,7 +131,7 @@ Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: the lease import'
 ## M8. Pilot readiness (week 10)
 
 - [x] Sentry and error reporting in code, a no-op without `SENTRY_DSN`
-- [ ] Full end-to-end test: new org → import → billing run → send → payment → reports
+- [x] Full end-to-end test: new org → import → billing run → send → payment → reports (`tests/e2e/journey.spec.ts`)
 - [ ] UX review of every screen by the `ux-reviewer` agent
 - [ ] (human) Create Sentry, Supabase cloud (Mumbai), Vercel and Inngest accounts; put the keys in `.env.local`
 - [ ] (human) Set up the staging environment and turn on database backups

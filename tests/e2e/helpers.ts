@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { utils, write } from "xlsx";
 
 /** A fresh account and organization for one test (the local stack doesn't confirm emails). */
 export async function signUpNewOwner(page: Page) {
@@ -116,4 +117,17 @@ export async function openFirstInvoice(page: Page) {
     .first()
     .click();
   await page.waitForURL(/\/billing\/invoices\/[0-9a-f-]{36}$/);
+}
+
+/** An .xlsx file with these sheets, for setInputFiles. */
+export function workbook(sheets: Record<string, string[][]>) {
+  const book = utils.book_new();
+  for (const [name, rows] of Object.entries(sheets))
+    utils.book_append_sheet(book, utils.aoa_to_sheet(rows), name);
+  return {
+    name: "import.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: write(book, { type: "buffer", bookType: "xlsx" }) as Buffer,
+  };
 }

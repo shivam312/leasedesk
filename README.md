@@ -40,7 +40,7 @@ You need Docker Desktop (running) and the Supabase CLI (`brew install supabase/t
 ```bash
 supabase start      # local Postgres, Auth and Storage; prints the URLs and keys
 pnpm db:migrate     # apply the migrations in drizzle/
-pnpm db:seed        # load the demo organization (2 buildings, 40 tenants, 45 leases)
+pnpm db:seed        # load the development data (2 buildings, 40 tenants, 45 leases; no login)
 supabase stop       # when you're done
 ```
 
@@ -48,10 +48,15 @@ supabase stop       # when you're done
 - After changing the schema in `src/lib/db/schema/`, run `pnpm db:generate` and read the new SQL in `drizzle/`.
 - `pnpm db:reset` wipes the local database and runs migrate and seed again.
 - Studio (a table browser) is at http://127.0.0.1:54323.
-- To try the app, open http://localhost:3000 and create an account. The seeded demo organization has no login yet.
+- To try the app, open http://localhost:3000 and create an account, or load the demo below and log in as its owner.
 - `db:migrate` and `db:seed` refuse to run against a database that isn't on your machine. To do it on purpose, prefix the command with `ALLOW_REMOTE_DB=yes`.
 - Database tests (`*.db.test.ts`) run against the local stack, so apply the migrations first (`pnpm db:migrate`); a missing table makes them fail. `SKIP_DB_TESTS=1` skips them all.
 - If `pnpm` says it's version 8, a Homebrew pnpm is ahead of the project's one on your `PATH`. Run `brew uninstall pnpm`, or `corepack enable`.
+
+### Demo and walkthrough
+
+- `pnpm db:seed:demo` resets and loads "Sharma Estates" (2 buildings, 45 tenants, three months of sent invoices and payments, this month unbilled) and prints the login `demo@sharma-estates.example` with a new password, the payment to record by hand, and the bank statement to import (`.local-demo/hdfc-statement.csv`). Local database only. The 10-minute landlord demo on it is `docs/DEMO_SCRIPT.md`.
+- `pnpm walkthrough` reseeds the demo and clicks through a month on the dev server (it starts `pnpm dev` if needed), saving numbered screenshots in `docs/walkthrough/screens/`, videos in `docs/walkthrough/videos/` (not in git), and `docs/walkthrough/index.html` with a caption per screenshot. The same script runs inside `pnpm test:e2e` as a test of the amounts on screen (D43, D44).
 
 ### Email and background jobs
 

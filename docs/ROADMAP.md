@@ -4,7 +4,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 Each task is one commit. Tasks tagged `(human)` need a person and are listed in `docs/DECISIONS_NEEDED.md` under Human tasks; the pipeline skips them. Tasks tagged `(blocked: D-xxx)` wait for that decision. See `PIPELINE.md`.
 
-**Current milestone:** M5a
+**Current milestone:** M8 (pilot readiness). Every pipeline task is done; only `(human)` tasks are left, in M4, M5 and M8, and M8 stays open until they are.
 
 ## M0. Project setup (week 3)
 
@@ -106,7 +106,7 @@ Wrapped up on 2026-10-23 (report: `docs/milestones/M5.md`); D-024 (the open Code
 - [x] Demo script: `docs/DEMO_SCRIPT.md`, a 10-minute spoken script for a landlord meeting on the demo data, with the exact clicks.
 - [x] The walkthrough doubles as an end-to-end test in `pnpm test:e2e`, asserting the key amounts on screen match the billing engine's output for the seeded leases.
 
-Finished on 2026-10-24 (D43, D44). Reviewed on 2026-10-24: nothing in M5a touches billing, invoices, payments or screens, so the billing and UX reviewers weren't needed. Fixed: the walkthrough captions take the TDS quarter, its due date and the financial year from the seed date instead of October 2026 (`demoTdsQuarters`), `removeDemo` refuses a non-local database itself, and the demo deposits are worked out in integer paise (`demoDeposit`); the demo script marks its date-relative figures. The rest is in `docs/BACKLOG.md`; no open questions, TODOs or new founder decisions. 990 unit and database tests pass.
+Finished on 2026-10-24 (D43, D44). Reviewed on 2026-10-24: nothing in M5a touches billing, invoices, payments or screens, so the billing and UX reviewers weren't needed. Fixed: the walkthrough captions take the TDS quarter, its due date and the financial year from the seed date instead of October 2026 (`demoTdsQuarters`), `removeDemo` refuses a non-local database itself, and the demo deposits are worked out in integer paise (`demoDeposit`); the demo script marks its date-relative figures. The rest is in `docs/BACKLOG.md`; no TODOs or new settings. Codex reviewed it twice: its organization-scoping and explain-panel points are fixed, and its last point (deposits in decimals) was fixed just after its second round and is D-031. Wrapped up on 2026-10-24 (report: `docs/milestones/M5A.md`); 990 unit and database tests pass.
 
 ## M6. Today screen and alerts (week 8)
 

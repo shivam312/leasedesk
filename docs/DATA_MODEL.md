@@ -2,7 +2,7 @@
 
 Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `created_at`, `updated_at`, and row-level security restricting rows to members of the organization. Money columns are `bigint` paise, percentages are `integer` basis points, areas are `integer` hundredths of a sq ft, dates are `date`. Statuses are Postgres enums.
 
-**Status (M2, in progress):** built so far: `organizations`, `memberships`, `billing_entities` (`src/lib/db/schema/organizations.ts`); `buildings`, `floors`, `units` (`property.ts`). Child tables reference their parent together with `organization_id` (composite foreign keys), so a row can never point at another organization's row. Every table is created with row-level security on; until its policies exist (M2 RLS task), signed-in users can't read it at all. Database tests are `*.db.test.ts` and run against the local stack inside a rolled-back transaction (`src/lib/db/__tests__/harness.ts`). Schema files go in `src/lib/db/schema/` (one file per table group below, re-exported from `index.ts`), migrations in `drizzle/` (D12). Drizzle uses `casing: "snake_case"`, so TypeScript names are camelCase and columns are the snake_case names written here.
+**Status (M2, in progress):** built so far: `organizations`, `memberships`, `billing_entities` (`src/lib/db/schema/organizations.ts`); `buildings`, `floors`, `units` (`property.ts`); `tenants`, `tenant_contacts` (`tenants.ts`). Child tables reference their parent together with `organization_id` (composite foreign keys), so a row can never point at another organization's row. Every table is created with row-level security on; until its policies exist (M2 RLS task), signed-in users can't read it at all. Database tests are `*.db.test.ts` and run against the local stack inside a rolled-back transaction (`src/lib/db/__tests__/harness.ts`). Schema files go in `src/lib/db/schema/` (one file per table group below, re-exported from `index.ts`), migrations in `drizzle/` (D12). Drizzle uses `casing: "snake_case"`, so TypeScript names are camelCase and columns are the snake_case names written here.
 
 **Settings columns:** `organizations`, `billing_entities`, `buildings`, `tenants` and `leases` each have `settings` (jsonb, default `{}`). Keys and defaults are in `docs/SETTINGS.md`; only values that differ from the default are stored. They're validated by `src/lib/settings/schema.ts` and read only through `src/lib/settings/resolve.ts` (lease → tenant → building → organization → default; billing-entity keys apply to that entity's invoice series).
 
@@ -24,9 +24,9 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 ## Tenants and leases
 
-**tenants**: company_name, gstin (nullable), pan, billing_address, state_code, TDS per charge type (`docs/BILLING_RULES.md` section 10): deducts_tds_rent, tds_rate_bp_rent, deducts_tds_cam, tds_rate_bp_cam, deducts_tds_parking, tds_rate_bp_parking, deducts_tds_other, tds_rate_bp_other (utilities, signage, other), settings (jsonb), notes.
+**tenants**: company_name, gstin (nullable), pan, billing_address, state_code, TDS per charge type (`docs/BILLING_RULES.md` section 10): deducts_tds_rent, tds_rate_bp_rent, deducts_tds_cam, tds_rate_bp_cam, deducts_tds_parking, tds_rate_bp_parking, deducts_tds_other, tds_rate_bp_other (utilities, signage, other); TDS columns default to on at 1000 bp, as for a company, settings (jsonb), notes.
 
-**tenant_contacts**: tenant_id, name, role (`billing`, `admin`, `legal`, `other`), email, phone, whatsapp (bool), is_primary.
+**tenant_contacts**: tenant_id, name, role (`billing`, `admin`, `legal`, `other`), email, phone, whatsapp (bool), is_primary (at most one per tenant).
 
 **leases**: tenant_id, building_id, status (`draft`, `active`, `in_notice`, `expired`, `terminated`), start_date, end_date, lock_in_end_date, notice_period_months, rent_free_months, rent_free_days, rent_commencement_date (derived, stored), area_basis (`carpet`, `chargeable`), deposit_amount, version (int), replaces_lease_id (for renewals and amendments), signed_document_id, settings (jsonb).
 

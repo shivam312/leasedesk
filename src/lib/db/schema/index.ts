@@ -3,3 +3,4 @@
 
 export * from "./organizations";
 export * from "./property";
+export * from "./tenants";

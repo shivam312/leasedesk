@@ -86,6 +86,7 @@ async function main() {
         // A building-level override, so the settings screens have one to show.
         settings: { "invoice.dueDays": 10 },
       });
+      await seedTenants(tx, org.id);
     });
     console.info(`Seeded the demo organization into the ${where}.`);
   } finally {
@@ -141,6 +142,110 @@ async function seedBuilding(
     }),
   );
   await tx.insert(schema.units).values(units);
+}
+
+const TENANT_NAMES = [
+  "Acme Software",
+  "Bharat Logistics",
+  "Coastal Foods",
+  "Deccan Pharma",
+  "Everest Consulting",
+  "Fortune Textiles",
+  "Ganga Finance",
+  "Himalaya Travels",
+  "Indus Analytics",
+  "Jaipur Gems",
+  "Kaveri Engineering",
+  "Lotus Clinics",
+  "Malabar Exports",
+  "Narmada Infra",
+  "Orbit Media",
+  "Pinnacle Legal",
+  "Quantum Labs",
+  "Rajdhani Caterers",
+  "Sahyadri Systems",
+  "Tata Street Cafe",
+  "Udaipur Crafts",
+  "Vindhya Steel",
+  "Western Ghats Coffee",
+  "Yamuna Insurance",
+  "Zenith Architects",
+  "Aravali Learning",
+  "Brahmaputra Tea",
+  "Chola Motors",
+  "Dhruv Diagnostics",
+  "Ellora Designs",
+  "Falcon Security",
+  "Godavari Agro",
+  "Hampi Hospitality",
+  "Iris Optics",
+  "Jhelum Apparel",
+  "Konark Realty",
+  "Lakshmi Jewellers",
+  "Meghdoot Couriers",
+  "Nilgiri Wellness",
+  "Omkar Printers",
+];
+
+/** 40 tenants: mostly companies that deduct TDS; a few proprietors who don't, and some without a GSTIN. */
+async function seedTenants(tx: Tx, organizationId: string) {
+  const rows = TENANT_NAMES.map((name, i) => {
+    const isCompany = i % 7 !== 3;
+    const stateCode = i % 2 === 0 ? "27" : "29";
+    // PAN: 5 letters (the 4th is C for a company, P for a person), 4 digits, 1 letter.
+    const letter = (n: number) => String.fromCharCode(65 + (n % 26));
+    const pan = `AAB${isCompany ? "C" : "P"}${letter(i)}${1000 + i * 37}${letter(i + 5)}`;
+    const company = {
+      organizationId,
+      companyName: isCompany ? `${name} Pvt Ltd` : name,
+      gstin: i % 9 === 5 ? null : `${stateCode}${pan}1Z${(i % 9) + 1}`,
+      pan,
+      billingAddress: `${100 + i}, ${stateCode === "27" ? "Andheri East, Mumbai" : "Whitefield, Bengaluru"}`,
+      stateCode,
+      notes: i === 0 ? "Pays by NEFT on the 5th." : null,
+    };
+    if (isCompany) {
+      // One company deducts no TDS on parking, as some do (D10).
+      return i === 2 ? { ...company, deductsTdsParking: false } : company;
+    }
+    return {
+      ...company,
+      deductsTdsRent: false,
+      deductsTdsCam: false,
+      deductsTdsParking: false,
+      deductsTdsOther: false,
+    };
+  });
+  const tenants = await tx.insert(schema.tenants).values(rows).returning();
+
+  const contacts = tenants.flatMap((tenant, i) => {
+    const slug = TENANT_NAMES[i]!.toLowerCase().replace(/[^a-z]+/g, "");
+    const primary = {
+      organizationId,
+      tenantId: tenant.id,
+      name: `Accounts, ${TENANT_NAMES[i]}`,
+      role: "billing" as const,
+      email: `accounts@${slug}.example`,
+      phone: `+9198${String(20000000 + i * 1234567).slice(0, 8)}`,
+      whatsapp: true,
+      isPrimary: true,
+    };
+    if (i % 3 !== 0) return [primary];
+    return [
+      primary,
+      {
+        organizationId,
+        tenantId: tenant.id,
+        name: `Admin, ${TENANT_NAMES[i]}`,
+        role: "admin" as const,
+        email: `admin@${slug}.example`,
+        phone: null,
+        whatsapp: false,
+        isPrimary: false,
+      },
+    ];
+  });
+  await tx.insert(schema.tenantContacts).values(contacts);
 }
 
 main().catch((error: unknown) => {

@@ -35,7 +35,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 
 - [x] Schema: organizations, memberships, billing entities (see `docs/DATA_MODEL.md`, including the `settings` jsonb columns)
 - [x] Schema: buildings, floors, units
-- [ ] Schema: tenants (TDS per charge type) and tenant contacts
+- [x] Schema: tenants (TDS per charge type) and tenant contacts
 - [ ] Row-level security policies and org-scoped query helpers, with tests that one org can't read another's data
 - [ ] Activity log helper
 - [ ] Settings system: Zod schema in `src/lib/settings/schema.ts` with every key and default in `docs/SETTINGS.md`

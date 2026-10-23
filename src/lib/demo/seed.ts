@@ -10,6 +10,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { compareDates, monthOf, type PlainDate } from "@/lib/billing/dates";
 import { only } from "@/lib/db/rows";
 import * as schema from "@/lib/db/schema";
+import { databaseUrl, isLocalDatabaseUrl } from "@/lib/db/url";
 import {
   runAsSystem,
   runScoped,
@@ -80,9 +81,14 @@ export function demoPassword(): string {
  * Remove the demo organization and its login. Sent invoices, payments and
  * the activity log are append-only (their triggers refuse deletes, D4), so
  * this turns triggers off for its own transaction; only ever against the
- * local database, and only rows of the organization named "Sharma Estates".
+ * local database (it refuses any other, with no override), and only rows of
+ * the organization named "Sharma Estates".
  */
 export async function removeDemo(db: Transactional) {
+  if (!isLocalDatabaseUrl(databaseUrl()))
+    throw new Error(
+      "The demo seed deletes and rebuilds an organization, so it only runs against the local database.",
+    );
   await db.transaction(async (tx) => {
     const orgs = await tx
       .select({ id: schema.organizations.id })
@@ -127,7 +133,7 @@ export async function seedDemo(
   });
   if (error || !data.user || !data.session)
     throw new Error(
-      `Couldn't create the demo login: ${error?.message ?? "email confirmation is on"}`,
+      `Couldn't create the demo login: ${error?.message ?? `Supabase Auth returned no session for ${DEMO_EMAIL}; either that login still exists or email confirmation is on in supabase/config.toml`}`,
     );
   const userId = data.user.id;
 

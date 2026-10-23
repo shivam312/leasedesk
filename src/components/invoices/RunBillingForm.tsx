@@ -10,12 +10,15 @@ export function RunBillingForm({
   month,
   monthLabel,
   hasDrafts,
+  primary = !hasDrafts,
   action,
 }: {
   month: string;
   monthLabel: string;
   /** Running again replaces drafts, so say so. */
   hasDrafts: boolean;
+  /** A filled button; by default only for a first run. */
+  primary?: boolean;
   action: (state: FormState, form: FormData) => Promise<FormState>;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
@@ -27,7 +30,7 @@ export function RunBillingForm({
         <Button
           type="submit"
           disabled={pending}
-          variant={hasDrafts ? "outline" : "default"}
+          variant={primary ? "default" : "outline"}
           className="h-11 md:h-9"
           aria-describedby={hintId}
         >

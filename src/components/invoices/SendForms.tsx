@@ -112,6 +112,7 @@ export function SendAllForm({
   count,
   total,
   consequence,
+  primary = true,
   action,
 }: {
   month: string;
@@ -121,6 +122,8 @@ export function SendAllForm({
   total: string;
   /** What sending does, from sendAllConsequence. */
   consequence: string;
+  /** A filled button (the default); outlined when another is the main one. */
+  primary?: boolean;
   action: Action;
 }) {
   const invoicesWord = count === 1 ? "invoice" : "invoices";
@@ -133,7 +136,7 @@ export function SendAllForm({
       confirmLabel={`Send ${count} ${invoicesWord}`}
       pendingLabel="Sending…"
       cancelLabel="Go back"
-      primary
+      primary={primary}
       action={action}
     />
   );

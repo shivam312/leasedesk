@@ -235,6 +235,18 @@ export function needsAttention(input: AttentionInput): AttentionItem[] {
 }
 
 /**
+ * The item whose button is the screen's one filled (main) button: the first
+ * on the list that makes or sends invoices. The rest are outlined
+ * (docs/UX_PRINCIPLES.md, screen checklist).
+ */
+export function mainActionKey(items: readonly AttentionItem[]): string | null {
+  return (
+    items.find((i) => i.kind === "not_made" || i.kind === "not_sent")?.key ??
+    null
+  );
+}
+
+/**
  * The Today numbers that come from open invoices: everything unpaid on sent
  * invoices (TDS not yet recorded included), and how much of what tenants are
  * asked to pay is past its due date (the overdue list's total).

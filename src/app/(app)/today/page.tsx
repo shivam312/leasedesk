@@ -16,6 +16,7 @@ import {
   dateTitle,
   dayCount,
   inDays,
+  mainActionKey,
   needsAttention,
   SNOOZE_DAYS,
   unpaidTotals,
@@ -99,6 +100,7 @@ async function Today() {
     };
   });
   const { items, totals, unpaid } = data;
+  const mainKey = mainActionKey(items);
   const monthLabel = formatMonth(totals.month);
 
   return (
@@ -155,6 +157,7 @@ async function Today() {
                       item={item}
                       canBill={canBill}
                       canLease={canLease}
+                      primary={item.key === mainKey}
                       whatsapp={data.whatsapp.get(item.key)}
                       noEmail={data.noEmail.get(item.key) ?? []}
                     />
@@ -217,12 +220,15 @@ function Item({
   item,
   canBill,
   canLease,
+  primary,
   whatsapp,
   noEmail,
 }: {
   item: AttentionItem;
   canBill: boolean;
   canLease: boolean;
+  /** This item's button is the screen's one filled button. */
+  primary: boolean;
   whatsapp: WhatsappReminder | undefined;
   noEmail: string[];
 }) {
@@ -279,6 +285,7 @@ function Item({
               month={item.month}
               monthLabel={label}
               hasDrafts={false}
+              primary={primary}
               action={runBillingNow}
             />
           ) : (
@@ -306,6 +313,7 @@ function Item({
                 count={item.count}
                 total={formatINR(item.totalPaise)}
                 consequence={sendAllConsequence(noEmail)}
+                primary={primary}
                 action={sendAllInvoices}
               />
             )}

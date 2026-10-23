@@ -3,6 +3,7 @@ import {
   dateShows,
   dateTitle,
   inDays,
+  mainActionKey,
   needsAttention,
   overdueByTenant,
   unpaidTotals,
@@ -186,6 +187,23 @@ describe("needsAttention", () => {
         month: "2026-10",
       },
     ]);
+  });
+});
+
+describe("mainActionKey", () => {
+  it("gives the filled button to the first item to make or send invoices", () => {
+    // September's drafts still waiting, and October's: one main button,
+    // on the older month, which comes first on the list.
+    const items = needsAttention({
+      ...empty,
+      open: [inv({ id: "a", dueDate: "2026-09-08" })],
+      drafts: [
+        { month: "2026-09-01", count: 2, totalPaise: 200_00 },
+        { month: "2026-10-01", count: 3, totalPaise: 300_00 },
+      ],
+    });
+    expect(mainActionKey(items)).toBe("not_sent:2026-09-01");
+    expect(mainActionKey([])).toBeNull();
   });
 });
 

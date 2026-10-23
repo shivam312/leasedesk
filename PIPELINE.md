@@ -52,6 +52,20 @@ Useful options:
 | `node scripts/pipeline.mjs --codex-rounds 3` | More Codex review/fix rounds per milestone (default 2) |
 | `node scripts/pipeline.mjs --no-codex` | Skip the Codex stages |
 
+## The overnight command
+
+One command that finishes the build, audits everything, has the reviewers debate, and builds the audit milestone:
+
+```
+caffeinate -i node scripts/pipeline.mjs --overnight
+```
+
+Who does what: **Opus** builds and fixes, **Fable** is the boss (reviews each milestone, judges the debate, writes the reports), **Codex** is the outside reviewer (independent review of every milestone, the audit, and one side of the debate). Override with `--build-model`, `--boss-model`, `--fix-model`, `--codex-model`.
+
+The debate: Codex and Opus each write a gap analysis without seeing the other's, then each rebuts the other's list item by item with evidence from the code. Fable reads all four documents, rules on every disputed item (`docs/audit/RULINGS.md`), and turns the result into `M9. Audit findings` in the roadmap, which is then built like any other milestone.
+
+Read `docs/audit/SUMMARY.md` in the morning.
+
 ## Audit everything at the end
 
 Once the build is through M7, run:

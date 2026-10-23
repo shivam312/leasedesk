@@ -12,7 +12,9 @@
 //   node scripts/pipeline.mjs --from M3 --to M3   run one milestone
 //   node scripts/pipeline.mjs --dry-run           show what would run
 //   node scripts/pipeline.mjs --fix-model sonnet  use a faster model for fix and review stages
-//   node scripts/pipeline.mjs --audit             after the build: Codex + Claude audit every milestone, then a gap analysis
+//   node scripts/pipeline.mjs --overnight         ONE command: finish the build, audit everything, debate the gaps,
+//                                                 build the audit milestone. Opus builds, Fable is the boss, Codex reviews.
+//   node scripts/pipeline.mjs --audit             Codex + Claude audit every milestone, debate, write the audit milestone
 //   node scripts/pipeline.mjs --no-codex          skip the Codex review stages
 //   node scripts/pipeline.mjs --codex-model gpt-5 pick the Codex model
 //
@@ -47,9 +49,10 @@ const cfg = {
   codexRounds: num(args["codex-rounds"], 2),
   noCodex: Boolean(args["no-codex"]),
   requireCodex: Boolean(args["require-codex"]),
-  buildModel: args["build-model"] || null,
-  fixModel: args["fix-model"] || null,
-  reviewModel: args["review-model"] || args["fix-model"] || null,
+  buildModel: args["build-model"] || (args.overnight ? "opus" : null),
+  fixModel: args["fix-model"] || (args.overnight ? "opus" : null),
+  // The boss model reviews, merges, judges debates and writes the reports.
+  bossModel: args["boss-model"] || args["review-model"] || (args.overnight ? "fable" : null),
   buildTurns: num(args["build-turns"], 60),
   buildRounds: num(args["build-rounds"], 3),
   fixAttempts: num(args["fix-attempts"], 3),
@@ -62,7 +65,9 @@ const cfg = {
   noReview: Boolean(args["no-review"]),
   dryRun: Boolean(args["dry-run"]),
   audit: Boolean(args["audit"]),
+  overnight: Boolean(args["overnight"]),
 };
+cfg.reviewModel = cfg.bossModel;
 const AUDIT_DIR = "docs/audit";
 
 // ---------- main ----------
@@ -78,11 +83,28 @@ function main() {
   preflight();
   const state = readState();
 
+  if (cfg.overnight) {
+    if (!codexEnabled()) finish("failed", "Overnight mode needs the Codex CLI: npm i -g @openai/codex, then codex login.");
+    log(`- Models: build=${cfg.buildModel}, fix=${cfg.fixModel}, boss=${cfg.bossModel}, codex=${cfg.codexModel || "default"}`);
+    log("\n# Overnight: 1/4 finish the build\n");
+    buildMilestones(state);
+    log("\n# Overnight: 2/4 audit and 3/4 debate\n");
+    runAudit();
+    log("\n# Overnight: 4/4 build the audit milestone\n");
+    cfg.to = null;
+    buildMilestones(readState());
+    finish("finished", "Overnight run complete. Read docs/audit/SUMMARY.md first, then docs/milestones/ for the audit milestone.");
+  }
   if (cfg.audit) {
     runAudit();
     finish("finished", "Audit complete. Read docs/audit/SUMMARY.md, then run the pipeline normally to build the audit milestone.");
   }
 
+  buildMilestones(state);
+  finish("finished", "All selected milestones are done.");
+}
+
+function buildMilestones(state) {
   applyAnswers(state);
 
   for (;;) {
@@ -146,8 +168,6 @@ function main() {
     if (cfg.to && mNum(m.id) >= mNum(cfg.to)) break;
     applyAnswers(state); // pick up any answers given while it ran
   }
-
-  finish("finished", "All selected milestones are done.");
 }
 
 // ---------- stages ----------
@@ -267,18 +287,27 @@ function runAudit() {
     commitAll(`docs: audit of ${m.id}`);
   }
 
-  // 2. Two independent gap analyses.
+  // 2. Two independent gap analyses (neither sees the other's).
   const all = { id: "ALL", title: "whole product" };
   log("\n## Gap analysis\n");
   const g = runCodex("gaps", all, gapPromptCodex());
   if (!g.ok) finish("failed", "Codex gap analysis failed.");
   fs.writeFileSync(path.join(AUDIT_DIR, "codex-gaps.md"), reportToMarkdown("Gap analysis (Codex)", g.report));
-  const c = runClaude("gaps", all, gapPromptClaude(), cfg.reviewModel);
+  const c = runClaude("gaps", all, gapPromptClaude(), cfg.fixModel);
   if (!c.ok) finish("failed", "Claude gap analysis failed.");
   commitAll("docs: gap analyses");
 
-  // 3. Merge into a roadmap milestone and a founder summary.
-  const mrg = runClaude("audit-merge", all, auditMergePrompt(milestones), cfg.reviewModel);
+  // 3. Debate: each reviewer rebuts the other's list, item by item, with evidence.
+  log("\n## Debate\n");
+  const cr = runCodex("rebuttal", all, rebuttalPromptCodex(), { schema: debateSchema(), kind: "debate" });
+  if (!cr.ok) finish("failed", "Codex rebuttal failed.");
+  fs.writeFileSync(path.join(AUDIT_DIR, "codex-rebuttal.md"), debateToMarkdown("Codex's rebuttal of Claude's gap list", cr.report));
+  const clr = runClaude("rebuttal", all, rebuttalPromptClaude(), cfg.fixModel);
+  if (!clr.ok) finish("failed", "Claude rebuttal failed.");
+  commitAll("docs: gap debate");
+
+  // 4. The boss rules on every disputed item and writes the audit milestone and the founder summary.
+  const mrg = runClaude("audit-merge", all, auditMergePrompt(milestones), cfg.bossModel);
   if (!mrg.ok) finish("failed", "Audit merge failed.");
   commitAll("docs: audit summary");
   if (!cfg.dryRun) {
@@ -324,14 +353,30 @@ The v1 build is finished and an independent auditor (Codex) has reviewed each mi
 Write docs/audit/claude-gaps.md: compare the product as it exists now against docs/PRODUCT_PLAN.md (v1 scope, Keeping it simple), docs/UX_PRINCIPLES.md and the pilot-readiness goal in docs/ROADMAP.md (M8). Start the dev server, log in with the demo data and click through every flow yourself before writing. Sections: (1) Demo readiness: what would look wrong or break in a 10-minute landlord demo. (2) Pilot readiness: what a real landlord's first month would hit (data import, PDF correctness, Tally export, reminders, TDS, reports). (3) Missing or half-built v1 features. (4) Security, data safety and operations. (5) Simplicity: UX rules broken, jargon, screens with more than one primary action. (6) Technical debt that will bite within 3 months. Each item: one line, concrete, with the file or screen. Order by importance within each section. End with a verdict in plain words for a non-technical founder. Commit as "docs: Claude gap analysis".`;
 }
 
+function rebuttalPromptCodex() {
+  return [
+    "You are one of two independent reviewers of LeaseDesk, a lease and rent billing product for Indian commercial landlords. You wrote docs/audit/codex-gaps.md. The other reviewer (Claude) wrote docs/audit/claude-gaps.md without seeing yours. Now rebut Claude's list.",
+    "",
+    "For every item in docs/audit/claude-gaps.md, take a position: agree (it's real and matters), disagree (it's wrong, already handled, or out of v1 scope; say why with evidence from the code or docs), or modify (real but the fix or priority should change; give the revised fix). Verify in the code before you disagree: cite the file and line. Then, in `summary`, name the three items you think matter most across BOTH lists and the one item you'd drop, with reasons. Be direct; this is a debate a third model will judge, and evidence wins.",
+  ].join("\n");
+}
+
+function rebuttalPromptClaude() {
+  return `${header("rebuttal", null)}
+
+You wrote docs/audit/claude-gaps.md. An independent reviewer (Codex) wrote docs/audit/codex-gaps.md without seeing yours, and has now rebutted your list in docs/audit/codex-rebuttal.md. Read all three.
+
+Write docs/audit/claude-rebuttal.md: for every item in Codex's gap list, take a position: agree, disagree (with evidence from the code or docs, file and line), or modify (revised fix or priority). Then respond to Codex's rebuttal of your items: concede where it's right, hold your ground with evidence where it's wrong. End with the three items you think matter most across both lists and the one you'd drop. Be direct; a third model will judge, and evidence wins. Commit as "docs: Claude rebuttal".`;
+}
+
 function auditMergePrompt(milestones) {
   return `${header("audit-merge", null)}
 
-Two independent gap analyses exist: docs/audit/codex-gaps.md (Codex) and docs/audit/claude-gaps.md (yours), plus per-milestone audit reports in docs/audit/. Merge them:
-1. Where both agree, that's high confidence. Where only one raised it, verify it in the code before keeping it; note disagreements honestly.
+You are the boss: the final judge. Two reviewers, Codex and Claude (Opus), each wrote a gap analysis (docs/audit/codex-gaps.md, docs/audit/claude-gaps.md) and then rebutted each other (docs/audit/codex-rebuttal.md, docs/audit/claude-rebuttal.md). Per-milestone audit reports are in docs/audit/ too. Read all of it, then rule:
+1. Where both agree, keep it. Where they disagree, check the code yourself and decide; write one line per ruling in docs/audit/RULINGS.md (item, who was right, why). Drop items that are out of v1 scope per docs/PRODUCT_PLAN.md, and say so.
 2. Add a milestone "## M9. Audit findings" to docs/ROADMAP.md after M8, one task per item, ordered: demo blockers, then pilot blockers, then the rest. Each task small enough for one commit; tag (human) and (blocked: D-xxx) as usual. Don't duplicate tasks already in M8 or docs/BACKLOG.md; move backlog items in if they matter.
 3. Anything that needs the founder (scope, spend, tax) goes into docs/DECISIONS_NEEDED.md with options and a recommendation.
-4. Write docs/audit/SUMMARY.md for the founder: a one-paragraph verdict (demo-ready? pilot-ready?), the three most important things to do next, a table of all audited milestones (${milestones.map((m) => m.id).join(", ")}) with Codex's verdict and what was fixed today, where the two reviewers disagreed, and the count of M9 tasks and new decisions.
+4. Write docs/audit/SUMMARY.md for the founder: a one-paragraph verdict (demo-ready? pilot-ready?), the three most important things to do next, a table of all audited milestones (${milestones.map((m) => m.id).join(", ")}) with Codex's verdict and what was fixed today, the debate's main disagreements and how you ruled, and the count of M9 tasks and new decisions.
 5. Set "Current milestone" in docs/ROADMAP.md to M8 or M9, whichever has the first unfinished buildable task. Run pnpm typecheck and pnpm test. Commit as "docs: audit summary and M9 audit milestone".`;
 }
 
@@ -398,8 +443,49 @@ function codexReviewContext(m, startSha) {
   ].join("\n");
 }
 
-function runCodex(stage, m, prompt) {
-  fs.writeFileSync(CODEX_SCHEMA, JSON.stringify(codexSchema()));
+function debateSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["summary", "positions"],
+    properties: {
+      summary: { type: "string" },
+      positions: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["item", "position", "evidence", "revised_fix"],
+          properties: {
+            item: { type: "string" },
+            position: { type: "string", enum: ["agree", "disagree", "modify"] },
+            evidence: { type: "string" },
+            revised_fix: { type: "string" },
+          },
+        },
+      },
+    },
+  };
+}
+
+function debateToMarkdown(title, r) {
+  return [
+    `# ${title}`,
+    "",
+    r.summary,
+    "",
+    "| Item | Position | Evidence | Revised fix |",
+    "| --- | --- | --- | --- |",
+    ...r.positions.map((p) => `| ${cell(p.item)} | ${p.position} | ${cell(p.evidence)} | ${cell(p.revised_fix)} |`),
+    "",
+  ].join("\n");
+}
+function cell(s) {
+  return String(s || "").replace(/\|/g, "\\|").replace(/\s+/g, " ");
+}
+
+function runCodex(stage, m, prompt, opts = {}) {
+  fs.writeFileSync(CODEX_SCHEMA, JSON.stringify(opts.schema || codexSchema()));
   const outFile = path.join(REVIEWS, `${m.id}-${stage}.json`);
   const cliArgs = ["exec", "--sandbox", "read-only", "--output-schema", CODEX_SCHEMA, "-o", outFile, "--color", "never"];
   if (cfg.codexModel) cliArgs.push("-m", cfg.codexModel);
@@ -412,7 +498,7 @@ function runCodex(stage, m, prompt) {
     log(`- ▶ ${m.id} ${stage} (Codex) started ${time()}`);
     if (cfg.dryRun) {
       log(`  (dry run) codex exec --sandbox read-only <${prompt.length} character prompt>`);
-      return { ok: true, report: { verdict: "pass", summary: "dry run", must_fix: [], should_fix: [], verified: [] } };
+      return { ok: true, report: opts.kind === "debate" ? { summary: "dry run", positions: [] } : { verdict: "pass", summary: "dry run", must_fix: [], should_fix: [], verified: [] } };
     }
     if (fs.existsSync(outFile)) fs.rmSync(outFile);
     const r = spawnSync(cfg.codexBin, cliArgs, {
@@ -426,9 +512,10 @@ function runCodex(stage, m, prompt) {
     const logFile = path.join(LOGS, `${stamp()}-${m.id}-${stage}-codex.log`);
     fs.writeFileSync(logFile, `${r.stdout || ""}\n\n--- stderr ---\n${r.stderr || ""}\n${r.error ? r.error.message : ""}`);
     const mins = ((Date.now() - started) / 60000).toFixed(0);
-    const report = parseCodexReport(outFile, r.stdout);
+    const report = parseCodexReport(outFile, r.stdout, opts.kind);
     if (r.status === 0 && report) {
-      log(`  ✔ done in ${mins} min: ${report.verdict}, ${report.must_fix.length} must-fix, ${report.should_fix.length} should-fix. ${short(oneLine(report.summary), 300)}`);
+      if (opts.kind === "debate") log(`  ✔ done in ${mins} min: ${report.positions.length} positions. ${short(oneLine(report.summary), 300)}`);
+      else log(`  ✔ done in ${mins} min: ${report.verdict}, ${report.must_fix.length} must-fix, ${report.should_fix.length} should-fix. ${short(oneLine(report.summary), 300)}`);
       return { ok: true, report };
     }
     const text = oneLine(`${r.stderr || ""} ${r.stdout || ""} ${r.error ? r.error.message : ""}`);
@@ -451,7 +538,7 @@ function runCodex(stage, m, prompt) {
   }
 }
 
-function parseCodexReport(outFile, stdout) {
+function parseCodexReport(outFile, stdout, kind) {
   const candidates = [];
   try {
     candidates.push(fs.readFileSync(outFile, "utf8"));
@@ -464,6 +551,13 @@ function parseCodexReport(outFile, stdout) {
     if (start < 0 || end < start) continue;
     try {
       const obj = JSON.parse(text.slice(start, end + 1));
+      if (kind === "debate") {
+        if (obj && Array.isArray(obj.positions)) {
+          obj.summary ??= "";
+          return obj;
+        }
+        continue;
+      }
       if (obj && Array.isArray(obj.must_fix) && Array.isArray(obj.should_fix)) {
         obj.verified ??= [];
         obj.summary ??= "";
@@ -713,7 +807,7 @@ function readRoadmap() {
   const ms = [];
   let cur = null;
   for (const line of fs.readFileSync(ROADMAP, "utf8").split(/\r?\n/)) {
-    const h = line.match(/^##\s+(M\d+)\b\.?\s*(.*)$/);
+    const h = line.match(/^##\s+(M\d+[a-z]?)\b\.?\s*(.*)$/i);
     if (h) {
       cur = { id: h[1].toUpperCase(), title: h[2].trim(), tasks: [] };
       ms.push(cur);
@@ -928,8 +1022,11 @@ function num(v, d) {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? n : d;
 }
+// M5 -> 5, M5a -> 5.1, M5b -> 5.2, so sub-milestones sort between their neighbours.
 function mNum(id) {
-  return Number(String(id).replace(/\D/g, "")) || 0;
+  const m = String(id).match(/(\d+)([a-z])?/i);
+  if (!m) return 0;
+  return Number(m[1]) + (m[2] ? (m[2].toLowerCase().charCodeAt(0) - 96) / 10 : 0);
 }
 function tail(s, n) {
   return s.split(/\r?\n/).slice(-n).join("\n");

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { InvoiceList } from "@/components/invoices/InvoiceList";
 import { RunBillingForm } from "@/components/invoices/RunBillingForm";
@@ -48,6 +49,9 @@ async function Month({
   searchParams: PageProps<"/billing">["searchParams"];
 }) {
   const { month: param } = await searchParams;
+  // Today is request data: Next.js only lets the page read the clock at
+  // request time, not while prerendering.
+  await connection();
   const today = todayInIndia();
   const month = billingMonth(param, today);
   return (

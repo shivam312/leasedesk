@@ -27,7 +27,11 @@ test("an owner changes a billing rule; advanced rules sit under More options", a
   await expect(rounding).toHaveValue("rupee");
   await rounding.selectOption("none");
   await page.getByRole("button", { name: "Save billing rules" }).click();
-  await expect(page.getByText(/Saved\. Invoices not sent yet/)).toBeVisible();
+  await expect(
+    page.getByText(
+      /Saved\. Invoices you make from now on use these rules; sent invoices don't change\./,
+    ),
+  ).toBeVisible();
 
   await page.reload();
   await page.getByText("More options").click();

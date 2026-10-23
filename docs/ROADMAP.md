@@ -67,7 +67,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [ ] (human) Renewal (new version)
 - [ ] (human) Termination
 
-All M3 tasks wait on the Human task "apply the local lease migrations" in `docs/DECISIONS_NEEDED.md`. The schema (`drizzle/0008`–`0011`) and the pure logic for every task (`src/lib/leases/`, with unit tests) are built on branch `m3-leases-schema`. Server actions, screens and Playwright tests come next, once the tables exist.
+All M3 tasks wait on the Human task "apply the local lease migrations" in `docs/DECISIONS_NEEDED.md`. Built on branch `m3-leases-schema` but never run against the database: the schema (`drizzle/0008`–`0011`), the logic for every task (`src/lib/leases/`, unit tests), the server actions (`src/server/actions/leases.ts`) and the screens (lease list, the four-step form with copy and renew, the lease page with End early). Once the tables exist: run the app, add the Playwright test, then tick the tasks.
 
 ## M4. Invoicing (week 7)
 

@@ -124,3 +124,16 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 **Why:** A review suggested "Billing name" for the billing entities on Settings → Business details. But a GSTIN isn't a name: it's the registration every Indian landlord and accountant already knows by that word, and it's printed on every invoice. Renaming it would make the screen harder to match with the invoice.
 **Consequences:** Settings → Business details keeps "GSTINs and bank accounts" and "Add a GSTIN". Plain words still apply around it (for example, the building's state hint says "same state or another state", not "CGST + SGST or IGST").
+
+## D20. The lease form reviews and saves the same input; a saved lease starts active (2026-10-23)
+
+**Why:** The review step must show exactly what will be billed. If the review and the save each read the form their own way, they could disagree.
+**Consequences:**
+- `parseLeaseForm` and `leaseInputFor` (`src/lib/leases/draft.ts`) are the only path from the form to the engine. `previewLease` and `saveLease` (`src/server/actions/leases.ts`) both use them with the lease's resolved settings, and the browser runs `parseLeaseForm` too, for Next.
+- "Save lease" on the review step saves the lease as `active` (`expired` if its last day has already passed). The review step is the confirmation, so there is no separate draft-then-activate step in v1.
+- A renewal is saved as a new version (`replaces_lease_id`, version + 1) for the same tenant, and only then is the old version marked `renewed`. The old version's rows are never edited otherwise. A renewal must start after the old version's last day (`renewalStartProblem`), so the two never overlap, and M4 must keep billing a `renewed` version up to its own end date: it is marked `renewed` when the renewal is saved, usually before it ends.
+
+## D21. Ending a lease early changes end dates, never amounts or rows (2026-10-23)
+
+**Why:** Sent invoices and their charges must stay as they were (CLAUDE.md rule 5), and the safe default is never to bill a tenant for days after they've left.
+**Consequences:** `terminateLease` sets the lease's end date to the tenant's last day, ends open charges on that day, moves the expiry date to it and closes later key dates. A charge that would only start after the exit is left as it is: the engine bills only dates inside the lease, so none of it is ever billed, and nothing is deleted. Anything already billed in advance past the exit date is refunded with a credit note (M4).

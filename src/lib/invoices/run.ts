@@ -3,7 +3,7 @@
 // replaces that month's drafts, so lease changes flow through; sent invoices
 // are never touched. The money comes from the pure engine (draftInvoice).
 
-import { and, eq, gte, inArray, lte, ne } from "drizzle-orm";
+import { eq, gte, inArray, lte, ne } from "drizzle-orm";
 import {
   addMonthsToMonth,
   endOfMonth,
@@ -41,7 +41,10 @@ export type RunResult = {
   runMonth: YearMonth;
   /** Drafts made in this run (including ones that replaced an older draft). */
   drafted: number;
-  /** Leases already sent an invoice for this month, left as they were. */
+  /**
+   * Leases already sent an invoice for this month (including one credited in
+   * full), left as they were.
+   */
   alreadySent: number;
   /** Leases with nothing to bill this month. */
   nothingToBill: number;
@@ -118,6 +121,19 @@ async function leaseTerms(s: Scoped, ids: string[]) {
   return { units, charges, rules, customs };
 }
 
+/**
+ * Leases already billed for the month: their invoice is past draft. An
+ * invoice credited in full (`cancelled`) counts too, so making the month
+ * again never bills a waived month a second time.
+ */
+export function billedLeaseIds(
+  month: readonly { leaseId: string; status: string }[],
+): Set<string> {
+  return new Set(
+    month.filter((i) => i.status !== "draft").map((i) => i.leaseId),
+  );
+}
+
 /** Delete one draft invoice and its lines, logged. */
 export async function deleteDraft(s: Scoped, invoiceId: string) {
   const lines = await s.tx
@@ -152,21 +168,13 @@ export async function runBilling(
       status: invoices.status,
     })
     .from(invoices)
-    .where(
-      s.where(
-        invoices,
-        eq(invoices.runMonth, startOfMonth(runMonth)),
-        ne(invoices.status, "cancelled"),
-      ),
-    )
+    .where(s.where(invoices, eq(invoices.runMonth, startOfMonth(runMonth))))
     // Locked, so an invoice being sent right now is seen as sent once that
     // commits, and never deleted as a draft (D25).
     .for("update");
   for (const draft of month.filter((i) => i.status === "draft"))
     await deleteDraft(s, draft.id);
-  const sent = new Set(
-    month.filter((i) => i.status !== "draft").map((i) => i.leaseId),
-  );
+  const sent = billedLeaseIds(month);
 
   const rows = await billableLeases(s, runMonth);
   const terms = await leaseTerms(
@@ -272,7 +280,7 @@ export async function runBilling(
   return result;
 }
 
-/** A run month's invoices (drafts and sent), by tenant name. */
+/** A run month's invoices (drafts, sent and credited in full), by tenant name. */
 export async function invoicesForMonth(s: Scoped, runMonth: YearMonth) {
   return s.tx
     .select({
@@ -290,14 +298,6 @@ export async function invoicesForMonth(s: Scoped, runMonth: YearMonth) {
     .from(invoices)
     .innerJoin(tenants, eq(tenants.id, invoices.tenantId))
     .innerJoin(buildings, eq(buildings.id, invoices.buildingId))
-    .where(
-      s.where(
-        invoices,
-        and(
-          eq(invoices.runMonth, startOfMonth(runMonth)),
-          ne(invoices.status, "cancelled"),
-        ),
-      ),
-    )
+    .where(s.where(invoices, eq(invoices.runMonth, startOfMonth(runMonth))))
     .orderBy(tenants.companyName);
 }

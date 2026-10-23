@@ -9,7 +9,9 @@ import {
   inRollback,
   type TestTx,
 } from "@/lib/db/__tests__/harness";
+import { issueCreditNote } from "../credit-notes";
 import { runBilling } from "../run";
+import { issueInvoice } from "../send";
 
 const ready = await hasTables("invoices", "invoice_lines");
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
@@ -116,6 +118,38 @@ describe.skipIf(!ready)(
         expect(
           await runScoped(asDb(tx), ctx, (s) => runBilling(s, "2026-11")),
         ).toMatchObject({ drafted: 0 });
+      });
+    });
+
+    it("never bills a month again after its invoice was credited in full", async () => {
+      await inRollback(async (tx) => {
+        const a = await billableOrg(tx);
+        const ctx = { userId: a.userId, organizationId: a.org.id };
+        const run = () =>
+          runScoped(asDb(tx), ctx, (s) => runBilling(s, "2026-11"));
+        await run();
+        const [draft] = await tx.select().from(schema.invoices);
+        await runScoped(asDb(tx), ctx, (s) =>
+          issueInvoice(s, draft!.id, new Date("2026-11-01T04:30:00Z")),
+        );
+        const lines = await tx
+          .select()
+          .from(schema.invoiceLines)
+          .where(eq(schema.invoiceLines.invoiceId, draft!.id));
+        await runScoped(asDb(tx), ctx, (s) =>
+          issueCreditNote(s, {
+            invoiceId: draft!.id,
+            date: "2026-11-05",
+            reason: "waiver",
+            note: null,
+            lines: lines.map((l) => ({
+              lineId: l.id,
+              taxablePaise: l.taxableAmount,
+            })),
+          }),
+        );
+        expect(await run()).toMatchObject({ drafted: 0, alreadySent: 1 });
+        expect(await tx.select().from(schema.invoices)).toHaveLength(1);
       });
     });
   },

@@ -79,6 +79,17 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     page.getByRole("heading", { name: `${month} invoices aren't made yet` }),
   ).toBeVisible();
   await shot(page, "1", "today");
+  // The demo's spotlight tenants haven't sent a certificate that's past its
+  // due date, so Today counts them and links to the tracker's missing list.
+  expect(demo.certificatesMissing).toBeGreaterThan(0);
+  await expect(
+    page.getByRole("heading", {
+      name: `${demo.certificatesMissing} TDS ${demo.certificatesMissing === 1 ? "certificate" : "certificates"} missing`,
+    }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "See missing certificates" }).click();
+  await expect(page).toHaveURL(/\/billing\/tds\?fy=\d{4}-\d{2}&missing=1$/);
+  await expect(visible(page, /Certificates missing for/)).toBeVisible();
 
   // The same Today, and the lease list, on a phone.
   const phone = await browser.newContext({
@@ -309,7 +320,15 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
     })
     .click();
   await expect(visible(page, /^Imported \d+ payments received/)).toBeVisible();
-  await page.goto("/billing/bank/match");
+  // Today counts the imported lines not yet matched, and links to matching.
+  await page.goto("/today");
+  await expect(
+    page.getByRole("heading", {
+      name: `${statement.length} payments in your bank statement to match`,
+    }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Match payments" }).click();
+  await expect(page).toHaveURL("/billing/bank/match");
   await shot(page, "6", "matches");
   await page
     .getByRole("button", { name: `Record ${statement.length} payments` })

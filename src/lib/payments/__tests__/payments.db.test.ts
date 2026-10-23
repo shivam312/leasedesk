@@ -181,6 +181,33 @@ describe.skipIf(skipDbTests)("payments", () => {
     });
   });
 
+  it("keeps a payment applied to nothing as credit, with an invoice unpaid", async () => {
+    await inRollback(async (tx) => {
+      const { a, ctx, invoice } = await sentInvoice(tx);
+      // The form with every invoice set to 0 sends no allocations (not
+      // "auto"): ₹50,000 received, no TDS, all ₹50,000 kept as credit and
+      // the ₹1,38,060 invoice left untouched until "Apply credit".
+      const { allocations } = await runScoped(asDb(tx), ctx, (s) =>
+        recordPayment(
+          s,
+          pay({
+            tenantId: a.tenant.id,
+            amountReceivedPaise: 5_000_000,
+            tdsPaise: 0,
+            allocations: [],
+          }),
+          "2026-11-10",
+        ),
+      );
+      expect(allocations).toEqual([]);
+      expect(await status(tx, invoice.id)).toBe("sent");
+      const credit = await runScoped(asDb(tx), ctx, (s) =>
+        paymentsWithCredit(s, a.tenant.id),
+      );
+      expect(credit.map((c) => c.creditPaise)).toEqual([5_000_000]);
+    });
+  });
+
   it("reverses a payment: invoice unpaid again, TDS stops counting", async () => {
     await inRollback(async (tx) => {
       const { a, ctx, invoice } = await sentInvoice(tx);

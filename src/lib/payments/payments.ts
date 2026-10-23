@@ -32,6 +32,7 @@ import {
   tdsRecords,
   tenants,
 } from "@/lib/db/schema";
+import { paiseSum } from "@/lib/db/rows";
 import type { Scoped } from "@/lib/db/scoped";
 import { formatDate, formatINR } from "@/lib/format";
 import { billingSettings } from "@/lib/settings/billing";
@@ -69,7 +70,7 @@ async function settledBy(s: Scoped, invoiceIds: string[]) {
     s.tx
       .select({
         invoiceId: paymentAllocations.invoiceId,
-        total: sum(paymentAllocations.amountSettled).mapWith(Number),
+        total: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
       })
       .from(paymentAllocations)
       .where(
@@ -82,7 +83,7 @@ async function settledBy(s: Scoped, invoiceIds: string[]) {
     s.tx
       .select({
         invoiceId: creditNotes.invoiceId,
-        total: sum(creditNotes.total).mapWith(Number),
+        total: sum(creditNotes.total).mapWith(paiseSum),
       })
       .from(creditNotes)
       .where(s.where(creditNotes, inArray(creditNotes.invoiceId, invoiceIds)))
@@ -90,7 +91,7 @@ async function settledBy(s: Scoped, invoiceIds: string[]) {
     s.tx
       .select({
         invoiceId: tdsRecords.invoiceId,
-        total: sum(tdsRecords.amount).mapWith(Number),
+        total: sum(tdsRecords.amount).mapWith(paiseSum),
       })
       .from(tdsRecords)
       .innerJoin(payments, eq(payments.id, tdsRecords.paymentId))
@@ -147,7 +148,7 @@ async function creditedLines(s: Scoped, invoiceIds: string[]) {
   const credits = await s.tx
     .select({
       lineId: creditNoteLines.invoiceLineId,
-      taxable: sum(creditNoteLines.taxableAmount).mapWith(Number),
+      taxable: sum(creditNoteLines.taxableAmount).mapWith(paiseSum),
     })
     .from(creditNoteLines)
     .where(
@@ -428,7 +429,7 @@ export async function reversePayment(
   const applied = await s.tx
     .select({
       invoiceId: paymentAllocations.invoiceId,
-      total: sum(paymentAllocations.amountSettled).mapWith(Number),
+      total: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
     })
     .from(paymentAllocations)
     .where(
@@ -507,7 +508,7 @@ export async function paymentsWithCredit(s: Scoped, tenantId: string) {
       tdsDeducted: payments.tdsDeducted,
       applied:
         sql<number>`coalesce(sum(${paymentAllocations.amountSettled}), 0)`.mapWith(
-          Number,
+          paiseSum,
         ),
     })
     .from(payments)
@@ -600,7 +601,7 @@ export async function getPayment(s: Scoped, id: string) {
   const allocations = await s.tx
     .select({
       invoiceId: paymentAllocations.invoiceId,
-      amount: sum(paymentAllocations.amountSettled).mapWith(Number),
+      amount: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
       number: invoices.number,
       invoiceDate: invoices.invoiceDate,
       grandTotal: invoices.grandTotal,

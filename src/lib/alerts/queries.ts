@@ -27,6 +27,7 @@ import {
   payments,
   tenants,
 } from "@/lib/db/schema";
+import { paiseSum } from "@/lib/db/rows";
 import type { Scoped } from "@/lib/db/scoped";
 import { leasesToBill } from "@/lib/invoices/run";
 import { unpaidInvoices } from "@/lib/payments/payments";
@@ -136,7 +137,7 @@ export async function attentionInput(
     .select({
       month: invoices.runMonth,
       count: count(),
-      total: sum(invoices.grandTotal).mapWith(Number),
+      total: sum(invoices.grandTotal).mapWith(paiseSum),
     })
     .from(invoices)
     .where(s.where(invoices, eq(invoices.status, "draft")))
@@ -171,7 +172,7 @@ export async function attentionInput(
 export async function monthTotals(s: Scoped, today: PlainDate) {
   const month = monthOf(today);
   const [billed] = await s.tx
-    .select({ total: sum(invoices.grandTotal).mapWith(Number) })
+    .select({ total: sum(invoices.grandTotal).mapWith(paiseSum) })
     .from(invoices)
     .where(
       s.where(
@@ -182,8 +183,8 @@ export async function monthTotals(s: Scoped, today: PlainDate) {
     );
   const [collected] = await s.tx
     .select({
-      received: sum(payments.amountReceived).mapWith(Number),
-      tds: sum(payments.tdsDeducted).mapWith(Number),
+      received: sum(payments.amountReceived).mapWith(paiseSum),
+      tds: sum(payments.tdsDeducted).mapWith(paiseSum),
     })
     .from(payments)
     .where(

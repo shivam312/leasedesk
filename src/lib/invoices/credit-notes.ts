@@ -19,6 +19,7 @@ import {
   paymentAllocations,
   type creditNoteReason,
 } from "@/lib/db/schema";
+import { paiseSum } from "@/lib/db/rows";
 import type { Scoped } from "@/lib/db/scoped";
 import { formatDate, formatINR } from "@/lib/format";
 import { lockTenantMoney, refreshInvoiceStatus } from "@/lib/payments/payments";
@@ -43,16 +44,16 @@ export async function creditableInvoice(s: Scoped, invoiceId: string) {
   const credited = await s.tx
     .select({
       invoiceLineId: creditNoteLines.invoiceLineId,
-      taxable: sum(creditNoteLines.taxableAmount).mapWith(Number),
-      cgst: sum(creditNoteLines.cgst).mapWith(Number),
-      sgst: sum(creditNoteLines.sgst).mapWith(Number),
-      igst: sum(creditNoteLines.igst).mapWith(Number),
+      taxable: sum(creditNoteLines.taxableAmount).mapWith(paiseSum),
+      cgst: sum(creditNoteLines.cgst).mapWith(paiseSum),
+      sgst: sum(creditNoteLines.sgst).mapWith(paiseSum),
+      igst: sum(creditNoteLines.igst).mapWith(paiseSum),
     })
     .from(creditNoteLines)
     .where(s.where(creditNoteLines, eq(creditNoteLines.invoiceId, invoiceId)))
     .groupBy(creditNoteLines.invoiceLineId);
   const [roundOff] = await s.tx
-    .select({ total: sum(creditNotes.roundOff).mapWith(Number) })
+    .select({ total: sum(creditNotes.roundOff).mapWith(paiseSum) })
     .from(creditNotes)
     .where(s.where(creditNotes, eq(creditNotes.invoiceId, invoiceId)));
   const byLine = new Map(credited.map((c) => [c.invoiceLineId, c]));
@@ -149,13 +150,13 @@ export async function issueCreditNote(s: Scoped, input: IssueCreditNote) {
   // Until D-019 is answered, a credit note never takes off money a payment
   // has already settled, so no payment is left stranded on the invoice.
   const [paid] = await s.tx
-    .select({ total: sum(paymentAllocations.amountSettled).mapWith(Number) })
+    .select({ total: sum(paymentAllocations.amountSettled).mapWith(paiseSum) })
     .from(paymentAllocations)
     .where(
       s.where(paymentAllocations, eq(paymentAllocations.invoiceId, invoice.id)),
     );
   const [creditedSoFar] = await s.tx
-    .select({ total: sum(creditNotes.total).mapWith(Number) })
+    .select({ total: sum(creditNotes.total).mapWith(paiseSum) })
     .from(creditNotes)
     .where(s.where(creditNotes, eq(creditNotes.invoiceId, invoice.id)));
   const paidPaise = paid?.total ?? 0;

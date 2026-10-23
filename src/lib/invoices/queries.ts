@@ -11,6 +11,7 @@ import {
   tenants,
   units,
 } from "@/lib/db/schema";
+import { paiseSum } from "@/lib/db/rows";
 import type { Scoped } from "@/lib/db/scoped";
 import { invoiceDocument } from "./document";
 
@@ -57,7 +58,7 @@ export async function getInvoiceDocument(s: Scoped, id: string) {
   if (!saved) return null;
   const unitCodes = await leaseUnitCodes(s, saved.invoice.leaseId);
   const [credit] = await s.tx
-    .select({ total: sum(creditNotes.total).mapWith(Number) })
+    .select({ total: sum(creditNotes.total).mapWith(paiseSum) })
     .from(creditNotes)
     .where(s.where(creditNotes, eq(creditNotes.invoiceId, id)));
   return invoiceDocument({ ...saved, unitCodes, credited: credit?.total ?? 0 });

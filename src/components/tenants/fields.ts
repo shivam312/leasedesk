@@ -92,8 +92,11 @@ export function tenantFields(
       label: "State",
       type: "select",
       required: true,
-      options: STATE_OPTIONS,
-      defaultValue: t?.stateCode ?? "27",
+      // No default for a new tenant: the state decides CGST + SGST or IGST.
+      options: t
+        ? STATE_OPTIONS
+        : [{ value: "", label: "Choose a state" }, ...STATE_OPTIONS],
+      defaultValue: t?.stateCode ?? "",
     },
     {
       name: "deductsTdsRent",

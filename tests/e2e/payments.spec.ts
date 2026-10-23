@@ -8,6 +8,7 @@ test("an owner records an advance payment, then reverses it", async ({
   await page.goto("/tenants/new");
   await page.getByLabel("Tenant name").fill("Acme Software Pvt Ltd");
   await page.getByLabel("Billing address").fill("101, Andheri East, Mumbai");
+  await page.getByLabel("State").selectOption("27");
   await page.getByLabel("Contact name").fill("Priya Shah");
   await page.getByLabel("Contact email (optional)").fill("accounts@acme.test");
   await page.getByRole("button", { name: "Add tenant" }).click();

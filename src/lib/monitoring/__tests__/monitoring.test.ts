@@ -115,6 +115,49 @@ describe("scrubEvent", () => {
     });
   });
 
+  it("cuts the query string off the Next.js request path and drops unknown contexts", () => {
+    // captureRequestError puts the full path in contexts.nextjs, and a
+    // search like ?q=Acme%20Traders is a tenant's name.
+    const event = scrubEvent({
+      contexts: {
+        nextjs: {
+          request_path: "/billing/payments/new?q=Acme%20Traders",
+          router_kind: "App Router",
+        },
+        details: { message: "Payment failed", paymentId: "p1" },
+        os: { name: "Linux" },
+        state: { form: { tenant: "Acme Traders" } },
+      },
+    });
+    expect(event.contexts).toEqual({
+      nextjs: {
+        request_path: "/billing/payments/new",
+        router_kind: "App Router",
+      },
+      details: { message: "Payment failed", paymentId: "p1" },
+      os: { name: "Linux" },
+    });
+  });
+
+  it("drops local variables from stack frames", () => {
+    const event = scrubEvent({
+      exception: {
+        values: [
+          {
+            type: "Error",
+            value: "x",
+            stacktrace: {
+              frames: [{ function: "f", vars: { gstin: "27AAPFU0939F1ZV" } }],
+            },
+          },
+        ],
+      },
+    });
+    expect(event.exception?.values?.[0]?.stacktrace?.frames).toEqual([
+      { function: "f" },
+    ]);
+  });
+
   it("leaves an event without a request or user alone", () => {
     expect(scrubEvent({})).toEqual({});
   });

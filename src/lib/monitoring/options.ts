@@ -7,7 +7,14 @@ type Env = Record<string, string | undefined>;
 
 /** The parts of a Sentry event we clean before it leaves the server. */
 export type ReportableEvent = {
-  exception?: { values?: { type?: string; value?: string }[] };
+  exception?: {
+    values?: {
+      type?: string;
+      value?: string;
+      stacktrace?: { frames?: { vars?: unknown }[] };
+    }[];
+  };
+  contexts?: { [key: string]: object | undefined };
   message?: unknown;
   logentry?: unknown;
   breadcrumbs?: unknown;
@@ -34,6 +41,23 @@ export type MonitoringOptions = {
 
 const SAFE_HEADERS = new Set(["user-agent", "referer", "content-type"]);
 
+// Contexts that say where and on what the error happened, never what was
+// on screen. `details` is reportError's message and ids; `nextjs` has the
+// request path, whose query string is cut off below. Anything else (a
+// context added later by an integration) is dropped.
+const SAFE_CONTEXTS = new Set([
+  "details",
+  "nextjs",
+  "os",
+  "runtime",
+  "app",
+  "device",
+  "browser",
+  "culture",
+  "cloud_resource",
+  "trace",
+]);
+
 /** An address without its query string or fragment (searches hold names). */
 function withoutQuery(url: string): string {
   return url.split(/[?#]/, 1)[0]!;
@@ -46,7 +70,8 @@ function withoutQuery(url: string): string {
  * error's text is dropped too, keeping only its type: a failed query's
  * message lists the values it tried to save (names, GSTINs, amounts). What
  * failed is still in the report, from reportError's message and ids.
- * Breadcrumbs and extra data go for the same reason.
+ * Breadcrumbs, extra data, stack-frame variables and unknown contexts go
+ * for the same reason; the Next.js request path loses its query string.
  */
 export function scrubEvent<E extends ReportableEvent>(event: E): E {
   if (event.request) {
@@ -73,7 +98,30 @@ export function scrubEvent<E extends ReportableEvent>(event: E): E {
     event.exception.values = event.exception.values.map((e) => ({
       ...e,
       value: e.type ?? "Error",
+      // Local variables (off by default) would hold amounts and GSTINs.
+      ...(e.stacktrace?.frames && {
+        stacktrace: {
+          ...e.stacktrace,
+          frames: e.stacktrace.frames.map((frame) => {
+            const kept = { ...frame };
+            delete kept.vars;
+            return kept;
+          }),
+        },
+      }),
     }));
+  }
+  if (event.contexts) {
+    event.contexts = Object.fromEntries(
+      Object.entries(event.contexts)
+        .filter(([k]) => SAFE_CONTEXTS.has(k))
+        .map(([k, v]) => {
+          const path = v && "request_path" in v ? v.request_path : undefined;
+          return k === "nextjs" && typeof path === "string"
+            ? [k, { ...v, request_path: withoutQuery(path) }]
+            : [k, v];
+        }),
+    );
   }
   delete event.message;
   delete event.logentry;

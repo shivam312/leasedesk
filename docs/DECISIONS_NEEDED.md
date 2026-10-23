@@ -34,6 +34,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-022 | A few paise left after a payment with TDS | ca | no | open |
 | D-023 | Money into one GSTIN's bank account paying another GSTIN's invoices | product | no | open |
 | D-024 | Codex review of M5: unresolved items | product | no | open |
+| D-025 | Codex review of M6: unresolved items | product | no | open |
 
 ## Human tasks
 
@@ -358,6 +359,25 @@ Things only a person can do. Tick them when done.
   - C) Also let a user change what a recorded payment was applied to, without reversing it (a new kind of correction entry)
 - Recommendation: B, because the behaviour is already correct and tested, and a single link makes "credit only" easy to find on a phone without touching how money is booked. C adds a new kind of entry for something reversing already handles.
 - Done meanwhile: A (no code change); the database test above was added. B is small and can be built once answered.
+- Answer:
+
+### D-025: Codex review of M6: unresolved items
+- Status: open
+- Type: product
+- Blocking: no
+- Context: Codex (the independent reviewer) and Claude still disagree on two "must fix" items after two review rounds (`.pipeline/reviews/M6-codex-review-2.md`). Neither changes an amount on an invoice; one is about the "hasn't paid ₹X" figure on Today, the other about reminder days on lease dates. Codex's three "should fix" items are handled: the loading skeleton is built, and the tappable amounts, the Excel import link (M7) and retrying a failed digest email are in `docs/BACKLOG.md`.
+  - **Item 1: TDS subtracted twice from the overdue amount on Today** (`src/lib/alerts/attention.ts`).
+    - Codex says: the overdue total subtracts each open invoice's expected TDS, even when TDS was already recorded against that invoice, so Today could ask a tenant for too little. It wants the expected TDS capped after recorded TDS, and a test with two invoices where TDS was recorded against one.
+    - Claude says: that cap is already there. The expected TDS comes from `unpaidInvoices` (`src/lib/payments/payments.ts`), which uses `remainingExpectedTds`: expected TDS less the TDS already recorded against that invoice, never more than is left to pay (BILLING_RULES section 10, tested in `src/lib/billing/__tests__/allocation.test.ts`). In Codex's example (two ₹1,18,000 invoices with ₹10,000 TDS each, the first part-paid ₹50,000 with its ₹10,000 TDS recorded) Today asks ₹58,000 + ₹1,08,000 = ₹1,66,000, which is correct.
+  - **Item 2: saving Billing rules overwrites reminder days on lease dates** (`src/lib/alerts/dates.ts`, `applyReminderDays`).
+    - Codex says: saving organization settings replaces the reminder days on every open expiry, rent increase and lock-in date, which would wipe any lease-specific reminder days. It wants only dates still on the old default updated, or an override marker.
+    - Claude says: there are no lease-specific reminder days to wipe. `alerts.expiryDays`, `alerts.increaseDays` and `alerts.lockInDays` can only be set for the whole organization (docs/SETTINGS.md, `src/lib/settings/schema.ts`), and no screen edits one date's reminder days. docs/SETTINGS.md says saving Billing rules updates dates not yet done, which is what the function does; notice, renewal-option and custom dates are left alone, and dates already matching are skipped. If per-lease reminder days are added later, this function must then skip those dates.
+- Options:
+  - A) Leave both as now (no code change)
+  - B) Leave the behaviour, but add the tests Codex asked for: two overdue invoices with TDS recorded against one, and a note in `applyReminderDays` that it must skip lease-level values if they are ever added
+  - C) Add per-lease reminder days now (a lease setting and an override marker), so landlords can set different reminders for one lease
+- Recommendation: B, because both behaviours are already correct by the documented rules, and the extra test pins down the exact case Codex worried about at almost no cost. C is a new feature no landlord has asked for yet.
+- Done meanwhile: A (no code change for either item); the loading skeleton was fixed and the other should-fix items were backlogged.
 - Answer:
 
 ## Applied

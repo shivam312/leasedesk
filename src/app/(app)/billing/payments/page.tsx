@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
+import { countLinesToMatch } from "@/lib/bank/match";
 import { recentPayments } from "@/lib/payments/payments";
 
 export const metadata: Metadata = { title: "Payments" };
@@ -37,7 +38,9 @@ export default function PaymentsPage() {
 
 async function Payments() {
   const member = await requireMember();
-  const rows = await runScoped(appDb, member, (s) => recentPayments(s));
+  const [rows, toMatch] = await runScoped(appDb, member, (s) =>
+    Promise.all([recentPayments(s), countLinesToMatch(s)]),
+  );
   const canBill = can(member.role, "manage_billing");
   return (
     <div className="flex flex-col gap-6">
@@ -58,6 +61,17 @@ async function Payments() {
           >
             Import bank statement
           </Link>
+          {toMatch > 0 && (
+            <Link
+              href="/billing/bank/match"
+              className={buttonVariants({
+                variant: "outline",
+                className: "h-11 md:h-9",
+              })}
+            >
+              Match payments ({toMatch})
+            </Link>
+          )}
         </div>
       )}
       {rows.length === 0 && !canBill ? (

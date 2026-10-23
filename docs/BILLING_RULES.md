@@ -120,6 +120,7 @@ Tenants usually deduct TDS before paying rent. Section numbers and thresholds ch
 - Each amount applied ≤ what is left on that invoice, and the total applied ≤ received + TDS (`checkAllocation`). The rest is credit.
 - Overpayments stay as an unallocated credit on the tenant ledger and are applied to the next invoice: "Apply credit" on the tenant page applies each payment's unapplied part, oldest payment and oldest invoice first, with no further TDS. A credit note on a paid invoice (D-019) leaves that invoice over-settled; it shows on the ledger, but isn't yet moved to other invoices (backlog).
 - Payments are never edited. A wrong payment is reversed with a reversal entry and recorded again. The reversal is dated the day it is made, carries the negative amounts, and takes off each invoice exactly what the payment had applied to it; the payment is marked reversed and its TDS records stop counting in every quarter, including the quarter of the original payment (D29). **[CA]** (D-020)
+- A bank credit confirmed on Billing → Payments → Match payments is recorded like a typed payment: dated the bank's date, TDS from the amount (as above, for the tenant chosen), applied first to any invoice whose number is in the bank text, then oldest first (D31).
 - Payments, applying credit, reversals and credit notes for one tenant are serialised (a transaction lock per tenant), so they never interleave.
 
 ## 12. Credit notes

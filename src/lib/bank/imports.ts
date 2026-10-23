@@ -12,6 +12,7 @@ import {
   billingEntities,
 } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
+import { refreshSuggestions } from "./match";
 import { readStatement, type ColumnMapping } from "./statement";
 
 /** A refusal with a message to show as it is. */
@@ -137,6 +138,7 @@ export async function importStatement(
     action: "create",
     after: { ...imported, problems: read.problems },
   });
+  await refreshSuggestions(s);
   if (JSON.stringify(account.columnMapping) !== JSON.stringify(input.mapping))
     await updateLogged(s, bankAccounts, account.id, {
       columnMapping: input.mapping,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import { getImport } from "@/lib/bank/imports";
@@ -66,14 +67,15 @@ async function Import({ params }: { params: Promise<{ id: string }> }) {
         Imported {imp.lineCount} {imp.lineCount === 1 ? "credit" : "credits"}.
         {skipped.length > 0 && ` Left out: ${skipped.join(", ")}.`}
       </p>
-      {lines.some((l) => l.matchStatus === "unmatched") && (
-        <p className="max-w-2xl text-sm">
-          Matching these to tenants&apos; invoices comes next. For now,{" "}
-          <Link href="/billing/payments/new" className="underline">
-            record each payment
-          </Link>{" "}
-          from Billing → Payments.
-        </p>
+      {lines.some(
+        (l) => l.matchStatus === "unmatched" || l.matchStatus === "suggested",
+      ) && (
+        <Link
+          href="/billing/bank/match"
+          className={buttonVariants({ className: "h-11 self-start md:h-9" })}
+        >
+          Match payments
+        </Link>
       )}
       {lines.length === 0 ? (
         <p className="max-w-2xl text-sm">

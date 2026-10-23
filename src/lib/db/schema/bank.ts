@@ -104,6 +104,8 @@ export const bankStatementLines = pgTable(
     matchStatus: matchStatus().notNull().default("unmatched"),
     suggestedTenantId: uuid(),
     suggestedInvoiceIds: uuid().array(),
+    // The TDS the suggestion expects, shown before the user confirms.
+    suggestedTdsAmount: bigint({ mode: "number" }),
     confidence: integer(),
     ...timestamps,
   },

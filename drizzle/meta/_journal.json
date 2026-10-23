@@ -127,6 +127,13 @@
       "when": 1792759248014,
       "tag": "0017_bank_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792760298083,
+      "tag": "0018_bank_suggested_tds",
+      "breakpoints": true
     }
   ]
 }

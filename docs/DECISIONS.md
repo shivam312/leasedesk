@@ -223,3 +223,12 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - The file isn't stored, only the lines read from it (less personal data kept). Server action bodies may be up to 4 MB (`next.config.ts`) to fit a long statement's rows.
 - Excel (.xlsx) files are refused with a message to save as CSV until SheetJS can be installed (Human task).
 - One activity entry per import, with its counts, rather than one per line.
+
+## D31. Bank credits are matched by evidence scores and recorded only when the user confirms (2026-10-23)
+
+**Why:** the india-compliance skill lists the evidence (amount less expected TDS, invoice number in the reference, tenant name, full amount) and says never auto-confirm. A score makes "likely" and "possible" explainable and testable.
+**Consequences:**
+- `matchLine` (`src/lib/bank/matching.ts`, pure): invoice number in the text 50, amount = invoices less expected TDS (within `tds.tolerancePaise` per invoice) 50, tenant name in the description 40 (whole words, company words dropped: the first word, then the start of the second, since banks cut names short; "Nova" never matches "INNOVATIVE"), invoice number only as a whole word or right after "INV"; amounts are tried against the oldest k invoices only, as a typed payment's TDS is (a newer invoice only when its number is named), amount = invoices in full 35; capped at 100. A suggestion needs 40 and is dropped when two tenants tie, so an amount alone that two tenants owe suggests nobody.
+- Suggestions are stored on the line after every import and every confirm (`refreshSuggestions`), not worked out on page load, so viewing never writes.
+- The suggested TDS is stored with the line and shown before confirming; if what the tenant owes has changed by then, confirming refuses and asks the user to look again. Suggestions only change lines still to match (row-locked), so a refresh never undoes a confirm. Reversing a payment recorded from a bank line frees the line to be matched again.
+- "Likely" (75+) lines start ticked; "possible" ones don't. "Record N payments" records each ticked line through `recordPayment` in its own transaction, dated the bank's date, with TDS and invoices from the matcher for the tenant chosen (the invoices it names first, then the oldest), mode guessed from the bank's words, and the line linked (`payments.bank_statement_line_id`, one active payment per line). "Not rent" sets lines aside (`ignored`).

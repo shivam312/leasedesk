@@ -13,7 +13,11 @@ import {
   ImportError,
   importStatement,
 } from "@/lib/bank/imports";
+import { confirmLine, ignoreLines, refreshSuggestions } from "@/lib/bank/match";
 import { runScoped } from "@/lib/db/scoped";
+import { PaymentError } from "@/lib/payments/payments";
+import { todayInIndia } from "@/lib/today";
+import { z } from "zod";
 import { guardedForm } from "./guard";
 
 /** "Add bank account". */
@@ -72,4 +76,110 @@ export async function importStatementAction(
   }
   revalidatePath("/billing/bank");
   redirect(`/billing/bank/imports/${id}`);
+}
+
+const uuid = z.uuid();
+
+/** The ticked lines, each with the tenant chosen for it. */
+function chosenLines(form: FormData) {
+  const ids = form
+    .getAll("line")
+    .filter(
+      (v): v is string => typeof v === "string" && uuid.safeParse(v).success,
+    );
+  return [...new Set(ids)].map((id) => {
+    const tenant = form.get(`tenant_${id}`);
+    return {
+      id,
+      tenantId:
+        typeof tenant === "string" && uuid.safeParse(tenant).success
+          ? tenant
+          : null,
+    };
+  });
+}
+
+async function guarded() {
+  const member = await requireMember();
+  try {
+    requirePermission(member, "manage_billing");
+  } catch (error) {
+    if (error instanceof PermissionError) return { error: error.message };
+    throw error;
+  }
+  return { member };
+}
+
+/**
+ * "Record N payments": each ticked line becomes a payment from the tenant
+ * chosen for it, each in its own transaction, so one problem doesn't stop
+ * the rest. Suggestions for what's left are worked out again afterwards.
+ */
+export async function confirmMatchesAction(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const g = await guarded();
+  if ("error" in g) return { message: g.error };
+  const lines = chosenLines(form);
+  if (lines.length === 0)
+    return { message: "Tick the bank lines to record as payments." };
+  const today = todayInIndia();
+  let recorded = 0;
+  const problems: string[] = [];
+  for (const [index, l] of lines.entries()) {
+    if (!l.tenantId) {
+      problems.push(`Line ${index + 1}: choose the tenant who paid.`);
+      continue;
+    }
+    try {
+      await runScoped(appDb, g.member, (s) =>
+        confirmLine(s, l.id, l.tenantId!, today),
+      );
+      recorded++;
+    } catch (error) {
+      if (error instanceof PaymentError) problems.push(error.message);
+      else {
+        console.error("Confirming a bank line failed", l.id, error);
+        problems.push(
+          "One line couldn't be recorded because something went wrong. Try it again.",
+        );
+      }
+    }
+  }
+  await runScoped(appDb, g.member, (s) => refreshSuggestions(s));
+  revalidatePath("/billing/bank/match");
+  revalidatePath("/billing/payments");
+  revalidatePath("/billing");
+  return {
+    message:
+      recorded > 0
+        ? `Recorded ${recorded} ${recorded === 1 ? "payment" : "payments"}.`
+        : "No payments were recorded.",
+    tone: recorded > 0 ? "success" : "error",
+    problems,
+  };
+}
+
+/** "Not rent": set ticked lines aside (bank interest, refunds, transfers). */
+export async function ignoreLinesAction(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const g = await guarded();
+  if ("error" in g) return { message: g.error };
+  const lines = chosenLines(form);
+  if (lines.length === 0)
+    return { message: "Tick the lines that aren't rent." };
+  const n = await runScoped(appDb, g.member, (s) =>
+    ignoreLines(
+      s,
+      lines.map((l) => l.id),
+    ),
+  );
+  revalidatePath("/billing/bank/match");
+  return {
+    message: `Set aside ${n} ${n === 1 ? "line" : "lines"} as not rent.`,
+    tone: "success",
+  };
 }

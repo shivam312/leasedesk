@@ -21,6 +21,7 @@ import { tdsQuarter } from "@/lib/billing/tds";
 import type { BillingSettings, ChargeType } from "@/lib/billing/types";
 import { insertLogged, logActivity, updateLogged } from "@/lib/db/activity-log";
 import {
+  bankStatementLines,
   creditNoteLines,
   creditNotes,
   invoiceLines,
@@ -469,6 +470,15 @@ export async function reversePayment(
     action: "reverse",
     after: { reversalId: reversal.id, date, reason },
   });
+  // A payment recorded from a bank line frees the line to be matched again.
+  if (original.bankStatementLineId)
+    await updateLogged(s, bankStatementLines, original.bankStatementLineId, {
+      matchStatus: "unmatched",
+      suggestedTenantId: null,
+      suggestedInvoiceIds: null,
+      suggestedTdsAmount: null,
+      confidence: null,
+    });
   await refreshInvoiceStatus(
     s,
     applied.map((a) => a.invoiceId),

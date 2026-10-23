@@ -40,6 +40,10 @@ test("an owner reads the rent roll and vacancy", async ({ page }) => {
 
   // Before the lease starts, nothing is running.
   await page.getByLabel("As on").fill("2020-01-01");
+  // The picker shows the browser's format; the date beside it is DD-MM-YYYY.
+  await expect(
+    page.getByText("01-01-2020", { exact: true }).first(),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Show" }).click();
   await expect(
     page.getByText(/^No lease is running on this date\./),

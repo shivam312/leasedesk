@@ -11,6 +11,7 @@ import {
   Field,
   FormMessage,
 } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { Input, Select } from "@/components/ui/input";
 import { formatArea, formatDate, formatINR, formatMonth } from "@/lib/format";
 import {
@@ -212,15 +213,22 @@ export function LeaseForm({
     field(
       name,
       label,
-      (common) => (
-        <Input
-          {...common}
-          type={type}
-          inputMode={inputMode}
-          value={String(values[name] ?? "")}
-          onChange={(e) => set({ [name]: e.target.value })}
-        />
-      ),
+      (common) =>
+        type === "date" ? (
+          <DateInput
+            {...common}
+            value={String(values[name] ?? "")}
+            onChange={(e) => set({ [name]: e.target.value })}
+          />
+        ) : (
+          <Input
+            {...common}
+            type={type}
+            inputMode={inputMode}
+            value={String(values[name] ?? "")}
+            onChange={(e) => set({ [name]: e.target.value })}
+          />
+        ),
       hint,
     );
 
@@ -424,23 +432,32 @@ export function LeaseForm({
               field(
                 k(f),
                 label,
-                (common) => (
-                  <Input
-                    {...common}
-                    type={type}
-                    inputMode={
-                      f === "amount" || f === "gstRate"
-                        ? "decimal"
-                        : f === "slots" || f === "sacCode"
-                          ? "numeric"
-                          : undefined
-                    }
-                    value={String(c[f] ?? "")}
-                    onChange={(e) =>
-                      setRow("charges", i, { [f]: e.target.value })
-                    }
-                  />
-                ),
+                (common) =>
+                  type === "date" ? (
+                    <DateInput
+                      {...common}
+                      value={String(c[f] ?? "")}
+                      onChange={(e) =>
+                        setRow("charges", i, { [f]: e.target.value })
+                      }
+                    />
+                  ) : (
+                    <Input
+                      {...common}
+                      type={type}
+                      inputMode={
+                        f === "amount" || f === "gstRate"
+                          ? "decimal"
+                          : f === "slots" || f === "sacCode"
+                            ? "numeric"
+                            : undefined
+                      }
+                      value={String(c[f] ?? "")}
+                      onChange={(e) =>
+                        setRow("charges", i, { [f]: e.target.value })
+                      }
+                    />
+                  ),
                 hint,
               );
             return (
@@ -630,9 +647,8 @@ export function LeaseForm({
                       k("anchorDate"),
                       "Increases counted from",
                       (common) => (
-                        <Input
+                        <DateInput
                           {...common}
-                          type="date"
                           value={String(r.anchorDate)}
                           onChange={(e) =>
                             setRow("rules", i, { anchorDate: e.target.value })

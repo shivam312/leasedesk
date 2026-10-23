@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
@@ -71,8 +71,7 @@ async function Body({
       <form method="get" className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-sm">
           From
-          <Input
-            type="date"
+          <DateInput
             name="from"
             defaultValue={from}
             className="h-11 w-44 md:h-9"
@@ -80,12 +79,7 @@ async function Body({
         </label>
         <label className="flex flex-col gap-1 text-sm">
           To
-          <Input
-            type="date"
-            name="to"
-            defaultValue={to}
-            className="h-11 w-44 md:h-9"
-          />
+          <DateInput name="to" defaultValue={to} className="h-11 w-44 md:h-9" />
         </label>
         <Button type="submit" variant="outline" className="h-11 md:h-9">
           Show

@@ -4,6 +4,7 @@ import { useActionState, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { errorProps, Field, FormMessage } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import type { FormState } from "@/lib/auth/forms";
 import {
   allocatePayment,
@@ -179,9 +180,8 @@ export function PaymentForm({
           htmlFor={`${base}-receivedDate`}
           error={state.fieldErrors?.receivedDate}
         >
-          <Input
+          <DateInput
             {...field("receivedDate")}
-            type="date"
             max={today}
             required
             defaultValue={v.receivedDate ?? today}

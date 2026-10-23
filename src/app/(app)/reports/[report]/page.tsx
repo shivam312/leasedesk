@@ -7,6 +7,7 @@ import { ReportView } from "@/components/reports/ReportView";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { appDb, requireMember } from "@/lib/auth";
 import { runScoped } from "@/lib/db/scoped";
 import {
@@ -85,8 +86,7 @@ async function Body({
         {def.filter === "asOf" && (
           <label className="flex flex-col gap-1 text-sm">
             As on
-            <Input
-              type="date"
+            <DateInput
               name="asOf"
               defaultValue={p.asOf}
               className="h-11 w-44 md:h-9"
@@ -97,8 +97,7 @@ async function Body({
           <>
             <label className="flex flex-col gap-1 text-sm">
               From
-              <Input
-                type="date"
+              <DateInput
                 name="from"
                 defaultValue={p.from}
                 className="h-11 w-44 md:h-9"
@@ -106,8 +105,7 @@ async function Body({
             </label>
             <label className="flex flex-col gap-1 text-sm">
               To
-              <Input
-                type="date"
+              <DateInput
                 name="to"
                 defaultValue={p.to}
                 className="h-11 w-44 md:h-9"

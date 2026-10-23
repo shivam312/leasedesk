@@ -156,7 +156,7 @@ Demo blockers (what a landlord would see go wrong in the 10-minute demo):
 - [x] Today shows the 5 oldest unpaid tenants with a total and "See all N", and rent increases due on the same day share one card
 - [x] Today's "hasn't paid ₹X" says it is the amount to pay after expected TDS; the "Unpaid now" box and Unpaid and ageing share one gross label, so the two screens agree
 - [x] Demo script part 4 adds a 5% yearly increase and ends the lease on 31-10-2035; the lease form's dates step suggests the day before the anniversary as the last day
-- [ ] Dates read DD-MM-YYYY beside or instead of the native date picker on the lease form, payment form, reports' "As on" and the Tally page (was backlog rows on native date inputs)
+- [x] Dates read DD-MM-YYYY beside or instead of the native date picker on the lease form, payment form, reports' "As on" and the Tally page (was backlog rows on native date inputs)
 - [ ] After every invoice of a month is sent, "Make … invoices" is no longer the filled button; "Make missing … invoices" shows only when a lease has no draft
 - [ ] The lease page folds the rent schedule on phones: the next 12 months, then "Show all N months"
 - [ ] Invoice lines in one fixed order, rent first, the same on screen and on the PDF

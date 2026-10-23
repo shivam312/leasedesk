@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { errorProps, Field, FormMessage } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import type { FormState } from "@/lib/auth/forms";
 import { formatDate } from "@/lib/format";
 
@@ -51,10 +51,9 @@ export function EndLeaseForm({
         hint="The lease and its charges end on this day."
         error={error}
       >
-        <Input
+        <DateInput
           id={id}
           name="exitDate"
-          type="date"
           required
           value={exitDate}
           onChange={(e) => {

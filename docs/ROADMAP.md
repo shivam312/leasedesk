@@ -57,15 +57,17 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 
 ## M3. Leases (week 6)
 
-- [ ] Schema: leases and lease units
-- [ ] Schema: lease charges, escalation rules, custom escalations, critical dates
-- [ ] Lease form, first steps: tenant, units, dates, rent-free period
-- [ ] Lease form, charges and rent increases, with lease-level settings under "More options"
-- [ ] Review step showing the full rent schedule
-- [ ] Copy an existing lease as a template
-- [ ] Critical dates generated from lease terms
-- [ ] Renewal (new version)
-- [ ] Termination
+- [ ] (human) Schema: leases and lease units
+- [ ] (human) Schema: lease charges, escalation rules, custom escalations, critical dates
+- [ ] (human) Lease form, first steps: tenant, units, dates, rent-free period
+- [ ] (human) Lease form, charges and rent increases, with lease-level settings under "More options"
+- [ ] (human) Review step showing the full rent schedule
+- [ ] (human) Copy an existing lease as a template
+- [ ] (human) Critical dates generated from lease terms
+- [ ] (human) Renewal (new version)
+- [ ] (human) Termination
+
+All M3 tasks wait on the Human task "apply the local lease migrations" in `docs/DECISIONS_NEEDED.md`. The schema (`drizzle/0008`–`0011`) and the pure logic for every task (`src/lib/leases/`, with unit tests) are built on branch `m3-leases-schema`. Server actions, screens and Playwright tests come next, once the tables exist.
 
 ## M4. Invoicing (week 7)
 

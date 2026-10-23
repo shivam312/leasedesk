@@ -43,7 +43,7 @@ export function buildingFields(
       required: true,
       options: STATE_OPTIONS,
       defaultValue: building?.stateCode ?? "27",
-      hint: "Decides CGST + SGST or IGST on rent.",
+      hint: "Decides which GST applies to rent: same state or another state.",
     },
     {
       name: "billingEntityId",

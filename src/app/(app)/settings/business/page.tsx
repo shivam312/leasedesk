@@ -75,7 +75,12 @@ async function Business() {
             GSTINs and bank accounts
           </h2>
           {editable && (
-            <Button asChild variant="outline" size="sm">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="min-h-11 md:min-h-0"
+            >
               <Link href="/settings/business/entities/new">Add a GSTIN</Link>
             </Button>
           )}
@@ -104,7 +109,12 @@ async function Business() {
                       <Badge tone="warn">No bank or UPI yet</Badge>
                     )}
                     {editable && (
-                      <Button asChild variant="ghost" size="sm">
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="sm"
+                        className="min-h-11 md:min-h-0"
+                      >
                         <Link
                           href={`/settings/business/entities/${e.id}`}
                           aria-label={`Edit ${e.legalName}`}

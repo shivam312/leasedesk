@@ -160,9 +160,6 @@ async function Stacking({ params }: { params: Promise<{ id: string }> }) {
           ))}
         </ol>
       )}
-      <p className="text-sm text-muted-foreground">
-        Tenant names appear on leased units once leases are added.
-      </p>
     </div>
   );
 }

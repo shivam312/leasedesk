@@ -62,5 +62,10 @@ test("an owner adds a tenant with a contact, then finds them in the list", async
     page.getByText("Acme Software Pvt Ltd").filter({ visible: true }),
   ).toBeVisible();
   await page.getByLabel("Search tenants").fill("nobody");
-  await expect(page.getByText("No tenants match.")).toBeVisible();
+  await expect(page.getByText(/No tenants match “nobody”/)).toBeVisible();
+  await page.getByRole("button", { name: "Clear search" }).click();
+  await expect(page.getByLabel("Search tenants")).toHaveValue("");
+  await expect(
+    page.getByText("Acme Software Pvt Ltd").filter({ visible: true }),
+  ).toBeVisible();
 });

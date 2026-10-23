@@ -14,17 +14,23 @@ export interface AuthField {
   hint?: string;
 }
 
-/** A one-column form for the sign-up, login and welcome pages. */
+/**
+ * A one-column form for the sign-up, login and welcome pages. `autoFocus` only
+ * where the form is the whole page (login): on a phone it opens the keyboard
+ * over the page's title.
+ */
 export function AuthForm({
   action,
   fields,
   submitLabel,
   pendingLabel,
+  autoFocus = false,
 }: {
   action: (state: FormState, form: FormData) => Promise<FormState>;
   fields: AuthField[];
   submitLabel: string;
   pendingLabel: string;
+  autoFocus?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   return (
@@ -46,7 +52,7 @@ export function AuthForm({
               type={f.type ?? "text"}
               autoComplete={f.autoComplete}
               defaultValue={state.values?.[f.name]}
-              autoFocus={i === 0}
+              autoFocus={autoFocus && i === 0}
               required
               {...errorProps(f.name, error, Boolean(f.hint))}
             />

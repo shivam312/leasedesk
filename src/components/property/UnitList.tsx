@@ -83,7 +83,21 @@ export function UnitList({
       </div>
 
       {shown.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No units match.</p>
+        <p className="text-sm text-muted-foreground">
+          {query.trim()
+            ? `No units match “${query.trim()}”.`
+            : "No units match."}{" "}
+          <button
+            type="button"
+            className="py-3 underline"
+            onClick={() => {
+              setQuery("");
+              setStatus("all");
+            }}
+          >
+            Clear search
+          </button>
+        </p>
       ) : (
         <>
           <ul className="flex flex-col gap-2 md:hidden">
@@ -110,7 +124,7 @@ export function UnitList({
                   </Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {u.floor ?? "No floor"} · billed{" "}
+                  {u.floor ?? "No floor"} · Billed area{" "}
                   {formatArea(u.chargeableArea)}
                 </p>
               </li>

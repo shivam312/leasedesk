@@ -13,6 +13,7 @@ export default function LoginPage() {
         Log in to see what needs doing today.
       </p>
       <AuthForm
+        autoFocus
         action={logIn}
         submitLabel="Log in"
         pendingLabel="Logging in…"

@@ -30,7 +30,7 @@ export default function WelcomePage() {
       <form action={logOut} className="mt-6 text-center">
         <button
           type="submit"
-          className="text-sm text-muted-foreground underline"
+          className="py-3 text-sm text-muted-foreground underline"
         >
           Use a different account
         </button>

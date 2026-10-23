@@ -19,7 +19,7 @@ export function JoinForm({ token, email }: { token: string; email: string }) {
       <Field
         label="Password"
         htmlFor="password"
-        hint="Choose a password with at least 8 characters. Already have a login? Enter your current password."
+        hint="At least 8 characters. If you already have a login, use your current password."
         error={error}
       >
         <Input
@@ -29,7 +29,7 @@ export function JoinForm({ token, email }: { token: string; email: string }) {
           autoComplete="new-password"
           autoFocus
           required
-          {...errorProps("password", error)}
+          {...errorProps("password", error, true)}
         />
       </Field>
       <Button type="submit" size="lg" disabled={pending}>

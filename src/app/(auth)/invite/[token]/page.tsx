@@ -30,8 +30,7 @@ async function Invite({ params }: { params: Promise<{ token: string }> }) {
           This invite link doesn&apos;t work any more
         </h1>
         <p className="mb-6 text-sm text-muted-foreground">
-          It may have been used already, or the owner cancelled it. Ask the
-          owner for a new link.
+          It may have been used already. Ask the owner for a new link.
         </p>
         <Link href="/login" className="text-sm font-medium underline">
           Log in instead

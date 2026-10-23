@@ -74,7 +74,21 @@ export function TenantList({ tenants }: { tenants: TenantRow[] }) {
       </div>
 
       {shown.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No tenants match.</p>
+        <p className="text-sm text-muted-foreground">
+          {query.trim()
+            ? `No tenants match “${query.trim()}”.`
+            : "No tenants match."}{" "}
+          <button
+            type="button"
+            className="py-3 underline"
+            onClick={() => {
+              setQuery("");
+              setFilter("all");
+            }}
+          >
+            Clear search
+          </button>
+        </p>
       ) : (
         <>
           <ul className="flex flex-col gap-2 md:hidden">

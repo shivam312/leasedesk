@@ -71,7 +71,7 @@ export function InviteForm() {
         >
           <p>
             Send this link to <strong>{state.invitedEmail}</strong>. It works
-            once.
+            once, and we haven&apos;t emailed it.
           </p>
           {copyFailed && (
             <p>Couldn&apos;t copy. Select the link and copy it.</p>
@@ -84,6 +84,7 @@ export function InviteForm() {
               type="button"
               variant="outline"
               size="sm"
+              className="min-h-11 md:min-h-0"
               onClick={() => {
                 navigator.clipboard
                   .writeText(link)
@@ -93,7 +94,12 @@ export function InviteForm() {
             >
               {copied ? "Copied" : "Copy link"}
             </Button>
-            <Button asChild variant="outline" size="sm">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="min-h-11 md:min-h-0"
+            >
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(`Join our team on ${brand.name}: ${link}`)}`}
                 target="_blank"

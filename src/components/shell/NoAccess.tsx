@@ -12,7 +12,10 @@ export function NoAccess({
   return (
     <Card className="max-w-xl">
       <p className="text-sm">{message}</p>
-      <Link href={back.href} className="mt-2 inline-block text-sm underline">
+      <Link
+        href={back.href}
+        className="mt-1 inline-block py-2 text-sm underline"
+      >
         {back.label}
       </Link>
     </Card>

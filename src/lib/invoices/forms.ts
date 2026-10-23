@@ -61,6 +61,21 @@ export function runSummary(result: RunResult): {
   };
 }
 
+/**
+ * What "Send all" will do, shown before it's confirmed. Names the tenants
+ * with no email address, since their invoices are numbered but not emailed.
+ */
+export function sendAllConsequence(noEmail: string[]): string {
+  const base =
+    "Each gets its invoice number and is emailed with its PDF to the tenant's billing contacts. Sent invoices can't be changed; corrections are credit notes.";
+  if (noEmail.length === 0) return base;
+  const who =
+    noEmail.length === 1
+      ? `${noEmail[0]} has no email address, so its invoice will be numbered but not emailed: download the PDF and send it yourself.`
+      : `${noEmail.length} tenants have no email address (${noEmail.join(", ")}), so their invoices will be numbered but not emailed: download the PDFs and send them yourself.`;
+  return `${base} ${who}`;
+}
+
 export type SendOutcome = {
   tenantName: string;
   number: string;

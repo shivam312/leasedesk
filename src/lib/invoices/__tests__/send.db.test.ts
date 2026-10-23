@@ -9,7 +9,7 @@ import {
   inRollback,
   type TestTx,
 } from "@/lib/db/__tests__/harness";
-import { issueInvoice, SendError } from "../send";
+import { draftTenantsWithoutEmail, issueInvoice, SendError } from "../send";
 
 const ready = await hasTables("invoices", "invoice_series");
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
@@ -68,3 +68,33 @@ describe.skipIf(!ready)("issueInvoice (skipped until pnpm db:migrate)", () => {
     });
   });
 });
+
+describe.skipIf(!ready)(
+  "draftTenantsWithoutEmail (skipped until pnpm db:migrate)",
+  () => {
+    afterAll(closeDb);
+
+    it("names a draft's tenant until it has an email address", async () => {
+      await inRollback(async (tx) => {
+        const a = await withGstin(tx);
+        await draftInvoice(tx, a);
+        const ctx = { userId: a.userId, organizationId: a.org.id };
+        const names = () =>
+          runScoped(asDb(tx), ctx, (s) =>
+            draftTenantsWithoutEmail(s, "2026-11"),
+          );
+        expect(await names()).toEqual(["A Tenant"]);
+        expect(
+          await runScoped(asDb(tx), ctx, (s) =>
+            draftTenantsWithoutEmail(s, "2026-12"),
+          ),
+        ).toEqual([]);
+        await tx
+          .update(schema.tenantContacts)
+          .set({ email: "accounts@a.test" })
+          .where(eq(schema.tenantContacts.tenantId, a.tenant.id));
+        expect(await names()).toEqual([]);
+      });
+    });
+  },
+);

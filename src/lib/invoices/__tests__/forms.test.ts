@@ -4,6 +4,7 @@ import {
   emailAgainMessage,
   monthChoices,
   runSummary,
+  sendAllConsequence,
   sendSummary,
 } from "../forms";
 
@@ -160,5 +161,22 @@ describe("emailAgainMessage", () => {
     expect(
       emailAgainMessage({ kind: "failed", message: "Down." }).message,
     ).toBe("Down. Try again in a few minutes.");
+  });
+});
+
+describe("sendAllConsequence", () => {
+  it("says what sending does when every tenant has an email address", () => {
+    expect(sendAllConsequence([])).toBe(
+      "Each gets its invoice number and is emailed with its PDF to the tenant's billing contacts. Sent invoices can't be changed; corrections are credit notes.",
+    );
+  });
+
+  it("warns before sending when tenants have no email address", () => {
+    expect(sendAllConsequence(["Acme"])).toMatch(
+      /Acme has no email address, so its invoice will be numbered but not emailed: download the PDF and send it yourself\.$/,
+    );
+    expect(sendAllConsequence(["Acme", "Birla", "Cipla"])).toMatch(
+      /3 tenants have no email address \(Acme, Birla, Cipla\), so their invoices will be numbered but not emailed: download the PDFs and send them yourself\.$/,
+    );
   });
 });

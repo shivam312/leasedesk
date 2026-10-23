@@ -9,8 +9,13 @@ import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { formatINR, formatMonth } from "@/lib/format";
-import { billingMonth, monthChoices } from "@/lib/invoices/forms";
+import {
+  billingMonth,
+  monthChoices,
+  sendAllConsequence,
+} from "@/lib/invoices/forms";
 import { invoicesForMonth } from "@/lib/invoices/run";
+import { draftTenantsWithoutEmail } from "@/lib/invoices/send";
 import { todayInIndia } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { runBillingNow, sendAllInvoices } from "@/server/actions/billing";
@@ -67,8 +72,11 @@ async function Month({
 
 async function MonthInvoices({ month }: { month: string }) {
   const member = await requireMember();
-  const rows = await runScoped(appDb, member, (s) =>
-    invoicesForMonth(s, month),
+  const [rows, noEmail] = await runScoped(appDb, member, (s) =>
+    Promise.all([
+      invoicesForMonth(s, month),
+      draftTenantsWithoutEmail(s, month),
+    ]),
   );
   const canBill = can(member.role, "manage_billing");
   const label = formatMonth(month);
@@ -81,6 +89,7 @@ async function MonthInvoices({ month }: { month: string }) {
           monthLabel={label}
           count={drafts.length}
           total={formatINR(drafts.reduce((sum, r) => sum + r.grandTotal, 0))}
+          consequence={sendAllConsequence(noEmail)}
           action={sendAllInvoices}
         />
       )}

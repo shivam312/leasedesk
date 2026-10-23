@@ -9,7 +9,7 @@
 //    leaves the invoice sent (it already has its number) and is reported, so
 //    the user can email it again from the invoice page (D25).
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { startOfMonth, type YearMonth } from "@/lib/billing/dates";
 import { logActivity, updateLogged } from "@/lib/db/activity-log";
 import { buildings, invoices, tenantContacts, tenants } from "@/lib/db/schema";
@@ -49,6 +49,47 @@ export async function recipientsFor(s: Scoped, tenantId: string) {
     .from(tenantContacts)
     .where(s.where(tenantContacts, eq(tenantContacts.tenantId, tenantId)));
   return invoiceRecipients(contacts);
+}
+
+/** The tenants among a run month's drafts that have no email address to send to. */
+export async function draftTenantsWithoutEmail(
+  s: Scoped,
+  runMonth: YearMonth,
+): Promise<string[]> {
+  const drafts = await s.tx
+    .selectDistinct({ id: tenants.id, name: tenants.companyName })
+    .from(invoices)
+    .innerJoin(tenants, eq(tenants.id, invoices.tenantId))
+    .where(
+      s.where(
+        invoices,
+        and(
+          eq(invoices.runMonth, startOfMonth(runMonth)),
+          eq(invoices.status, "draft"),
+        ),
+      ),
+    )
+    .orderBy(asc(tenants.companyName));
+  if (drafts.length === 0) return [];
+  const contacts = await s.tx
+    .select()
+    .from(tenantContacts)
+    .where(
+      s.where(
+        tenantContacts,
+        inArray(
+          tenantContacts.tenantId,
+          drafts.map((d) => d.id),
+        ),
+      ),
+    );
+  return drafts
+    .filter(
+      (d) =>
+        invoiceRecipients(contacts.filter((c) => c.tenantId === d.id))
+          .length === 0,
+    )
+    .map((d) => d.name);
 }
 
 export type IssueResult =

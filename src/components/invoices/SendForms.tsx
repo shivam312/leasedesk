@@ -111,6 +111,7 @@ export function SendAllForm({
   monthLabel,
   count,
   total,
+  consequence,
   action,
 }: {
   month: string;
@@ -118,6 +119,8 @@ export function SendAllForm({
   count: number;
   /** The drafts' grand total, formatted. */
   total: string;
+  /** What sending does, from sendAllConsequence. */
+  consequence: string;
   action: Action;
 }) {
   const invoicesWord = count === 1 ? "invoice" : "invoices";
@@ -126,7 +129,7 @@ export function SendAllForm({
       fields={{ month }}
       label={`Send ${count} ${invoicesWord}`}
       question={`Send ${count} ${monthLabel} ${invoicesWord} for ${total} in all?`}
-      consequence="Each gets its invoice number and is emailed with its PDF to the tenant's billing contacts. Sent invoices can't be changed; corrections are credit notes."
+      consequence={consequence}
       confirmLabel={`Send ${count} ${invoicesWord}`}
       pendingLabel="Sending…"
       cancelLabel="Go back"

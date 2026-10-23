@@ -186,3 +186,19 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - The form starts each line at all that is left on it, so the usual case (credit the whole invoice) is one click and a confirmation. The credit note is dated today in India.
 - It is emailed after the commit like an invoice (D25), and its PDF reuses the invoice layout (`creditNoteDocument`), printed from the invoice's frozen copies, with "Credit Note", its number, and the invoice's number and date.
 - `invoice.startingNumber` applies to invoice series only; credit-note series start at 1.
+
+## D27. A draft is checked against its lease when sent, and a fully credited month counts as billed (2026-10-23)
+
+**Why:** the M4 review found that drafts made before a lease was ended early, or before a billing rule changed, were sent with the old amounts; and that making a month again re-billed a month waived by a full credit note.
+**Consequences:**
+- `issueInvoice` works the draft out again (`freshDraft` in `run.ts`, the same code as the run) and refuses with "make the month again" if any amount, date or line differs (`draftChanged` in `src/lib/invoices/draft-rows.ts`). Drafts are never changed silently.
+- `runBilling` treats every non-draft invoice, `cancelled` included, as billed (`billedLeaseIds`). Billing a credited month again on purpose waits on D-018.
+- An invoice is never sent before its invoice date (`tooEarlyToSend`, D-016 [CA]).
+- Numbers are unique per GSTIN and year: the number format needs `{prefix}`, `{fy}` and `{seq}`, and building prefixes are checked (`prefixClash`, D-015 [CA]).
+- An invoice with a credit note asks for no fixed amount on its PDF and QR until D-017 decides the TDS after a credit.
+
+## D28. In the invoice list the row is the way to an amount's working (2026-10-23)
+
+**Why:** UX principle 7 says every amount explains itself. In a list of 40 invoices an explanation per total is noise; the invoice page explains every line and the total.
+**Consequences:** list rows link to the invoice page, where each amount has "How is this worked out?". Search, status filters and row selection on the list are deferred (BACKLOG), not dropped.
+

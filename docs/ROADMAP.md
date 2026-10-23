@@ -82,7 +82,7 @@ Built on branch `m3-leases-schema`; the lease migrations (`drizzle/0008`–`0011
 - [x] Credit notes
 - [ ] (human) Create a Resend account, verify the sending domain and put `RESEND_API_KEY` in `.env.local`
 
-Built on branch `m3-leases-schema` (report: `docs/milestones/M4.md`). The invoice migrations (`drizzle/0012`–`0013`) are not applied yet (Human task in `docs/DECISIONS_NEEDED.md`): until then the invoice database tests are skipped and the invoice screens can't save. Still to add: Playwright tests for sending and credit notes (`docs/BACKLOG.md`).
+Built on branch `m3-leases-schema` (report: `docs/milestones/M4.md`). The invoice migrations (`drizzle/0012`–`0013`) are not applied yet (Human task in `docs/DECISIONS_NEEDED.md`): until then the invoice database tests are skipped and the invoice screens can't save. Still to add: Playwright tests for sending and credit notes (`docs/BACKLOG.md`). Reviewed by the billing and UX reviewers on 2026-10-23; the fixes and open decisions (D-015 to D-019) are in the report.
 
 ## M5. Payments and TDS (week 8)
 

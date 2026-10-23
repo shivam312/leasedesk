@@ -23,7 +23,11 @@ import {
   type LeaseFormStep,
 } from "@/lib/leases/draft";
 import { createLease, getLease, markRenewed } from "@/lib/leases/queries";
-import { renewalRefusal, renewalStartProblem } from "@/lib/leases/renewal";
+import {
+  renewalPremisesProblem,
+  renewalRefusal,
+  renewalStartProblem,
+} from "@/lib/leases/renewal";
 import { reviewRows, type ReviewRow } from "@/lib/leases/review";
 import { terminationPlan } from "@/lib/leases/termination";
 import { todayInIndia } from "@/lib/today";
@@ -92,7 +96,7 @@ export async function previewLease(
 
 /**
  * Save the lease. A renewal (`replacesLeaseId`) is a new version for the
- * same tenant; the old version becomes `renewed` and is never edited
+ * same tenant, building and units; the old version becomes `renewed` and is never edited
  * otherwise.
  */
 export async function saveLease(
@@ -134,6 +138,19 @@ export async function saveLease(
             tenantId:
               "A renewal is for the same tenant. For a new tenant, add a new lease.",
           },
+        };
+      const premises = renewalPremisesProblem(
+        {
+          buildingId: old.lease.buildingId,
+          unitIds: old.units.map((u) => u.unitId),
+        },
+        draft.parties,
+      );
+      if (premises)
+        return {
+          ok: false as const,
+          step: "parties" as const,
+          errors: { [premises.field]: premises.message },
         };
       version = old.lease.version + 1;
     }

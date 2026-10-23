@@ -100,3 +100,30 @@ export function renewalStartProblem(
     ? null
     : `The renewal must start after the current lease ends on ${formatDate(oldEndDate)}.`;
 }
+
+/**
+ * A renewal is for the same premises: the same building and exactly the
+ * same units (any order). Other premises are a new lease, which goes through
+ * the full unit-overlap check; the renewal check skips the old version.
+ * Null when they match.
+ */
+export function renewalPremisesProblem(
+  old: { buildingId: string; unitIds: string[] },
+  renewal: { buildingId: string; unitIds: string[] },
+): { field: "buildingId" | "unitIds"; message: string } | null {
+  if (old.buildingId !== renewal.buildingId)
+    return {
+      field: "buildingId",
+      message:
+        "A renewal is for the same building. For other premises, add a new lease.",
+    };
+  const before = new Set(old.unitIds);
+  const after = new Set(renewal.unitIds);
+  if (before.size !== after.size || [...after].some((u) => !before.has(u)))
+    return {
+      field: "unitIds",
+      message:
+        "A renewal is for the same units. For other units, add a new lease.",
+    };
+  return null;
+}

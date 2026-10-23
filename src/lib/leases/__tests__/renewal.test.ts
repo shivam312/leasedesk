@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   renewalDraft,
+  renewalPremisesProblem,
   renewalRefusal,
   renewalStartProblem,
   type RenewableLease,
@@ -86,5 +87,38 @@ describe("renewalStartProblem", () => {
     );
     expect(renewalStartProblem("2027-03-31", "2027-03-31")).not.toBeNull();
     expect(renewalStartProblem("2027-03-31", "2027-04-01")).toBeNull();
+  });
+});
+
+describe("renewalPremisesProblem", () => {
+  it("refuses a renewal for a different building or different units", () => {
+    // L1 is b1 with u1 + u2. A renewal is the same premises; moving to u3
+    // or adding u3 is a new lease, else unitClashes (which skips the old
+    // version) would let u3 be let twice.
+    const old = { buildingId: "b1", unitIds: ["u1", "u2"] };
+    expect(
+      renewalPremisesProblem(old, { buildingId: "b2", unitIds: ["u1", "u2"] }),
+    ).toEqual({
+      field: "buildingId",
+      message:
+        "A renewal is for the same building. For other premises, add a new lease.",
+    });
+    for (const unitIds of [["u1"], ["u1", "u3"], ["u1", "u2", "u3"]])
+      expect(
+        renewalPremisesProblem(old, { buildingId: "b1", unitIds }),
+      ).toEqual({
+        field: "unitIds",
+        message:
+          "A renewal is for the same units. For other units, add a new lease.",
+      });
+  });
+
+  it("accepts the same units in any order", () => {
+    expect(
+      renewalPremisesProblem(
+        { buildingId: "b1", unitIds: ["u1", "u2"] },
+        { buildingId: "b1", unitIds: ["u2", "u1"] },
+      ),
+    ).toBeNull();
   });
 });

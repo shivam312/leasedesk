@@ -19,31 +19,6 @@ import { sendDueReminders } from "../run";
 
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
 
-/**
- * Whether the local database has the reminders migrations (drizzle/0021–
- * 0022). Until `pnpm db:migrate` has applied them (a Human task in
- * docs/DECISIONS_NEEDED.md) this suite is skipped with a warning rather than
- * failing: running the migration inside a test transaction locks `invoices`
- * and stalls the other database tests running alongside. Remove this once
- * the migrations are applied everywhere.
- */
-async function hasRemindersTable() {
-  let found = false;
-  await inRollback(async (tx) => {
-    const [row] = (await tx.execute(
-      sql`select to_regclass('public.reminders') as t`,
-    )) as unknown as { t: string | null }[];
-    found = Boolean(row?.t);
-  });
-  return found;
-}
-
-const missingTable = !skipDbTests && !(await hasRemindersTable());
-if (missingTable)
-  console.warn(
-    "Skipping the reminder database tests: run `pnpm db:migrate` to add the reminders table.",
-  );
-
 function outbox(fail = false) {
   const sent: Email[] = [];
   const driver: EmailDriver = {
@@ -86,7 +61,7 @@ async function remind(
 const rows = (tx: TestTx) =>
   tx.select().from(schema.reminders).orderBy(schema.reminders.createdAt);
 
-describe.skipIf(skipDbTests || missingTable)("sendDueReminders", () => {
+describe.skipIf(skipDbTests)("sendDueReminders", () => {
   afterAll(closeDb);
 
   it("emails the step due today once, asking for the amount less TDS", async () => {
@@ -267,7 +242,7 @@ describe.skipIf(skipDbTests || missingTable)("sendDueReminders", () => {
   });
 });
 
-describe.skipIf(skipDbTests || missingTable)("WhatsApp reminder", () => {
+describe.skipIf(skipDbTests)("WhatsApp reminder", () => {
   afterAll(closeDb);
 
   it("links to the WhatsApp contact with the amount less TDS, and records who sent it", async () => {

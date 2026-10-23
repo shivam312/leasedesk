@@ -92,7 +92,7 @@ Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice 
 - [x] Matching suggestions and bulk confirm
 - [x] TDS tracker by tenant and quarter, certificate upload
 - [x] Reminders: automatic emails
-- [ ] Reminders: one-tap WhatsApp link
+- [x] Reminders: one-tap WhatsApp link
 - [ ] Tenant ledger with running balance
 - [ ] (human) Get one real bank statement export (CSV or Excel) per major bank the pilots use, personal details removed, into `tests/fixtures/bank/`
 

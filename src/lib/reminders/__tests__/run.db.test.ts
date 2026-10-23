@@ -14,6 +14,7 @@ import { madeDraft } from "@/lib/invoices/__tests__/db-fixtures";
 import { issueInvoice } from "@/lib/invoices/send";
 import { recordPayment } from "@/lib/payments/payments";
 import { saveSettings } from "@/lib/settings/store";
+import { recordWhatsappReminder, whatsappReminder } from "../manual";
 import { sendDueReminders } from "../run";
 
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
@@ -262,6 +263,75 @@ describe.skipIf(skipDbTests || missingTable)("sendDueReminders", () => {
           sql`update reminders set amount_asked = 1 where id = ${r!.id}`,
         ),
       ).rejects.toThrow();
+    });
+  });
+});
+
+describe.skipIf(skipDbTests || missingTable)("WhatsApp reminder", () => {
+  afterAll(closeDb);
+
+  it("links to the WhatsApp contact with the amount less TDS, and records who sent it", async () => {
+    await inRollback(async (tx) => {
+      const { a, ctx, invoice } = await sentInvoice(tx, null);
+      const ready = () =>
+        runScoped(asDb(tx), ctx, (s) =>
+          whatsappReminder(s, invoice.id, "2026-11-15"),
+        );
+      expect(await ready()).toEqual({ kind: "no_number" });
+
+      await tx
+        .update(schema.tenantContacts)
+        .set({ phone: "+919820012345", whatsapp: true })
+        .where(eq(schema.tenantContacts.tenantId, a.tenant.id));
+      const link = await ready();
+      expect(link).toMatchObject({
+        kind: "ready",
+        phone: "+919820012345",
+        // ₹1,38,060 − ₹11,700 TDS = ₹1,26,360
+        amountPaise: 12_636_000,
+      });
+      expect(link.kind === "ready" && link.url).toMatch(
+        /^https:\/\/wa\.me\/919820012345\?text=/,
+      );
+
+      const row = await runScoped(asDb(tx), ctx, (s) =>
+        recordWhatsappReminder(s, invoice.id, "2026-11-15"),
+      );
+      expect(row).toMatchObject({
+        channel: "whatsapp_link",
+        step: null,
+        sentBy: a.userId,
+        sentTo: ["+919820012345"],
+        amountAsked: 12_636_000,
+        status: "sent",
+      });
+    });
+  });
+
+  it("has nothing to ask once the invoice is paid", async () => {
+    await inRollback(async (tx) => {
+      const { a, ctx, invoice } = await sentInvoice(tx);
+      await runScoped(asDb(tx), ctx, (s) =>
+        recordPayment(
+          s,
+          {
+            tenantId: a.tenant.id,
+            receivedDate: "2026-11-06",
+            amountReceivedPaise: 12_636_000,
+            tdsPaise: 1_170_000,
+            mode: "neft",
+            reference: null,
+            note: null,
+            allocations: "auto",
+          },
+          "2026-11-06",
+        ),
+      );
+      expect(
+        await runScoped(asDb(tx), ctx, (s) =>
+          recordWhatsappReminder(s, invoice.id, "2026-11-15"),
+        ),
+      ).toBeNull();
     });
   });
 });

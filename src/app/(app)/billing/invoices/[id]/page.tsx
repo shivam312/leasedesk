@@ -8,6 +8,7 @@ import {
 } from "@/components/invoices/SendForms";
 import { INVOICE_STATUS } from "@/components/invoices/status";
 import { Working } from "@/components/invoices/Working";
+import { WhatsappReminderLink } from "@/components/reminders/WhatsappReminderLink";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/field";
@@ -21,6 +22,7 @@ import { lineWorking, totalWorking } from "@/lib/invoices/explain";
 import { tooEarlyToSend } from "@/lib/invoices/forms";
 import { getInvoice } from "@/lib/invoices/queries";
 import { reminderStepWords } from "@/lib/reminders/email";
+import { whatsappReminder } from "@/lib/reminders/manual";
 import { remindersFor } from "@/lib/reminders/queries";
 import { loadSettings } from "@/lib/settings/store";
 import { todayInIndia } from "@/lib/today";
@@ -46,6 +48,7 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const member = await requireMember();
+  const canBill = can(member.role, "manage_billing");
   const data = await runScoped(appDb, member, async (s) => {
     const saved = await getInvoice(s, id);
     return saved
@@ -53,6 +56,9 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
           ...saved,
           credits: await creditNotesFor(s, id),
           reminders: await remindersFor(s, id),
+          whatsapp: canBill
+            ? await whatsappReminder(s, id, todayInIndia())
+            : null,
           autoRemind: (await loadSettings(s, { tenantId: saved.tenant.id }))[
             "reminders.autoSend"
           ],
@@ -60,10 +66,9 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
       : null;
   });
   if (!data) notFound();
-  const { credits, reminders, autoRemind } = data;
+  const { credits, reminders, autoRemind, whatsapp } = data;
   const { invoice, tenant, building, lines } = data;
   const status = INVOICE_STATUS[invoice.status];
-  const canBill = can(member.role, "manage_billing");
   const month = invoice.runMonth.slice(0, 7);
   const early = tooEarlyToSend(invoice.invoiceDate, todayInIndia());
   const interState = invoice.supplyType === "inter_state";
@@ -343,7 +348,9 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
                     <span className="flex min-w-0 flex-col">
                       <span className="font-medium">
                         {formatDate(todayInIndia(r.sentAt))} ·{" "}
-                        {reminderStepWords(r.step)}
+                        {r.channel === "whatsapp_link"
+                          ? "WhatsApp (opened)"
+                          : reminderStepWords(r.step)}
                       </span>
                       <span className="break-words text-muted-foreground">
                         {r.status === "no_email" ? (
@@ -357,6 +364,8 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
                             </Link>
                             .
                           </>
+                        ) : r.channel === "whatsapp_link" ? (
+                          `Opened in WhatsApp for ${r.sentTo.join(", ")}; you press Send there`
                         ) : (
                           `${REMINDER_STATUS[r.status]} ${r.sentTo.join(", ")}`
                         )}
@@ -368,6 +377,23 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
                   </li>
                 ))}
               </ul>
+            )}
+            {whatsapp?.kind === "ready" && (
+              <WhatsappReminderLink
+                invoiceId={invoice.id}
+                url={whatsapp.url}
+                contactName={whatsapp.contactName}
+              />
+            )}
+            {whatsapp?.kind === "no_number" && (
+              <p className="text-sm text-muted-foreground">
+                To remind {tenant.companyName} on WhatsApp, add a contact with a
+                phone number and &ldquo;WhatsApp on this number&rdquo; on{" "}
+                <Link href={`/tenants/${tenant.id}`} className="underline">
+                  the tenant&apos;s page
+                </Link>
+                .
+              </p>
             )}
           </section>
         )}

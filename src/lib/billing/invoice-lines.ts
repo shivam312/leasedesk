@@ -1,6 +1,7 @@
 import { addDays, monthOf, startOfMonth } from "./dates";
 import type { PlainDate, YearMonth } from "./dates";
 import { formatDate, formatMonth } from "@/lib/format";
+import { rupees } from "./explain";
 import type { BasisPoints, Paise } from "./money";
 import { chargePeriods } from "./schedule";
 import type { ChargePeriod, LeaseInput } from "./schedule";
@@ -36,8 +37,10 @@ const NOUNS: Record<ChargeType, string> = {
  *   starts mid-period).
  * - In arrears: a period is billed in the run after the period ends, or the
  *   run after the lease ends if that is sooner (a lease ending mid-quarter).
- * - A period split by a rent increase gives one line per part.
- * - ₹0 lines are skipped; with no lines left there is no invoice.
+ * - A period split by a rent increase gives one line per part, or one line
+ *   with `midMonthIncreaseLines: "one_line"`.
+ * - With `skipZeroInvoices` (default), ₹0 lines are skipped and with no
+ *   lines left there is no invoice; without it ₹0 lines stay.
  */
 export function invoiceForRun(
   lease: LeaseInput,
@@ -53,9 +56,9 @@ export function invoiceForRun(
     .flatMap((charge) =>
       chargePeriods(charge, lease, settings)
         .filter((p) => p.billedIn === runMonth)
-        .flatMap((p) => linesFor(charge, p)),
+        .flatMap((p) => linesFor(charge, p, settings)),
     )
-    .filter((line) => line.taxablePaise !== 0);
+    .filter((line) => !settings.skipZeroInvoices || line.taxablePaise !== 0);
   if (lines.length === 0) return null;
   const invoiceDate = startOfMonth(runMonth);
   return {
@@ -65,26 +68,49 @@ export function invoiceForRun(
   };
 }
 
-function linesFor(charge: Charge, p: ChargePeriod): InvoiceLine[] {
+function linesFor(
+  charge: Charge,
+  p: ChargePeriod,
+  settings: Pick<BillingSettings, "midMonthIncreaseLines">,
+): InvoiceLine[] {
   const noun = charge.label ?? NOUNS[charge.type];
-  return p.segments.map((segment) => {
-    const whole =
-      segment.from === p.calendarPeriod.start &&
-      segment.to === p.calendarPeriod.end;
-    return {
-      chargeId: charge.id,
-      chargeType: charge.type,
-      description: whole
-        ? `${noun} for ${periodLabel(p.calendarPeriod.start, p.calendarPeriod.end)}`
-        : `${noun} ${formatDate(segment.from)} to ${formatDate(segment.to)}`,
-      periodStart: segment.from,
-      periodEnd: segment.to,
-      taxablePaise: segment.amount,
-      gstRateBp: charge.gstRateBp,
-      sacCode: charge.sacCode,
-      explanation: segment.explanation,
-    };
+  const line = (
+    from: PlainDate,
+    to: PlainDate,
+    taxablePaise: Paise,
+    explanation: Explanation,
+  ): InvoiceLine => ({
+    chargeId: charge.id,
+    chargeType: charge.type,
+    description:
+      from === p.calendarPeriod.start && to === p.calendarPeriod.end
+        ? `${noun} for ${periodLabel(from, to)}`
+        : `${noun} ${formatDate(from)} to ${formatDate(to)}`,
+    periodStart: from,
+    periodEnd: to,
+    taxablePaise,
+    gstRateBp: charge.gstRateBp,
+    sacCode: charge.sacCode,
+    explanation,
   });
+
+  // billing.midMonthIncreaseLines = one_line: a period split by an increase
+  // is one line, the sum of its parts (each part still pro-rated and rounded
+  // on its own); the explanation keeps every part.
+  if (settings.midMonthIncreaseLines === "one_line" && p.segments.length > 1) {
+    const amounts = p.segments.map((s) => s.amount);
+    return [
+      line(p.period.start, p.period.end, p.amount, {
+        rule: "Part periods at different amounts",
+        steps: [
+          ...p.segments.flatMap((s) => s.explanation.steps),
+          `Total: ${amounts.map(rupees).join(" + ")} = ${rupees(p.amount)}`,
+        ],
+        result: p.amount,
+      }),
+    ];
+  }
+  return p.segments.map((s) => line(s.from, s.to, s.amount, s.explanation));
 }
 
 /** "Oct 2026" for a month, "Jul–Sep 2026" for a quarter. */

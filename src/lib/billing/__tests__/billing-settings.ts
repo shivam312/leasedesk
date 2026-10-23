@@ -8,6 +8,9 @@ export const DEFAULT_SETTINGS: BillingSettings = {
   roundInvoiceTotal: "rupee",
   partPeriodMethod: "month_by_month",
   monthEndRule: "roll_forward",
+  midMonthIncreaseLines: "two_lines",
+  afterCustomIncrease: "stop_rule",
+  skipZeroInvoices: true,
   dueDays: 7,
 };
 

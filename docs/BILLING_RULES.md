@@ -50,7 +50,7 @@ An escalation rule: `percentBp`, `everyMonths`, `anchor` (`lease_start`, `rent_c
 - Effective dates = anchor + k × `everyMonths`, for k = 1, 2, 3…. An increase (rule or custom) applies if its date is on or before the lease end date and on or before the charge's end date, if it has one: the same rule for both. An increase on the last day applies to that day.
 - Compounding: new amount = previous amount × (10000 + percentBp) / 10000, rounded once per section 2.
 - Non-compounding: new amount = base amount × (10000 + k × percentBp) / 10000.
-- Custom escalations: a list of `{ effectiveDate, newAmount }` or `{ effectiveDate, percentBp }`. These override the rule from their date: from a charge's first custom entry, the rule's later increases stop for good and only custom entries apply. A custom percentage applies to the amount just before it; a custom new amount is used exactly as entered (not rounded).
+- Custom escalations: a list of `{ effectiveDate, newAmount }` or `{ effectiveDate, percentBp }`. These override the rule from their date: by default (`stop_rule`), from a charge's first custom entry, the rule's later increases stop for good and only custom entries apply. A custom percentage applies to the amount just before it; a custom new amount is used exactly as entered (not rounded). With setting `billing.afterCustomIncrease` = `resume_rule` (lease, D-002), the rule starts again after each custom entry, counted from that entry's date (custom date + k × `everyMonths`), never before the rule's own first increase date, until the next custom entry (a resumed date on a custom date gives way to the custom entry); a non-compounding rule then counts its steps from the custom amount. Default `stop_rule`. **[Pilot]**
 - Rule increases dated on or before a charge's start date are ignored (e.g. a charge added mid-lease): the entered amount is its starting amount, and non-compounding steps count from the first increase that applies. A custom entry dated on or before the charge's start is an input error and is rejected.
 - An escalation effective mid-month splits that month into two segments (section 6).
 
@@ -60,7 +60,7 @@ Example: ₹1,00,000/month, 5% every 12 months, compounding, from 1 Apr 2026. Ye
 
 - Use actual days in the calendar month (part quarters too: see section 7).
 - Amount = round(monthly amount × billable days / days in month).
-- A month with an escalation inside it is billed as two segments, each pro-rated, on one invoice line or two (setting; default two lines with clear labels).
+- A month with an escalation inside it is billed as two segments, each pro-rated, on one invoice line or two (setting `billing.midMonthIncreaseLines`, organization: `two_lines`, the default, with clear labels; or `one_line`, the sum of the parts, each still pro-rated and rounded on its own, with both parts in the explanation). With `one_line`, GST is worked out on the combined line, so CGST and SGST can each be 1 paisa different from two lines (₹90,000 → ₹94,500 on 16 Jul: ₹8,309.03 CGST on one line, ₹8,309.04 on two). **[CA]** (D-009) If one part of a split month is ₹0, the one line still covers the whole period.
 - Lease end mid-month: bill to the end date inclusive.
 
 Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → ₹45,000.
@@ -72,7 +72,7 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 - `advance`: the invoice for a period is generated in that period's monthly run (dated the 1st). `arrears`: in the run after the period ends. When the lease ends mid-period, an arrears charge's final bill is in the first monthly run after the lease ends (lease ends 20 Nov → the December run, not January for an Oct–Dec quarter).
 - An invoice line's period is the dates actually billed: it never starts before the lease, the charge or rent commencement (for waived charges), and never ends after the lease or charge ends.
 - Invoice due date = invoice date + `invoice.dueDays` (building or tenant setting, default 7).
-- Lines that come to ₹0 (a waived charge, a ₹0 amount) are left off the invoice. If every line is ₹0, no invoice is created for that lease and month.
+- Lines that come to ₹0 (a ₹0 amount, or a custom new amount of ₹0) are left off the invoice. Waived charges in a rent-free period produce no lines at all, under either setting. If every line is ₹0, no invoice is created for that lease and month. This is setting `billing.skipZeroInvoices` (organization, default `true`); when `false`, ₹0 lines are kept and a lease with a ₹0 charge in the month gets an invoice even if its total is ₹0.
 
 ## 8. GST **[CA]**
 

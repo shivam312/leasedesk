@@ -15,7 +15,14 @@ import type {
 } from "./types";
 
 type Event =
-  | { kind: "rule"; date: PlainDate; rule: EscalationRule; count: number }
+  | {
+      kind: "rule";
+      date: PlainDate;
+      rule: EscalationRule;
+      count: number;
+      /** Set when the rule restarted from a custom increase on this date. */
+      resumedFrom?: PlainDate;
+    }
   | { kind: "custom"; date: PlainDate; entry: CustomEscalation };
 
 /**
@@ -33,7 +40,10 @@ export function amountSteps({
   lease: LeaseTerms;
   rules?: EscalationRule[];
   custom?: CustomEscalation[];
-  settings: Pick<BillingSettings, "roundIncreasedRent" | "monthEndRule">;
+  settings: Pick<
+    BillingSettings,
+    "roundIncreasedRent" | "monthEndRule" | "afterCustomIncrease"
+  >;
 }): AmountStep[] {
   const base = chargeBaseAmount(charge);
   const noun =
@@ -89,6 +99,41 @@ export function amountSteps({
       events.push({ kind: "custom", date: entry.effectiveDate, entry });
     }
   }
+  // billing.afterCustomIncrease = resume_rule (D-002): after each custom
+  // increase the rule starts again, counted from that date, until the next
+  // custom increase. A resumed increase is never sooner than a full interval
+  // after the custom one, nor before the rule's own first increase date.
+  if (rule && settings.afterCustomIncrease === "resume_rule") {
+    const firstRuleDate = addMonths(
+      ruleAnchor(rule, lease, settings),
+      rule.everyMonths,
+      settings.monthEndRule,
+    );
+    const inForceCustoms = customs.filter((c) => inForce(c.effectiveDate));
+    inForceCustoms.forEach((entry, i) => {
+      const next = inForceCustoms[i + 1]?.effectiveDate;
+      let count = 0;
+      for (let k = 1; ; k++) {
+        const date = addMonths(
+          entry.effectiveDate,
+          k * rule.everyMonths,
+          settings.monthEndRule,
+        );
+        if (!inForce(date)) break;
+        if (next && compareDates(date, next) >= 0) break;
+        if (compareDates(date, firstRuleDate) < 0) continue;
+        count += 1;
+        events.push({
+          kind: "rule",
+          date,
+          rule,
+          count,
+          resumedFrom: entry.effectiveDate,
+        });
+      }
+    });
+  }
+  events.sort((a, b) => compareDates(a.date, b.date));
 
   const steps: AmountStep[] = [
     {
@@ -112,6 +157,9 @@ export function amountSteps({
       : `${rupees(from)} + ${percent(bp)}`;
 
   let previous = base.amount;
+  // The amount set by the latest custom increase: a resumed non-compounding
+  // rule counts its steps from it.
+  let customAmount = base.amount;
   for (const event of events) {
     const on = formatDate(event.date);
     const lines: string[] = [];
@@ -119,8 +167,13 @@ export function amountSteps({
     let word: string;
 
     if (event.kind === "rule") {
-      const { rule: r, count } = event;
-      if (ruleIntro) lines.push(ruleIntro);
+      const { rule: r, count, resumedFrom } = event;
+      if (resumedFrom) {
+        lines.push(
+          `${noun} goes up ${percent(r.percentBp)} every ${r.everyMonths} months again from the change on ${formatDate(resumedFrom)}`,
+        );
+      } else if (ruleIntro) lines.push(ruleIntro);
+      const start = resumedFrom ? customAmount : base.amount;
       if (r.compounding ?? true) {
         amount = raise(previous, r.percentBp);
         word = amount < previous ? "decrease" : "increase";
@@ -128,10 +181,10 @@ export function amountSteps({
           `${noun} ${word} on ${on}: ${change(previous, r.percentBp)}${rounding} = ${rupees(amount)}`,
         );
       } else {
-        amount = raise(base.amount, count * r.percentBp);
+        amount = raise(start, count * r.percentBp);
         word = amount < previous ? "decrease" : "increase";
         lines.push(
-          `${noun} ${word} on ${on}: ${rupees(base.amount)} + ${count} × ${percent(r.percentBp)}${rounding} = ${rupees(amount)}`,
+          `${noun} ${word} on ${on}: ${rupees(start)} + ${count} × ${percent(r.percentBp)}${rounding} = ${rupees(amount)}`,
         );
       }
     } else if (event.entry.newAmountPaise !== undefined) {
@@ -150,6 +203,7 @@ export function amountSteps({
       );
     }
 
+    if (event.kind === "custom") customAmount = amount;
     steps.push({
       from: event.date,
       amount,

@@ -18,6 +18,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-006 | Product name | product | no | open |
 | D-007 | Final bill for a quarterly arrears charge that ends before the lease | pilot | no | open |
 | D-008 | Approve shadcn's `cn` and `radix-ui` packages? | package | no | open |
+| D-009 | GST on a month split by a rent increase, shown as one line | ca | no | open |
 
 ## Human tasks
 
@@ -57,7 +58,7 @@ Things only a person can do. Tick them when done.
   - B) Resume the automatic rule from the custom increase
   - C) Let each lease choose (setting), default A
 - Recommendation: C.
-- Done meanwhile: A built (`amountSteps` in `src/lib/billing/escalation.ts`; `docs/BILLING_RULES.md` section 5). C planned for M2 as lease setting `billing.afterCustomIncrease`, default A.
+- Done meanwhile: C built: lease setting `billing.afterCustomIncrease`, default A (`amountSteps` in `src/lib/billing/escalation.ts`; `docs/BILLING_RULES.md` section 5). For B, the rule restarts counted from the custom increase's date (1 Oct custom → next increase 1 Oct a year later), not on the original anniversaries, and never before the rule's own first increase date, so it never bills an increase sooner than a full interval after the custom one or earlier than the rule would have. Tell us if your pilots expect the original dates.
 - Answer:
 
 ### D-003: TDS rounding, quarter and applicable charges
@@ -135,6 +136,18 @@ Things only a person can do. Tick them when done.
   - B) Keep the approved equivalents. Every shadcn component we add has its imports changed to `@/lib/utils` and `@radix-ui/react-*`.
 - Recommendation: A, because both are official packages from the same authors as libraries already approved, and it removes a manual step from every new screen. Nothing changes for landlords either way.
 - Done meanwhile: B. `src/lib/utils.ts` builds `cn` from `clsx` + `tailwind-merge`, and `src/components/ui/button.tsx` imports `Slot` from `@radix-ui/react-slot`. If you pick A, the switch back is a few lines.
+- Answer:
+
+### D-009: GST on a month split by a rent increase, shown as one line
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: When rent goes up mid-month, that month can be shown as two invoice lines (one per rate, the default) or one combined line (setting `billing.midMonthIncreaseLines`). GST is rounded on each line, so one line can give CGST and SGST 1 paisa different from two lines. Example: ₹90,000 rising to ₹94,500 on 16 July gives CGST ₹8,309.04 on two lines and ₹8,309.03 on one. Related to D-004 (where tax is rounded).
+- Options:
+  - A) Allow both: GST worked out on whatever lines the invoice shows
+  - B) Always work out GST on the two parts, even when they are shown as one line
+- Recommendation: A. Tax on the lines as printed is what an officer or the tenant's accountant can check on the invoice itself.
+- Done meanwhile: A built (`linesFor` in `src/lib/billing/invoice-lines.ts`, tested in `line-settings.test.ts`). The default is two lines, so nothing changes unless a landlord picks one line.
 - Answer:
 
 ## Applied

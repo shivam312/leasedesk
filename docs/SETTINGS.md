@@ -18,11 +18,11 @@ When a setting is built, tick it and note where it lives in code.
 | [x] | `billing.roundInvoiceTotal` | organization | `none`, `rupee` | `rupee` | advanced | Round-off line on invoices is common but not universal [CA] | `BillingSettings.roundInvoiceTotal`, used by `invoiceTotals` in `gst.ts` |
 | [x] | `billing.partPeriodMethod` | organization, lease | `month_by_month`, `days_in_period` | `month_by_month` | advanced | How a part quarter is pro-rated [Pilot] (D-001) | `BillingSettings.partPeriodMethod`, used by `segmentsForPeriod` in `proration.ts` (quarterly charges only) |
 | [x] | `billing.monthEndRule` | organization, lease | `roll_forward` (to the 1st), `last_day` | `roll_forward` | advanced | Dates like 31 Jan + 1 month: never bill a day early by default | `BillingSettings.monthEndRule`, passed to `addMonths` in `dates.ts` by `rentCommencement` (`rent-free.ts`) and `amountSteps` (`escalation.ts`) |
-| [ ] | `billing.midMonthIncreaseLines` | organization | `one_line`, `two_lines` | `two_lines` | advanced | Some accountants prefer one combined line | Fixed to `two_lines`: `linesFor` in `invoice-lines.ts` |
-| [ ] | `billing.afterCustomIncrease` | lease | `stop_rule`, `resume_rule` | `stop_rule` | advanced (lease form) | Whether the automatic increase rule continues after a custom increase [Pilot] (D-002) | Fixed to `stop_rule`: `amountSteps` in `escalation.ts` |
+| [x] | `billing.midMonthIncreaseLines` | organization | `one_line`, `two_lines` | `two_lines` | advanced | Some accountants prefer one combined line | `BillingSettings.midMonthIncreaseLines`, used by `linesFor` in `invoice-lines.ts` |
+| [x] | `billing.afterCustomIncrease` | lease | `stop_rule`, `resume_rule` | `stop_rule` | advanced (lease form) | Whether the automatic increase rule continues after a custom increase [Pilot] (D-002) | `BillingSettings.afterCustomIncrease`, used by `amountSteps` in `escalation.ts`; `resume_rule` restarts the rule from the custom date |
 | [x] | `billing.defaultTiming` | building, charge | `advance`, `arrears` | `advance` | advanced | Rent is usually in advance; utilities often in arrears | Charge level only: `Charge.timing` in `types.ts`, default in `withChargeDefaults` (`charges.ts`). Building default not built |
 | [x] | `billing.waivedDuringRentFree` | charge | `true`, `false` | `true` for rent, `false` for other charges | advanced (lease form) | Some leases waive CAM or parking during fit-out too | `Charge.waivedDuringRentFree` in `types.ts`, default in `withChargeDefaults` (`charges.ts`) |
-| [ ] | `billing.skipZeroInvoices` | organization | `true`, `false` | `true` | advanced | Avoid using invoice numbers on ₹0 bills | Fixed to `true`: `invoiceForRun` in `invoice-lines.ts` |
+| [x] | `billing.skipZeroInvoices` | organization | `true`, `false` | `true` | advanced | Avoid using invoice numbers on ₹0 bills | `BillingSettings.skipZeroInvoices`, used by `invoiceForRun` in `invoice-lines.ts` |
 
 ## GST
 

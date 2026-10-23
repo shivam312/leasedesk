@@ -95,6 +95,12 @@ export type BillingSettings = {
   partPeriodMethod: "month_by_month" | "days_in_period";
   /** billing.monthEndRule: what 31 Jan + 1 month is (section 1). */
   monthEndRule: "roll_forward" | "last_day";
+  /** billing.midMonthIncreaseLines: a period split by an increase as one invoice line or one per part (section 6). */
+  midMonthIncreaseLines: "one_line" | "two_lines";
+  /** billing.afterCustomIncrease: whether the automatic rule stops, or restarts from a custom increase (section 5, D-002). */
+  afterCustomIncrease: "stop_rule" | "resume_rule";
+  /** billing.skipZeroInvoices: no invoice (and no ₹0 lines) when there is nothing to bill (section 7). */
+  skipZeroInvoices: boolean;
   /** invoice.dueDays: due date = invoice date + this many days (section 7). */
   dueDays: number;
 };

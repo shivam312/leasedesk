@@ -11,6 +11,9 @@ export function billingSettings(settings: Settings): BillingSettings {
     roundInvoiceTotal: settings["billing.roundInvoiceTotal"],
     partPeriodMethod: settings["billing.partPeriodMethod"],
     monthEndRule: settings["billing.monthEndRule"],
+    midMonthIncreaseLines: settings["billing.midMonthIncreaseLines"],
+    afterCustomIncrease: settings["billing.afterCustomIncrease"],
+    skipZeroInvoices: settings["billing.skipZeroInvoices"],
     dueDays: settings["invoice.dueDays"],
   };
 }

@@ -3,7 +3,12 @@
 
 import { sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
-import { closeDb, inRollback, skipDbTests } from "@/lib/db/__tests__/harness";
+import {
+  closeDb,
+  hasTables,
+  inRollback,
+  skipDbTests,
+} from "@/lib/db/__tests__/harness";
 import { PERMISSIONS, type Permission } from "../roles";
 
 const TABLE_PERMISSION: Record<
@@ -19,6 +24,18 @@ const TABLE_PERMISSION: Record<
   tenants: { write: "manage_tenants", delete: "delete_records" },
   tenant_contacts: { write: "manage_tenants", delete: "delete_records" },
 };
+
+// Billing tables (M4): checked once their migration is applied. Drafts can
+// be deleted by whoever bills; triggers refuse deleting anything sent.
+const BILLING_TABLES = {
+  invoice_series: { write: "manage_billing", delete: null },
+  invoices: { write: "manage_billing", delete: "manage_billing" },
+  invoice_lines: { write: "manage_billing", delete: "manage_billing" },
+  credit_notes: { write: "manage_billing", delete: null },
+  credit_note_lines: { write: "manage_billing", delete: null },
+} satisfies typeof TABLE_PERMISSION;
+if (await hasTables(...Object.keys(BILLING_TABLES)))
+  Object.assign(TABLE_PERMISSION, BILLING_TABLES);
 
 describe.skipIf(skipDbTests)("permissions match row-level security", () => {
   afterAll(closeDb);

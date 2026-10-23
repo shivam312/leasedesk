@@ -71,7 +71,7 @@ Built on branch `m3-leases-schema`; the lease migrations (`drizzle/0008`–`0011
 
 ## M4. Invoicing (week 7)
 
-- [ ] Schema: invoice series, invoices, invoice lines, credit notes
+- [x] Schema: invoice series, invoices, invoice lines, credit notes
 - [ ] Monthly billing run: generate drafts for all active leases, with a manual "Run now" button
 - [ ] Schedule the monthly billing run with Inngest (local dev server)
 - [ ] Move invoice number formatting from `src/lib/billing/invoice-number.ts` to `src/lib/invoices/` with sequence assignment (D9)

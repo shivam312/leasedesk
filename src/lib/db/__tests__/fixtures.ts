@@ -138,3 +138,62 @@ export async function seedOrg(tx: TestTx, name: string, role: Role = "owner") {
   });
   return { userId, org, entity, building, unit, tenant, lease, charge };
 }
+
+const EXPLAINED = { rule: "Fixed amount", steps: [], result: 100000 };
+
+/** A draft invoice with one ₹1,000 rent line plus 18% GST, for `seedOrg`'s lease. */
+export async function draftInvoice(
+  tx: TestTx,
+  a: Awaited<ReturnType<typeof seedOrg>>,
+  runMonth = "2026-11-01",
+) {
+  const invoice = only(
+    await tx
+      .insert(schema.invoices)
+      .values({
+        organizationId: a.org.id,
+        tenantId: a.tenant.id,
+        leaseId: a.lease.id,
+        buildingId: a.building.id,
+        billingEntityId: a.entity.id,
+        runMonth,
+        invoiceDate: runMonth,
+        dueDate: runMonth,
+        periodStart: runMonth,
+        periodEnd: runMonth,
+        placeOfSupply: "27",
+        supplyType: "intra_state",
+        taxableTotal: 100000,
+        cgstTotal: 9000,
+        sgstTotal: 9000,
+        igstTotal: 0,
+        grandTotal: 118000,
+        expectedTds: 10000,
+      })
+      .returning(),
+  );
+  const line = only(
+    await tx
+      .insert(schema.invoiceLines)
+      .values({
+        organizationId: a.org.id,
+        invoiceId: invoice.id,
+        leaseId: a.lease.id,
+        chargeId: a.charge.id,
+        chargeType: "rent",
+        position: 1,
+        description: "Rent",
+        periodStart: runMonth,
+        periodEnd: runMonth,
+        sacCode: "997212",
+        taxableAmount: 100000,
+        gstRateBp: 1800,
+        cgst: 9000,
+        sgst: 9000,
+        igst: 0,
+        explanation: { amount: EXPLAINED, tax: EXPLAINED },
+      })
+      .returning(),
+  );
+  return { invoice, line };
+}

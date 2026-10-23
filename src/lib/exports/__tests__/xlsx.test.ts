@@ -1,4 +1,4 @@
-import { read, utils } from "xlsx";
+import { read, SSF, utils } from "xlsx";
 import { describe, expect, it } from "vitest";
 import type { Report } from "@/lib/reports/report";
 import { excelCell, reportWorkbook, sheetName } from "../xlsx";
@@ -59,6 +59,18 @@ describe("excelCell", () => {
       v: 46318,
       z: "dd-mm-yyyy",
     });
+  });
+  it("shows negative money with a minus sign and lakh grouping", () => {
+    // A reversed payment of ₹1,08,000: -108000, shown -₹1,08,000.00.
+    const shown = (paise: number) => {
+      const cell = excelCell(col("money"), paise);
+      return SSF.format(cell.z as string, cell.v as number);
+    };
+    expect(shown(-10_800_000)).toBe("-₹1,08,000.00");
+    expect(shown(-1_234_567_800)).toBe("-₹1,23,45,678.00");
+    expect(shown(-500)).toBe("-₹5.00");
+    expect(shown(10_800_000)).toBe("₹1,08,000.00");
+    expect(shown(1_234_567_800)).toBe("₹1,23,45,678.00");
   });
   it("writes basis points as a fraction shown as a percent", () => {
     expect(excelCell(col("percent"), 1800)).toMatchObject({

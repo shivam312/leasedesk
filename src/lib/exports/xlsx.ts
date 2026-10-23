@@ -11,6 +11,16 @@ import type { Column, Cell, Report, ReportSection } from "@/lib/reports/report";
 /** ₹ with lakh and crore grouping: 1,18,000.00 and 1,23,45,678.00. */
 export const INR_FORMAT =
   '[>=10000000]"₹"##\\,##\\,##\\,##0.00;[>=100000]"₹"##\\,##\\,##0.00;"₹"#,##0.00';
+/**
+ * A negative amount gets one unconditioned format for its size, so Excel
+ * adds the minus sign itself (a conditioned format shows none).
+ */
+function negativeInrFormat(paise: number): string {
+  const abs = Math.abs(paise);
+  if (abs >= 1_000_000_000) return '"₹"##\\,##\\,##\\,##0.00';
+  if (abs >= 10_000_000) return '"₹"##\\,##\\,##0.00';
+  return '"₹"#,##0.00';
+}
 const AREA_FORMAT = '#,##0.00" sq ft"';
 const PERCENT_FORMAT = "0.00%";
 const DATE_FORMAT = "dd-mm-yyyy";
@@ -41,7 +51,11 @@ export function excelCell(column: Column, value: Cell): CellObject {
   }
   switch (column.kind) {
     case "money":
-      return { t: "n", v: hundredthsToNumber(value), z: INR_FORMAT };
+      return {
+        t: "n",
+        v: hundredthsToNumber(value),
+        z: value < 0 ? negativeInrFormat(value) : INR_FORMAT,
+      };
     case "area":
       return { t: "n", v: hundredthsToNumber(value), z: AREA_FORMAT };
     case "percent":

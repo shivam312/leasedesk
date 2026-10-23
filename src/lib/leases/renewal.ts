@@ -4,7 +4,13 @@
 // tenant and units, with the old terms as a template. When it's activated,
 // the old version's status becomes `renewed`.
 
-import { addDays, addMonths, type PlainDate } from "@/lib/billing/dates";
+import {
+  addDays,
+  addMonths,
+  compareDates,
+  type PlainDate,
+} from "@/lib/billing/dates";
+import { formatDate } from "@/lib/format";
 import type { BillingSettings } from "@/lib/billing/types";
 import {
   leaseTemplate,
@@ -65,4 +71,17 @@ export function renewalDraft(
       -1,
     ),
   };
+}
+
+/**
+ * A renewal must start after the version it replaces ends, or the same
+ * units would be billed twice for the overlapping days. Null when it's fine.
+ */
+export function renewalStartProblem(
+  oldEndDate: PlainDate,
+  newStartDate: PlainDate,
+): string | null {
+  return compareDates(newStartDate, oldEndDate) > 0
+    ? null
+    : `The renewal must start after the current lease ends on ${formatDate(oldEndDate)}.`;
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { renewalDraft, type RenewableLease } from "../renewal";
+import {
+  renewalDraft,
+  renewalStartProblem,
+  type RenewableLease,
+} from "../renewal";
 
 const lease: RenewableLease = {
   id: "L1",
@@ -45,5 +49,17 @@ describe("renewalDraft", () => {
       renewalDraft({ ...lease, status: "renewed" }, 36, settings),
     ).toThrow("already been renewed");
     expect(() => renewalDraft(lease, 0, settings)).toThrow("whole months");
+  });
+});
+
+describe("renewalStartProblem", () => {
+  it("refuses a renewal that starts before the old version ends", () => {
+    // Old lease ends 31-03-2027; a renewal from 01-01-2027 would bill
+    // Jan–Mar 2027 twice for the same units.
+    expect(renewalStartProblem("2027-03-31", "2027-01-01")).toBe(
+      "The renewal must start after the current lease ends on 31-03-2027.",
+    );
+    expect(renewalStartProblem("2027-03-31", "2027-03-31")).not.toBeNull();
+    expect(renewalStartProblem("2027-03-31", "2027-04-01")).toBeNull();
   });
 });

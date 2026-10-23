@@ -82,8 +82,8 @@ function ProblemList({ problems }: { problems: string[] }) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border p-3 text-sm">
       <ul aria-label="Rows to fix" className="flex flex-col gap-1">
-        {shown.map((p) => (
-          <li key={p} className="break-words">
+        {shown.map((p, i) => (
+          <li key={`${i}-${p}`} className="break-words">
             {p}
           </li>
         ))}
@@ -91,11 +91,11 @@ function ProblemList({ problems }: { problems: string[] }) {
       {rest.length > 0 && (
         <details>
           <summary className="min-h-11 cursor-pointer py-2 font-medium md:min-h-9">
-            Show {rest.length} more rows to fix
+            Show {rest.length} more {rest.length === 1 ? "row" : "rows"} to fix
           </summary>
           <ul aria-label="More rows to fix" className="flex flex-col gap-1">
-            {rest.map((p) => (
-              <li key={p} className="break-words">
+            {rest.map((p, i) => (
+              <li key={`${i}-${p}`} className="break-words">
                 {p}
               </li>
             ))}

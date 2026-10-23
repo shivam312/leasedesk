@@ -69,7 +69,9 @@ export async function importStatementAction(
     id = result.import.id;
   } catch (error) {
     if (error instanceof ImportError) return { message: error.message };
-    reportError("Statement import failed", error);
+    reportError("Statement import failed", error, {
+      bankAccountId: parsed.data.bankAccountId,
+    });
     return {
       message:
         "Something went wrong; nothing was imported. Try again in a few minutes.",

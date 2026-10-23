@@ -4,3 +4,4 @@
 export * from "./organizations";
 export * from "./property";
 export * from "./tenants";
+export * from "./activity-log";

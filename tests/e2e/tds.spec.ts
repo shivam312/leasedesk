@@ -1,13 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { hasTables, signUpNewOwner } from "./helpers";
+import { signUpNewOwner } from "./helpers";
 
 test("an owner opens the TDS certificates list for the year", async ({
   page,
 }) => {
-  test.skip(
-    !(await hasTables("tds_records", "documents")),
-    "TDS tables aren't migrated yet: run pnpm db:migrate",
-  );
   await signUpNewOwner(page);
   await page.goto("/billing/payments");
   await page.getByRole("link", { name: "TDS certificates" }).click();

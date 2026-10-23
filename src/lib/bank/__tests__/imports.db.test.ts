@@ -8,7 +8,7 @@ import { seedOrg } from "@/lib/db/__tests__/fixtures";
 import {
   actAs,
   closeDb,
-  hasTables,
+  skipDbTests,
   inRollback,
   type TestTx,
 } from "@/lib/db/__tests__/harness";
@@ -16,11 +16,6 @@ import { parseCsv } from "../csv";
 import { addBankAccount, ImportError, importStatement } from "../imports";
 import { suggestMapping } from "../statement";
 
-const ready = await hasTables(
-  "bank_accounts",
-  "bank_statement_imports",
-  "bank_statement_lines",
-);
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
 const rows = parseCsv(
   readFileSync(
@@ -30,7 +25,7 @@ const rows = parseCsv(
 );
 const mapping = suggestMapping(rows)!.mapping;
 
-describe.skipIf(!ready)("bank imports (skipped until pnpm db:migrate)", () => {
+describe.skipIf(skipDbTests)("bank imports", () => {
   afterAll(closeDb);
 
   it("imports credits once, remembers the columns, and skips repeats", async () => {

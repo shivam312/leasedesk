@@ -5,14 +5,13 @@ import { runScoped, type Transactional } from "@/lib/db/scoped";
 import { draftInvoice, seedOrg } from "@/lib/db/__tests__/fixtures";
 import {
   closeDb,
-  hasTables,
+  skipDbTests,
   inRollback,
   type TestTx,
 } from "@/lib/db/__tests__/harness";
 import { draftTenantsWithoutEmail, issueInvoice, SendError } from "../send";
 import { madeDraft } from "./db-fixtures";
 
-const ready = await hasTables("invoices", "invoice_series");
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
 const SENT_AT = new Date("2026-11-01T04:30:00Z");
 
@@ -25,7 +24,7 @@ async function withGstin(tx: TestTx, gstin: string | null = "27AAPFU0939F1ZV") {
   return a;
 }
 
-describe.skipIf(!ready)("issueInvoice (skipped until pnpm db:migrate)", () => {
+describe.skipIf(skipDbTests)("issueInvoice", () => {
   afterAll(closeDb);
 
   it("numbers a draft, copies the details onto it and marks it sent, once", async () => {
@@ -109,32 +108,27 @@ describe.skipIf(!ready)("issueInvoice (skipped until pnpm db:migrate)", () => {
   });
 });
 
-describe.skipIf(!ready)(
-  "draftTenantsWithoutEmail (skipped until pnpm db:migrate)",
-  () => {
-    afterAll(closeDb);
+describe.skipIf(skipDbTests)("draftTenantsWithoutEmail", () => {
+  afterAll(closeDb);
 
-    it("names a draft's tenant until it has an email address", async () => {
-      await inRollback(async (tx) => {
-        const a = await withGstin(tx);
-        await draftInvoice(tx, a);
-        const ctx = { userId: a.userId, organizationId: a.org.id };
-        const names = () =>
-          runScoped(asDb(tx), ctx, (s) =>
-            draftTenantsWithoutEmail(s, "2026-11"),
-          );
-        expect(await names()).toEqual(["A Tenant"]);
-        expect(
-          await runScoped(asDb(tx), ctx, (s) =>
-            draftTenantsWithoutEmail(s, "2026-12"),
-          ),
-        ).toEqual([]);
-        await tx
-          .update(schema.tenantContacts)
-          .set({ email: "accounts@a.test" })
-          .where(eq(schema.tenantContacts.tenantId, a.tenant.id));
-        expect(await names()).toEqual([]);
-      });
+  it("names a draft's tenant until it has an email address", async () => {
+    await inRollback(async (tx) => {
+      const a = await withGstin(tx);
+      await draftInvoice(tx, a);
+      const ctx = { userId: a.userId, organizationId: a.org.id };
+      const names = () =>
+        runScoped(asDb(tx), ctx, (s) => draftTenantsWithoutEmail(s, "2026-11"));
+      expect(await names()).toEqual(["A Tenant"]);
+      expect(
+        await runScoped(asDb(tx), ctx, (s) =>
+          draftTenantsWithoutEmail(s, "2026-12"),
+        ),
+      ).toEqual([]);
+      await tx
+        .update(schema.tenantContacts)
+        .set({ email: "accounts@a.test" })
+        .where(eq(schema.tenantContacts.tenantId, a.tenant.id));
+      expect(await names()).toEqual([]);
     });
-  },
-);
+  });
+});

@@ -4,17 +4,16 @@ import { runScoped, type Transactional } from "@/lib/db/scoped";
 import { seedOrg } from "@/lib/db/__tests__/fixtures";
 import {
   closeDb,
-  hasTables,
+  skipDbTests,
   inRollback,
   type TestTx,
 } from "@/lib/db/__tests__/harness";
 import { DEFAULT_NUMBER_FORMAT } from "../number";
 import { takeNumber } from "../numbering";
 
-const ready = await hasTables("invoice_series");
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
 
-describe.skipIf(!ready)("takeNumber (skipped until pnpm db:migrate)", () => {
+describe.skipIf(skipDbTests)("takeNumber", () => {
   afterAll(closeDb);
 
   it("numbers consecutively per series and starts again each financial year", async () => {

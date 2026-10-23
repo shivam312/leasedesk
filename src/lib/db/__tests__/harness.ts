@@ -64,24 +64,3 @@ export async function actAs(tx: TestTx, userId: string) {
   );
   await tx.execute(rawSql`set local role authenticated`);
 }
-
-/**
- * Whether these tables exist in the local database, i.e. their migration
- * has been applied with `pnpm db:migrate`. Tests for tables whose migration
- * is still waiting are skipped (their describe title says so) rather than
- * failed, so an unapplied local migration doesn't hide every other result.
- */
-export async function hasTables(...names: string[]): Promise<boolean> {
-  if (skipDbTests) return false;
-  const url = databaseUrl();
-  assertLocalDatabase(url);
-  const sql = postgres(url, { max: 1, onnotice: () => {}, connect_timeout: 5 });
-  try {
-    const rows = await sql<{ count: number }[]>`
-      select count(*)::int as count from pg_tables
-      where schemaname = 'public' and tablename = any(${names})`;
-    return rows[0]?.count === names.length;
-  } finally {
-    await sql.end();
-  }
-}

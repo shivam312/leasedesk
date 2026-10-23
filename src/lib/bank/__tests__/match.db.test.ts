@@ -4,7 +4,7 @@ import * as schema from "@/lib/db/schema";
 import { runScoped, type Transactional } from "@/lib/db/scoped";
 import {
   closeDb,
-  hasTables,
+  skipDbTests,
   inRollback,
   type TestTx,
 } from "@/lib/db/__tests__/harness";
@@ -18,7 +18,6 @@ import {
 import { addBankAccount, importStatement } from "../imports";
 import { confirmLine, ignoreLines, linesToMatch } from "../match";
 
-const ready = await hasTables("bank_statement_lines", "payments");
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
 
 // November's invoice T/26-27/0001: ₹1,38,060 with ₹11,700 TDS expected,
@@ -55,7 +54,7 @@ async function imported(tx: TestTx) {
   return { a, ctx, invoice, lines };
 }
 
-describe.skipIf(!ready)("bank matching (skipped until pnpm db:migrate)", () => {
+describe.skipIf(skipDbTests)("bank matching", () => {
   afterAll(closeDb);
 
   it("suggests the tenant and invoice on import, and confirming records the payment", async () => {

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { join } from "node:path";
-import { addGstin, hasTables, signUpNewOwner } from "./helpers";
+import { addGstin, signUpNewOwner } from "./helpers";
 
 const fixture = (name: string) =>
   join(process.cwd(), "tests/fixtures/bank/synthetic", name);
@@ -8,10 +8,6 @@ const fixture = (name: string) =>
 test("an owner imports a bank statement; the columns are remembered", async ({
   page,
 }) => {
-  test.skip(
-    !(await hasTables("bank_accounts", "bank_statement_lines")),
-    "Bank tables aren't migrated yet: run pnpm db:migrate",
-  );
   await signUpNewOwner(page);
   await addGstin(page);
   await page.goto("/billing/payments");

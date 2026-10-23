@@ -1,13 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { hasTables, signUpNewOwner } from "./helpers";
+import { signUpNewOwner } from "./helpers";
 
 test("an owner records an advance payment, then reverses it", async ({
   page,
 }) => {
-  test.skip(
-    !(await hasTables("payments", "payment_allocations", "tds_records")),
-    "Payment tables aren't migrated yet: run pnpm db:migrate",
-  );
   await signUpNewOwner(page);
   await page.goto("/tenants/new");
   await page.getByLabel("Tenant name").fill("Acme Software Pvt Ltd");

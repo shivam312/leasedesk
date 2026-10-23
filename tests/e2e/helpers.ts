@@ -37,13 +37,3 @@ export async function addBuilding(page: Page, name = "E2E Tower") {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
   return page.url();
 }
-
-/**
- * Whether the local database has these tables (their migration applied with
- * `pnpm db:migrate`). Tests of screens on newer tables skip until then.
- */
-export async function hasTables(...names: string[]): Promise<boolean> {
-  const { hasTables: check } =
-    await import("../../src/lib/db/__tests__/harness");
-  return check(...names);
-}

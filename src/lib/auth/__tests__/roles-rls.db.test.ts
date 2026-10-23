@@ -3,12 +3,7 @@
 
 import { sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
-import {
-  closeDb,
-  hasTables,
-  inRollback,
-  skipDbTests,
-} from "@/lib/db/__tests__/harness";
+import { closeDb, inRollback, skipDbTests } from "@/lib/db/__tests__/harness";
 import { PERMISSIONS, type Permission } from "../roles";
 
 const TABLE_PERMISSION: Record<
@@ -34,8 +29,7 @@ const BILLING_TABLES = {
   credit_notes: { write: "manage_billing", delete: null },
   credit_note_lines: { write: "manage_billing", delete: null },
 } satisfies typeof TABLE_PERMISSION;
-if (await hasTables(...Object.keys(BILLING_TABLES)))
-  Object.assign(TABLE_PERMISSION, BILLING_TABLES);
+Object.assign(TABLE_PERMISSION, BILLING_TABLES);
 
 describe.skipIf(skipDbTests)("permissions match row-level security", () => {
   afterAll(closeDb);

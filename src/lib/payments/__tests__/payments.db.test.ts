@@ -6,7 +6,7 @@ import { seedOrg } from "@/lib/db/__tests__/fixtures";
 import {
   actAs,
   closeDb,
-  hasTables,
+  skipDbTests,
   inRollback,
   type TestTx,
 } from "@/lib/db/__tests__/harness";
@@ -24,7 +24,6 @@ import {
   type RecordPayment,
 } from "../payments";
 
-const ready = await hasTables("payments", "payment_allocations", "tds_records");
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
 
 // November 2026: ₹1,17,000 rent + ₹21,060 GST = ₹1,38,060, expected TDS
@@ -45,7 +44,7 @@ const status = async (tx: TestTx, id: string) =>
       .where(eq(schema.invoices.id, id))
   )[0]?.status;
 
-describe.skipIf(!ready)("payments (skipped until pnpm db:migrate)", () => {
+describe.skipIf(skipDbTests)("payments", () => {
   afterAll(closeDb);
 
   const pay = (over: Partial<RecordPayment> & { tenantId: string }) => ({

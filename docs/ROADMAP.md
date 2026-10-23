@@ -73,7 +73,7 @@ Built on branch `m3-leases-schema`; the lease migrations (`drizzle/0008`–`0011
 
 - [x] Schema: invoice series, invoices, invoice lines, credit notes
 - [x] Monthly billing run: generate drafts for all active leases, with a manual "Run now" button
-- [ ] Schedule the monthly billing run with Inngest (local dev server)
+- [x] Schedule the monthly billing run with Inngest (local dev server)
 - [ ] Move invoice number formatting from `src/lib/billing/invoice-number.ts` to `src/lib/invoices/` with sequence assignment (D9)
 - [ ] Email adapter with a console driver (writes to `.local-outbox/`) used when `RESEND_API_KEY` is missing
 - [ ] Invoice PDF with GST fields, bank details and UPI QR code

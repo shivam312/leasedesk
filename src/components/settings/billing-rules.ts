@@ -12,6 +12,19 @@ import {
 } from "@/lib/settings/schema";
 
 /** How a value reads in words, e.g. "In advance", "18%", "7 days". */
+/** 1 → "1st", 22 → "22nd", 25 → "25th". */
+function ordinal(n: number): string {
+  const suffix =
+    n % 10 === 1 && n !== 11
+      ? "st"
+      : n % 10 === 2 && n !== 12
+        ? "nd"
+        : n % 10 === 3 && n !== 13
+          ? "rd"
+          : "th";
+  return `${n}${suffix}`;
+}
+
 export function describeValue(key: SettingKey, value: unknown): string {
   const input = SETTING_LABELS[key]?.input;
   switch (input?.kind) {
@@ -25,6 +38,8 @@ export function describeValue(key: SettingKey, value: unknown): string {
       return formatINR(value as number);
     case "days":
       return `${String(value)} days`;
+    case "dayOfMonth":
+      return `The ${ordinal(Number(value))}`;
     default:
       return String(value);
   }

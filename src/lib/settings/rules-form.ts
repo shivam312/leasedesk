@@ -61,7 +61,7 @@ export function readSettingsForm(
     const input = SETTING_LABELS[key]?.input;
     let value: unknown = raw;
     if (input?.kind === "boolean") value = raw === "true";
-    if (input?.kind === "days") value = /^\d+$/.test(raw) ? Number(raw) : NaN;
+    if (input?.kind === "days" || input?.kind === "dayOfMonth") value = /^\d+$/.test(raw) ? Number(raw) : NaN;
     if (input?.kind === "percent") value = percentToBp(raw);
     if (input?.kind === "rupees") value = rupeesToPaise(raw);
     const parsed = SETTINGS[key].schema.safeParse(value);
@@ -81,6 +81,8 @@ function messageFor(key: SettingKey): string {
       return "Enter an amount in rupees, like 1 or 0.50.";
     case "days":
       return "Enter a whole number of days, 0 to 180.";
+    case "dayOfMonth":
+      return "Enter a day of the month from 1 to 28.";
     default:
       return key === "gst.defaultSac"
         ? "A SAC code is 6 digits, like 997212."

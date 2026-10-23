@@ -12,6 +12,7 @@ export type Input =
   | { kind: "percent" }
   | { kind: "rupees" }
   | { kind: "days" }
+  | { kind: "dayOfMonth" }
   | { kind: "text"; placeholder?: string };
 
 export interface SettingLabel {
@@ -102,6 +103,11 @@ export const SETTING_LABELS: Partial<Record<SettingKey, SettingLabel>> = {
     label: "Payment due",
     help: "Days after the invoice date. 7 days: an invoice of 1 May is due 8 May.",
     input: { kind: "days" },
+  },
+  "invoice.runDay": {
+    label: "Day to make invoices",
+    help: "On the 1st: that month's invoices. On a later day, the next month's: the 25th makes November's invoices on 25 Oct. Nothing is sent until you send it.",
+    input: { kind: "dayOfMonth" },
   },
   "tds.rounding": {
     label: "Expected TDS",

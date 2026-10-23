@@ -48,8 +48,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next.js internals and static files.
+  // Everything except Next.js internals, static files and the background-job
+  // endpoint (Inngest signs its own requests; src/app/api/inngest).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|api/inngest|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

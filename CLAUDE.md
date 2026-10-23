@@ -45,6 +45,8 @@ Database (local Supabase via `supabase start`; needs Docker running):
 - `pnpm db:seed`: load demo data (2 buildings, 40 tenants, 45 leases; same remote-database guard)
 - `pnpm db:reset`: wipe the local database, then migrate and seed
 
+Background jobs: `pnpm jobs:dev` runs Inngest's local dev server against `pnpm dev` (http://localhost:8288), where the daily billing run can be triggered by hand.
+
 ## Non-negotiable rules
 
 1. **Money is integer paise** (`bigint` in the database, `number` in TypeScript only when safely below 2^53). Never use floats for money. Percentages are basis points (18% = 1800).

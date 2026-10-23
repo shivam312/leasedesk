@@ -148,3 +148,12 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - The amounts come only from `draftInvoice` (`src/lib/billing/draft-invoice.ts`), which joins the engine's lines, GST, totals and expected TDS. Settings are resolved per lease (lease → tenant → building → billing entity → organization).
 - Leases in every saved status are considered (a `renewed` or ended lease still bills to its end date, and arrears up to three months after it); the engine decides whether there is anything to bill.
 - `runAsSystem` (`src/lib/db/scoped.ts`) gives trusted background code (the scheduled run, the seed script) an organization scope with no user: it runs as the database owner, still filters by organization, and logs activity with no actor. Screens never use it.
+
+## D23. The scheduled run checks every morning and honours each organization's run day (2026-10-23)
+
+**Why:** `invoice.runDay` lets a landlord make invoices on the 25th for the next month. One monthly cron on the 1st couldn't do that.
+**Consequences:**
+- `monthlyBilling` (`src/lib/jobs/monthly-billing.ts`) runs daily at 06:00 India time (`TZ=Asia/Kolkata 0 6 * * *`). `dueRuns` picks the organizations whose run day is today: day 1 makes that month's drafts, a later day the next month's. Each organization is its own Inngest step, so a retry doesn't redo the others.
+- It only makes drafts (`runBilling` through `runAsSystem`); nothing is sent automatically. The Billing page's "Make invoices" button calls the same `runBilling`, so billing works with no job server at all.
+- Without `INNGEST_SIGNING_KEY` the client is in dev mode and talks to the local dev server (`pnpm jobs:dev`). `/api/inngest` is outside the login proxy because Inngest signs its own requests; creating the Inngest account is a human task (M8).
+- An invoice is still dated the 1st of its month whatever the run day; `invoice.runDay` decides only when the drafts are made.

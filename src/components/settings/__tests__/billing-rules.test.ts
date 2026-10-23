@@ -8,4 +8,11 @@ describe("describeValue", () => {
     expect(describeValue("tds.tolerancePaise", 100)).toBe("₹1");
     expect(describeValue("tds.tolerancePaise", 150)).toBe("₹1.50");
   });
+
+  it("shows the run day as a day of the month", () => {
+    expect(describeValue("invoice.runDay", 1)).toBe("The 1st");
+    expect(describeValue("invoice.runDay", 22)).toBe("The 22nd");
+    expect(describeValue("invoice.runDay", 13)).toBe("The 13th");
+    expect(describeValue("invoice.runDay", 25)).toBe("The 25th");
+  });
 });

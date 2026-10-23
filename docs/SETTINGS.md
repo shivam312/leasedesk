@@ -52,7 +52,7 @@ TDS is set per charge type on the tenant: `rent`, `cam`, `parking` and `other` (
 | [ ] | `invoice.numberFormat` | billing entity | template | `{prefix}/{fy}/{seq}` | advanced | Existing numbering must continue when they switch to us | Fixed to the default: `invoiceNumber` in `invoice-number.ts` |
 | [ ] | `invoice.startingNumber` | billing entity, per FY | first number per financial year, e.g. `{"2026-27": 412}` | `{}` (start at 1 every year) | basic (onboarding) | Customers join mid-year with numbers already used | |
 | [x] | `invoice.dueDays` | building, tenant | days | `7` | basic | Payment terms vary by lease | `BillingSettings.dueDays`, used by `invoiceForRun` in `invoice-lines.ts` |
-| [ ] | `invoice.runDay` | organization | day of month | `1` | basic | Some landlords bill on the 25th for the next month | Fixed to the 1st: `invoiceForRun` in `invoice-lines.ts` |
+| [x] | `invoice.runDay` | organization | day of month, 1–28 | `1` | basic | Some landlords bill on the 25th for the next month | When the scheduled run makes drafts: `scheduledRunMonth` in `src/lib/invoices/schedule.ts` (1 = that month, on the 1st; a later day = the next month's, ahead of time). Invoices are still dated the 1st of their month (`invoiceForRun`) |
 
 ## Reminders and alerts
 

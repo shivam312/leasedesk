@@ -167,8 +167,10 @@ test("new landlord → import → billing run → send → payment → reports",
   await page.goto("/reports/tds-summary");
   await expect(visible(page, "₹10,000")).toBeVisible();
 
-  // Today shows the month at a glance: billed ₹1,77,000, collected ₹1,18,000
-  // (the payment and the TDS together settle Beta's invoice).
+  // Today shows the month at a glance: billed ₹1,77,000, collected ₹1,08,000
+  // in money plus ₹10,000 TDS kept back (together they settle Beta's invoice).
   await page.goto("/today");
   await expect(visible(page, "₹1,77,000")).toBeVisible();
+  await expect(visible(page, "₹1,08,000")).toBeVisible();
+  await expect(visible(page, "Plus ₹10,000 TDS kept back")).toBeVisible();
 });

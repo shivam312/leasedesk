@@ -55,6 +55,11 @@ async function Building({ params }: { params: Promise<{ id: string }> }) {
               </Link>
             </Button>
           )}
+          <Button asChild variant="outline">
+            <Link href={`/leases/buildings/${building.id}/stacking`}>
+              Stacking plan
+            </Link>
+          </Button>
           {editable && (
             <Button asChild variant="ghost">
               <Link href={`/leases/buildings/${building.id}/edit`}>

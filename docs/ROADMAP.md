@@ -52,7 +52,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [x] Settings: organization and billing entities (GSTIN, bank, UPI)
 - [x] Settings → Billing rules page (organization and building level, basic and "More options")
 - [x] Buildings and units screens
-- [ ] Stacking plan
+- [x] Stacking plan
 - [ ] Tenants list and tenant page
 
 ## M3. Leases (week 6)

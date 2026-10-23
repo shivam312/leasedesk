@@ -35,6 +35,7 @@ import { ageing, collections } from "./collections";
 import { gstSummary, type GstDocument, type GstLine } from "./gst-summary";
 import type { Report } from "./report";
 import { tdsSummary } from "./tds-summary";
+import { expirySchedule } from "./expiry";
 import { rentRoll, type RentRollLease } from "./rent-roll";
 import { vacancy } from "./vacancy";
 
@@ -107,6 +108,7 @@ export async function rentRollLeases(s: Scoped): Promise<RentRollLease[]> {
       endDate: lease.endDate,
       rentStartsOn: lease.rentCommencementDate,
       lockInEndDate: lease.lockInEndDate,
+      noticePeriodMonths: lease.noticePeriodMonths,
       depositPaise: lease.depositAmount,
       input: savedLeaseInput(
         lease,
@@ -365,4 +367,11 @@ export async function tdsSummaryReport(
     financialYear,
     today,
   );
+}
+
+export async function expiryReport(
+  s: Scoped,
+  asOf: PlainDate,
+): Promise<Report> {
+  return expirySchedule(await rentRollLeases(s), asOf);
 }

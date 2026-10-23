@@ -23,6 +23,7 @@ export type RentRollLease = {
   endDate: PlainDate;
   rentStartsOn: PlainDate;
   lockInEndDate: PlainDate | null;
+  noticePeriodMonths: number | null;
   depositPaise: Paise;
   input: LeaseInput;
   settings: Pick<

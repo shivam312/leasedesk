@@ -16,6 +16,7 @@ import { financialYearChoices } from "@/lib/tds/tracker";
 import {
   ageingReport,
   collectionsReport,
+  expiryReport,
   gstSummaryReport,
   tdsSummaryReport,
   rentRollReport,
@@ -68,6 +69,14 @@ export const REPORTS: ReportDefinition[] = [
       "How much of each building is leased, and every vacant unit with the day it became vacant.",
     filter: "asOf",
     load: (s, p) => vacancyReport(s, p.asOf),
+  },
+  {
+    slug: "expiry",
+    title: "Expiry schedule",
+    description:
+      "Leases ending in the next 12 months, soonest first, with the last day to give notice.",
+    filter: "asOf",
+    load: (s, p) => expiryReport(s, p.asOf),
   },
   {
     slug: "collections",

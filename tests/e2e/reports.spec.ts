@@ -38,6 +38,17 @@ test("an owner reads the rent roll and vacancy", async ({ page }) => {
     page.getByText("No lease is running on this date."),
   ).toBeVisible();
 
+  // The lease ends three years from this month: listed from two years on.
+  await page.goto("/reports/expiry");
+  await expect(
+    page.getByText("No lease ends in the 12 months from this date.").first(),
+  ).toBeVisible();
+  const later = `${Number(today.slice(0, 4)) + 2}-${today.slice(5, 7)}-15`;
+  await page.goto(`/reports/expiry?asOf=${later}`);
+  await expect(
+    page.getByText("Acme Software Pvt Ltd").filter({ visible: true }).first(),
+  ).toBeVisible();
+
   await page.goto("/reports/vacancy");
   await expect(
     page.getByText("Every unit is leased on this date."),

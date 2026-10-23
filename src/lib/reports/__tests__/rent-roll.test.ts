@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "@/lib/billing/__tests__/billing-settings";
 import type { Charge } from "@/lib/billing/types";
+import { expirySchedule } from "../expiry";
 import { rentFigures, rentRoll, type RentRollLease } from "../rent-roll";
 import { vacancy, type VacancyUnit } from "../vacancy";
 
@@ -28,6 +29,7 @@ const lease = (over: Partial<RentRollLease> = {}): RentRollLease => ({
   endDate: "2030-03-31",
   rentStartsOn: "2025-04-01",
   lockInEndDate: "2027-03-31",
+  noticePeriodMonths: 3,
   depositPaise: 64_150_050,
   input: {
     id: "l1",
@@ -207,5 +209,58 @@ describe("vacancy", () => {
         marked: "Fit-out",
       }),
     ]);
+  });
+});
+
+describe("expirySchedule", () => {
+  it("lists running leases ending in the next 12 months, soonest first", () => {
+    const report = expirySchedule(
+      [
+        lease(),
+        // Ends 31-03-2027, notice 3 months: last day to give notice is
+        // 01-04-2027 − 3 months − 1 day = 31-12-2026
+        lease({
+          leaseId: "b",
+          tenantName: "Beta Foods LLP",
+          endDate: "2027-03-31",
+        }),
+        // Ends 30-11-2026, 1 month notice → 31-10-2026 is the last day
+        lease({
+          leaseId: "c",
+          tenantName: "Chai Point",
+          endDate: "2026-11-30",
+          noticePeriodMonths: 1,
+        }),
+        // Already renewed: not listed
+        lease({ leaseId: "d", status: "renewed", endDate: "2026-12-31" }),
+        // Ends after the window (window ends 22-10-2027)
+        lease({ leaseId: "e", endDate: "2027-10-23" }),
+      ],
+      "2026-10-23",
+    );
+    const [list, byQuarter] = report.sections;
+    expect(list!.rows.map((r) => [r.tenant, r.end, r.days, r.notice])).toEqual([
+      ["Chai Point", "2026-11-30", 38, "2026-10-31"],
+      ["Beta Foods LLP", "2027-03-31", 159, "2026-12-31"],
+    ]);
+    // Rent in the last month: after the 01-04-2026 increase, ₹1,12,264
+    expect(list!.rows[0]!.rent).toBe(11_226_400);
+    expect(byQuarter!.rows.map((r) => [r.quarter, r.leases])).toEqual([
+      ["Q3 FY 2026-27 (Oct–Dec)", 1],
+      ["Q4 FY 2026-27 (Jan–Mar)", 1],
+    ]);
+    expect(report.period).toBe("Leases ending 23-10-2026 to 22-10-2027");
+  });
+
+  it("marks a notice day that has already passed", () => {
+    const report = expirySchedule(
+      [lease({ endDate: "2026-12-31", noticePeriodMonths: 3 })],
+      "2026-10-23",
+    );
+    // 01-01-2027 − 3 months − 1 day = 30-09-2026, before 23-10-2026
+    expect(report.sections[0]!.rows[0]).toMatchObject({
+      notice: "2026-09-30",
+      noticePassed: "Passed",
+    });
   });
 });

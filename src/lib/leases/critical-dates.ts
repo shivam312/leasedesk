@@ -21,6 +21,31 @@ export type GeneratedCriticalDate = {
 
 const NOTICE_REMIND_DAYS = [30, 7];
 
+/**
+ * The last day to give notice so the lease ends on its last day; null with
+ * no notice period, or when that day is before the lease starts.
+ */
+export function noticeDeadline(
+  lease: {
+    startDate: PlainDate;
+    endDate: PlainDate;
+    noticePeriodMonths?: number | null;
+  },
+  monthEndRule: BillingSettings["monthEndRule"],
+): PlainDate | null {
+  if (!lease.noticePeriodMonths) return null;
+  // Notice given on this day ends the lease on its last day.
+  const date = addDays(
+    addMonths(
+      addDays(lease.endDate, 1),
+      -lease.noticePeriodMonths,
+      monthEndRule,
+    ),
+    -1,
+  );
+  return compareDates(date, lease.startDate) >= 0 ? date : null;
+}
+
 /** The lease's critical dates, in date order. */
 export function criticalDatesFor(
   lease: LeaseInput & {
@@ -47,23 +72,13 @@ export function criticalDatesFor(
       remindDays: settings["alerts.lockInDays"],
     });
   }
-  if (lease.noticePeriodMonths) {
-    // Notice given on this day ends the lease on its last day.
-    const date = addDays(
-      addMonths(
-        addDays(lease.endDate, 1),
-        -lease.noticePeriodMonths,
-        billing.monthEndRule,
-      ),
-      -1,
-    );
-    if (compareDates(date, lease.startDate) >= 0) {
-      dates.push({
-        type: "notice_deadline",
-        date,
-        remindDays: NOTICE_REMIND_DAYS,
-      });
-    }
+  const date = noticeDeadline(lease, billing.monthEndRule);
+  if (date) {
+    dates.push({
+      type: "notice_deadline",
+      date,
+      remindDays: NOTICE_REMIND_DAYS,
+    });
   }
 
   // A rent increase is where a rent charge's full-period rate goes up.

@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { ReportView } from "@/components/reports/ReportView";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 import { appDb, requireMember } from "@/lib/auth";
 import { runScoped } from "@/lib/db/scoped";
 import {
@@ -15,6 +15,7 @@ import {
   reportParams,
   searchReport,
 } from "@/lib/reports/registry";
+import { financialYearChoices } from "@/lib/tds/tracker";
 import { todayInIndia } from "@/lib/today";
 
 export function generateStaticParams() {
@@ -112,6 +113,33 @@ async function Body({
               />
             </label>
           </>
+        )}
+        {def.filter === "month" && (
+          <label className="flex flex-col gap-1 text-sm">
+            Month
+            <Input
+              type="month"
+              name="month"
+              defaultValue={p.month}
+              className="h-11 w-44 md:h-9"
+            />
+          </label>
+        )}
+        {def.filter === "fy" && (
+          <label className="flex flex-col gap-1 text-sm">
+            Financial year
+            <Select
+              name="fy"
+              defaultValue={p.financialYear}
+              className="h-11 w-44 md:h-9"
+            >
+              {financialYearChoices(p.today).map((y) => (
+                <option key={y} value={y}>
+                  FY {y}
+                </option>
+              ))}
+            </Select>
+          </label>
         )}
         <label className="flex flex-col gap-1 text-sm">
           Search

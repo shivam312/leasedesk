@@ -87,4 +87,17 @@ test("an owner reads unpaid rent and collections", async ({ page }) => {
   await expect(
     page.getByText("₹10,000").filter({ visible: true }).first(),
   ).toBeVisible();
+
+  // The invoice is ₹1,00,000 + ₹9,000 CGST + ₹9,000 SGST; ₹10,000 TDS kept back.
+  await page.goto(`/reports/gst-summary?month=${today.slice(0, 7)}`);
+  await expect(
+    page.getByText("₹9,000").filter({ visible: true }).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByText("B2B").filter({ visible: true }).first(),
+  ).toBeVisible();
+  await page.goto("/reports/tds-summary");
+  await expect(
+    page.getByText("₹10,000").filter({ visible: true }).first(),
+  ).toBeVisible();
 });

@@ -163,6 +163,8 @@ describe("reportParams", () => {
   it("defaults to today and this month so far", () => {
     expect(reportParams({}, "2026-10-23")).toEqual({
       today: "2026-10-23",
+      month: "2026-10",
+      financialYear: "2026-27",
       asOf: "2026-10-23",
       from: "2026-10-01",
       to: "2026-10-23",

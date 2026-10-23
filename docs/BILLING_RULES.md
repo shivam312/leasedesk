@@ -85,6 +85,8 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 - State code = first two digits of a GSTIN.
 - Security deposits are not billed. If a deposit is adjusted against dues at exit, flag it for the accountant: GST may apply on the adjusted amount.
 
+- The GST summary report counts a sent invoice in the month of its invoice date and a credit note in the month it was issued, one row per GST rate, B2B when the tenant's GSTIN was printed on the invoice and B2C otherwise. Its figures are copied from the sent documents (CGST, SGST, IGST and taxable value as printed), never worked out again. **[CA]** (D-026) `gstSummary` in `src/lib/reports/gst-summary.ts`.
+
 ## 9. Invoice numbering **[CA]**
 
 - One series per billing GSTIN, financial year and building prefix (GST rule 46 allows several series), each consecutive with no gaps. Every number is unique within the GSTIN and financial year: a custom format must include `{prefix}`, `{fy}` and `{seq}`, and a building's credit note prefix may not be the invoice prefix of any building under the same GSTIN. Buildings sharing an invoice prefix share its series. **[CA]** (D-015)

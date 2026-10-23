@@ -1,10 +1,19 @@
 // Loading what each report needs, for the current organization. Building the
 // report from it is pure (rent-roll.ts, vacancy.ts and the rest).
 
-import { and, asc, eq, gte, inArray, lte, ne } from "drizzle-orm";
-import type { PlainDate } from "@/lib/billing/dates";
+import { and, asc, eq, gte, inArray, lte, ne, notInArray } from "drizzle-orm";
+import {
+  endOfMonth,
+  startOfMonth,
+  type PlainDate,
+  type YearMonth,
+} from "@/lib/billing/dates";
+import { trackerRecords } from "@/lib/tds/certificates";
 import {
   buildings,
+  creditNoteLines,
+  creditNotes,
+  invoiceLines,
   invoices,
   paymentAllocations,
   payments,
@@ -23,7 +32,9 @@ import { savedLeaseInput } from "@/lib/leases/rows";
 import { billingSettings } from "@/lib/settings/billing";
 import { loadSettings } from "@/lib/settings/store";
 import { ageing, collections } from "./collections";
+import { gstSummary, type GstDocument, type GstLine } from "./gst-summary";
 import type { Report } from "./report";
+import { tdsSummary } from "./tds-summary";
 import { rentRoll, type RentRollLease } from "./rent-roll";
 import { vacancy } from "./vacancy";
 
@@ -234,6 +245,124 @@ export async function ageingReport(
       outstandingPaise: o.outstandingPaise,
       expectedTdsPaise: o.expectedTdsPaise,
     })),
+    today,
+  );
+}
+
+/** Sent invoices dated in `month` and credit notes issued in it. [CA] (D-026) */
+export async function gstSummaryReport(
+  s: Scoped,
+  month: YearMonth,
+): Promise<Report> {
+  const from = startOfMonth(month);
+  const to = endOfMonth(month);
+  const [invoiceRows, creditRows] = await Promise.all([
+    s.tx
+      .select()
+      .from(invoices)
+      .where(
+        s.where(
+          invoices,
+          notInArray(invoices.status, ["draft"]),
+          gte(invoices.invoiceDate, from),
+          lte(invoices.invoiceDate, to),
+        ),
+      ),
+    s.tx
+      .select({ note: creditNotes, invoice: invoices })
+      .from(creditNotes)
+      .innerJoin(invoices, eq(invoices.id, creditNotes.invoiceId))
+      .where(
+        s.where(
+          creditNotes,
+          gte(creditNotes.date, from),
+          lte(creditNotes.date, to),
+        ),
+      ),
+  ]);
+  const invoiceIds = invoiceRows.map((i) => i.id);
+  const noteIds = creditRows.map((c) => c.note.id);
+  const [lines, noteLines] = await Promise.all([
+    invoiceIds.length === 0
+      ? []
+      : s.tx
+          .select()
+          .from(invoiceLines)
+          .where(
+            s.where(invoiceLines, inArray(invoiceLines.invoiceId, invoiceIds)),
+          ),
+    noteIds.length === 0
+      ? []
+      : s.tx
+          .select()
+          .from(creditNoteLines)
+          .where(
+            s.where(
+              creditNoteLines,
+              inArray(creditNoteLines.creditNoteId, noteIds),
+            ),
+          ),
+  ]);
+  const gstLine = (l: {
+    gstRateBp: number;
+    taxableAmount: number;
+    cgst: number;
+    sgst: number;
+    igst: number;
+  }): GstLine => ({
+    gstRateBp: l.gstRateBp,
+    taxable: l.taxableAmount,
+    cgst: l.cgst,
+    sgst: l.sgst,
+    igst: l.igst,
+  });
+  const docs: GstDocument[] = [
+    ...invoiceRows.map((i) => ({
+      kind: "invoice" as const,
+      supplierGstin: i.supplier?.gstin ?? "",
+      number: i.number ?? "",
+      date: i.invoiceDate,
+      recipientName: i.recipient?.companyName ?? "",
+      recipientGstin: i.recipient?.gstin ?? null,
+      placeOfSupply: i.placeOfSupply,
+      value: i.grandTotal,
+      lines: lines.filter((l) => l.invoiceId === i.id).map(gstLine),
+    })),
+    ...creditRows.map(({ note, invoice }) => ({
+      kind: "credit_note" as const,
+      supplierGstin: invoice.supplier?.gstin ?? "",
+      number: note.number,
+      date: note.date,
+      recipientName: invoice.recipient?.companyName ?? "",
+      recipientGstin: invoice.recipient?.gstin ?? null,
+      placeOfSupply: invoice.placeOfSupply,
+      value: note.total,
+      invoiceNumber: invoice.number ?? "",
+      invoiceDate: invoice.invoiceDate,
+      lines: noteLines.filter((l) => l.creditNoteId === note.id).map(gstLine),
+    })),
+  ];
+  return gstSummary(docs, month);
+}
+
+export async function tdsSummaryReport(
+  s: Scoped,
+  financialYear: string,
+  today: PlainDate,
+): Promise<Report> {
+  const records = await trackerRecords(s, financialYear);
+  const ids = [...new Set(records.map((r) => r.tenantId))];
+  const pans =
+    ids.length === 0
+      ? []
+      : await s.tx
+          .select({ id: tenants.id, pan: tenants.pan })
+          .from(tenants)
+          .where(s.where(tenants, inArray(tenants.id, ids)));
+  return tdsSummary(
+    records,
+    new Map(pans.map((p) => [p.id, p.pan])),
+    financialYear,
     today,
   );
 }

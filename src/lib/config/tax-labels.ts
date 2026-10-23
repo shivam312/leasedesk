@@ -7,6 +7,8 @@ export const TAX_LABELS = {
   tdsCertificate: "Form 16A",
   /** The section rent TDS is deducted under. */
   rentTdsSection: "section 194-I",
+  /** The tax statement where a landlord sees TDS deducted for them. */
+  taxCreditStatement: "Form 26AS",
 } as const;
 
 /**

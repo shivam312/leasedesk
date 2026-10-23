@@ -35,6 +35,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-023 | Money into one GSTIN's bank account paying another GSTIN's invoices | product | no | open |
 | D-024 | Codex review of M5: unresolved items | product | no | open |
 | D-025 | Codex review of M6: unresolved items | product | no | open |
+| D-026 | Which month an invoice or credit note counts in on the GST summary | ca | no | open |
 
 ## Human tasks
 
@@ -378,6 +379,18 @@ Things only a person can do. Tick them when done.
   - C) Add per-lease reminder days now (a lease setting and an override marker), so landlords can set different reminders for one lease
 - Recommendation: B, because both behaviours are already correct by the documented rules, and the extra test pins down the exact case Codex worried about at almost no cost. C is a new feature no landlord has asked for yet.
 - Done meanwhile: A (no code change for either item); the loading skeleton was fixed and the other should-fix items were backlogged.
+- Answer:
+
+### D-026: Which month an invoice or credit note counts in on the GST summary
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: Reports → GST summary is meant to help your accountant fill the monthly GST returns (GSTR-1 and GSTR-3B). It counts each sent invoice in the month of its invoice date (the 1st of the month it bills), and each credit note in the month it was issued, even when its invoice is from an earlier month. It splits invoices into B2B (tenant has a GSTIN) and B2C (tenant isn't registered), one row per GST rate, with figures copied from the sent documents. Invoices not sent yet are left out, even if their date has passed.
+- Options:
+  - A) Keep this: invoice date and credit note date decide the month
+  - B) Count an invoice in the month it was sent (numbered), when that is later than its invoice date
+- Recommendation: A, because the invoice date printed on the invoice is the date of supply your GST return reports, and a credit note is reported in the month it is issued.
+- Done meanwhile: built A (`src/lib/reports/gst-summary.ts`), with a note on the report to check with a CA before filing.
 - Answer:
 
 ## Applied

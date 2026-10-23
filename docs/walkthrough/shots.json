@@ -1,0 +1,230 @@
+{
+  "today": "2026-10-24",
+  "month": "Oct 2026",
+  "shots": [
+    {
+      "n": 1,
+      "file": "screens/01-log-in.png",
+      "step": "1",
+      "name": "log-in",
+      "width": 1280
+    },
+    {
+      "n": 2,
+      "file": "screens/02-today.png",
+      "step": "1",
+      "name": "today",
+      "width": 1280
+    },
+    {
+      "n": 3,
+      "file": "screens/03-phone-today.png",
+      "step": "phone",
+      "name": "phone-today",
+      "width": 375
+    },
+    {
+      "n": 4,
+      "file": "screens/04-phone-leases.png",
+      "step": "phone",
+      "name": "phone-leases",
+      "width": 375
+    },
+    {
+      "n": 5,
+      "file": "screens/05-tenants.png",
+      "step": "2",
+      "name": "tenants",
+      "width": 1280
+    },
+    {
+      "n": 6,
+      "file": "screens/06-tenant.png",
+      "step": "2",
+      "name": "tenant",
+      "width": 1280
+    },
+    {
+      "n": 7,
+      "file": "screens/07-lease.png",
+      "step": "2",
+      "name": "lease",
+      "width": 1280
+    },
+    {
+      "n": 8,
+      "file": "screens/08-new-tenant.png",
+      "step": "3",
+      "name": "new-tenant",
+      "width": 1280
+    },
+    {
+      "n": 9,
+      "file": "screens/09-new-lease-units.png",
+      "step": "3",
+      "name": "new-lease-units",
+      "width": 1280
+    },
+    {
+      "n": 10,
+      "file": "screens/10-new-lease-dates.png",
+      "step": "3",
+      "name": "new-lease-dates",
+      "width": 1280
+    },
+    {
+      "n": 11,
+      "file": "screens/11-new-lease-charges.png",
+      "step": "3",
+      "name": "new-lease-charges",
+      "width": 1280
+    },
+    {
+      "n": 12,
+      "file": "screens/12-new-lease-check.png",
+      "step": "3",
+      "name": "new-lease-check",
+      "width": 1280
+    },
+    {
+      "n": 13,
+      "file": "screens/13-new-lease-saved.png",
+      "step": "3",
+      "name": "new-lease-saved",
+      "width": 1280
+    },
+    {
+      "n": 14,
+      "file": "screens/14-invoices-made.png",
+      "step": "4",
+      "name": "invoices-made",
+      "width": 1280
+    },
+    {
+      "n": 15,
+      "file": "screens/15-draft.png",
+      "step": "4",
+      "name": "draft",
+      "width": 1280
+    },
+    {
+      "n": 16,
+      "file": "screens/16-explain.png",
+      "step": "4",
+      "name": "explain",
+      "width": 1280
+    },
+    {
+      "n": 17,
+      "file": "screens/17-send-check.png",
+      "step": "4",
+      "name": "send-check",
+      "width": 1280
+    },
+    {
+      "n": 18,
+      "file": "screens/18-sent.png",
+      "step": "4",
+      "name": "sent",
+      "width": 1280
+    },
+    {
+      "n": 19,
+      "file": "screens/19-payment.png",
+      "step": "5",
+      "name": "payment",
+      "width": 1280
+    },
+    {
+      "n": 20,
+      "file": "screens/20-payment-recorded.png",
+      "step": "5",
+      "name": "payment-recorded",
+      "width": 1280
+    },
+    {
+      "n": 21,
+      "file": "screens/21-bank-import.png",
+      "step": "6",
+      "name": "bank-import",
+      "width": 1280
+    },
+    {
+      "n": 22,
+      "file": "screens/22-matches.png",
+      "step": "6",
+      "name": "matches",
+      "width": 1280
+    },
+    {
+      "n": 23,
+      "file": "screens/23-payments.png",
+      "step": "6",
+      "name": "payments",
+      "width": 1280
+    },
+    {
+      "n": 24,
+      "file": "screens/24-reports.png",
+      "step": "7",
+      "name": "reports",
+      "width": 1280
+    },
+    {
+      "n": 25,
+      "file": "screens/25-report-rent-roll.png",
+      "step": "7",
+      "name": "report-rent-roll",
+      "width": 1280
+    },
+    {
+      "n": 26,
+      "file": "screens/26-report-vacancy.png",
+      "step": "7",
+      "name": "report-vacancy",
+      "width": 1280
+    },
+    {
+      "n": 27,
+      "file": "screens/27-report-expiry.png",
+      "step": "7",
+      "name": "report-expiry",
+      "width": 1280
+    },
+    {
+      "n": 28,
+      "file": "screens/28-report-collections.png",
+      "step": "7",
+      "name": "report-collections",
+      "width": 1280
+    },
+    {
+      "n": 29,
+      "file": "screens/29-report-ageing.png",
+      "step": "7",
+      "name": "report-ageing",
+      "width": 1280
+    },
+    {
+      "n": 30,
+      "file": "screens/30-report-gst-summary.png",
+      "step": "7",
+      "name": "report-gst-summary",
+      "width": 1280
+    },
+    {
+      "n": 31,
+      "file": "screens/31-report-tds-summary.png",
+      "step": "7",
+      "name": "report-tds-summary",
+      "width": 1280
+    },
+    {
+      "n": 32,
+      "file": "screens/32-report-tally.png",
+      "step": "7",
+      "name": "report-tally",
+      "width": 1280
+    }
+  ]
+}

@@ -27,3 +27,6 @@ next-env.d.ts
 
 # Stray secret files
 supabase.env
+
+# pnpm walkthrough: videos are large and made fresh each run; the screenshots are kept
+/docs/walkthrough/videos/

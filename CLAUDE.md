@@ -36,6 +36,7 @@ Keep this list in sync with package.json. Node 24 (`.nvmrc`); Next.js 16 changed
 - `pnpm lint`: ESLint
 - `pnpm format` / `pnpm format:check`: Prettier (sorts Tailwind classes)
 - `pnpm test`: Vitest unit tests (`pnpm test billing` for the billing engine only; `pnpm test:watch` to watch)
+- `pnpm walkthrough`: reset the demo, then click through a month's work on the dev server (starts `pnpm dev` if needed), saving numbered screenshots and videos in `docs/walkthrough/`
 - `pnpm test:e2e`: Playwright end-to-end tests at 375px and 1280px, against a fresh production build on port 3100, so a running `pnpm dev` is never reused (first time: `pnpm exec playwright install chromium`)
 
 Database (local Supabase via `supabase start`; needs Docker running):

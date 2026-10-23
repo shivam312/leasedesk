@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "walkthrough": "playwright test -c playwright.walkthrough.config.ts",
     "jobs:dev": "pnpm dlx inngest-cli@latest dev -u http://localhost:3000/api/inngest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",

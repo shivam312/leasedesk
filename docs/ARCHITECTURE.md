@@ -117,7 +117,7 @@ src/
   instrumentation.ts         starts Sentry on the server only when SENTRY_DSN is set; instrumentation-client.ts does the same in the browser (D41)
 drizzle/                     generated SQL migrations (never edit applied ones); applied by scripts/migrate.ts
 supabase/                    local stack config for the Supabase CLI (config.toml); no migrations here (D12)
-tests/e2e/                   Playwright tests
+tests/e2e/                   Playwright tests; walkthrough.spec.ts is also `pnpm walkthrough` (playwright.walkthrough.config.ts, D44), demo.ts resets and reads the demo
 scripts/
   db-env.ts                  shared setup for db scripts: loads .env.local, refuses remote databases
   migrate.ts                 pnpm db:migrate

@@ -358,3 +358,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - This month is left unbilled, so the walkthrough can make, check and send it.
 - Running it again removes the demo organization first. Sent invoices, payments and the activity log refuse deletes (D4), so `removeDemo` sets `session_replication_role = replica` for its own transaction and deletes every row with the demo organization's id. It's the only code that does this; the script refuses non-local databases even with `ALLOW_REMOTE_DB=yes`. Uploaded certificate files stay in local Storage (harmless; paths have random ids).
 - The login is made through Supabase Auth's sign-up (the local stack doesn't confirm emails), with a new readable password each run, printed by the script.
+
+## D44. The walkthrough is one Playwright test, run two ways (2026-10-24)
+
+**Why:** M5a asks for a recorded walkthrough of the demo and for the same walkthrough to be an end-to-end test; one script can't drift from the other.
+**Consequences:**
+- `tests/e2e/walkthrough.spec.ts` resets the demo (`resetDemo`, D43), logs in as the demo owner and goes through the seven steps, then Today and the lease list at 375px (taken just after step 1, before this month's invoices are sent, so Today shows the demo's story rather than 40 just-sent invoices that are already past due).
+- `pnpm walkthrough` runs it with `playwright.walkthrough.config.ts`: against the dev server on port 3000, `WALKTHROUGH=1`, so it saves numbered full-page screenshots in `docs/walkthrough/screens/`, a list of them in `shots.json`, and a video per window in `docs/walkthrough/videos/` (`laptop.webm`, `phone.webm`). The browser uses the `en-IN` locale so date fields read DD-MM-YYYY.
+- `pnpm test:e2e` runs it against the production build without saving anything. It runs on the laptop project only: both projects would reset the same demo organization at once.
+- Screenshots are committed so the founder can read the walkthrough without running anything; videos (several MB each) are git-ignored and made fresh by each run.
+- Amounts the test types (Rangoli's payment, the bank statement lines) are read from the database after the demo is seeded, never hard-coded, since the demo is built from today's date.

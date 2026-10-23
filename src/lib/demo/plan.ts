@@ -17,7 +17,7 @@ import {
 } from "@/lib/billing/dates";
 import { formatINR } from "@/lib/format";
 import { makeGstin } from "@/lib/india/identifiers";
-import { certificateDue } from "@/lib/tds/tracker";
+import { certificateDue, type Quarter } from "@/lib/tds/tracker";
 
 export const DEMO_ORG_NAME = "Sharma Estates";
 export const DEMO_EMAIL = "demo@sharma-estates.example";
@@ -647,6 +647,58 @@ export function demoLeases(today: PlainDate): DemoLease[] {
   });
 }
 
+export type DemoTdsQuarter = {
+  /** "2026-27" */
+  financialYear: string;
+  quarter: Quarter;
+  /** When the tenants' certificates for it are due. */
+  due: PlainDate;
+};
+
+const tdsQuarterAt = (date: PlainDate) => {
+  const q = fyQuarter(date);
+  const fy = financialYear(q.start).label;
+  return {
+    end: q.end,
+    quarter: {
+      financialYear: fy,
+      quarter: q.quarter,
+      due: certificateDue(fy, q.quarter),
+    },
+  };
+};
+
+/**
+ * The latest quarter before this one whose certificate due date has passed.
+ * Certificates are due within about five months of a quarter's end, so one
+ * of the last two quarters always qualifies.
+ */
+function latestOverdueTdsQuarter(today: PlainDate) {
+  const current = monthOf(today);
+  for (let back = 1; back <= 4; back++) {
+    const q = tdsQuarterAt(startOfMonth(addMonthsToMonth(current, -3 * back)));
+    if (compareDates(q.quarter.due, today) < 0) return q;
+  }
+  throw new Error(`No TDS quarter is overdue on ${today}`);
+}
+
+/**
+ * The TDS quarters the demo's story turns on: the latest quarter whose
+ * certificates are already due (the three spotlight tenants haven't sent
+ * theirs), and the one after it, whose aren't due yet. Both have TDS in the
+ * demo's history.
+ */
+export function demoTdsQuarters(today: PlainDate): {
+  overdue: DemoTdsQuarter;
+  next: DemoTdsQuarter;
+} {
+  const overdue = latestOverdueTdsQuarter(today);
+  return {
+    overdue: overdue.quarter,
+    next: tdsQuarterAt(addDays(overdue.end, 1)).quarter,
+  };
+}
+
 /**
  * The months with invoices and payments: the last three months, reaching
  * back further if needed so they include the latest quarter whose TDS
@@ -655,16 +707,8 @@ export function demoLeases(today: PlainDate): DemoLease[] {
 export function historyMonths(today: PlainDate): YearMonth[] {
   const current = monthOf(today);
   let first = addMonthsToMonth(current, -3);
-  // The latest quarter, before this one, whose certificate due date has passed.
-  for (let back = 1; back <= 4; back++) {
-    const q = fyQuarter(startOfMonth(addMonthsToMonth(current, -3 * back)));
-    const fy = financialYear(q.start).label;
-    if (compareDates(certificateDue(fy, q.quarter), today) < 0) {
-      const lastMonth = monthOf(q.end);
-      if (lastMonth < first) first = lastMonth;
-      break;
-    }
-  }
+  const lastMonth = monthOf(latestOverdueTdsQuarter(today).end);
+  if (lastMonth < first) first = lastMonth;
   const months: YearMonth[] = [];
   for (let m = first; m < current; m = addMonthsToMonth(m, 1)) months.push(m);
   return months;

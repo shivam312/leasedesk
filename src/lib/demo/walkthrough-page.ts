@@ -4,8 +4,9 @@
 // numbers. The figures come from the run (the demo is built from today's
 // date), so the words always match the pictures. Pure: manifest in, HTML out.
 
+import { financialYear } from "@/lib/billing/dates";
 import { formatArea, formatDate, formatINR } from "@/lib/format";
-import { DEMO_TENANTS, SPOTLIGHT } from "./plan";
+import { DEMO_TENANTS, SPOTLIGHT, demoTdsQuarters } from "./plan";
 
 export type WalkthroughShot = {
   n: number;
@@ -74,6 +75,8 @@ export const STEP_TITLES: Record<string, string> = {
 };
 
 const pct = (bp: number) => `${bp / 100}%`;
+const WORDS = ["no", "one", "two", "three", "four", "five", "six"];
+const words = (n: number) => WORDS[n] ?? String(n);
 const rentLine = (f: WalkthroughFacts) =>
   f.kalinga.invoice.lines.find((l) => l.type === "rent");
 
@@ -82,7 +85,7 @@ export const CAPTIONS: Record<string, (f: WalkthroughFacts) => string> = {
   "log-in": (f) =>
     `The owner of Sharma Estates logs in with the demo login (${f.email}; <code>pnpm db:seed:demo</code> prints a new password each time). The demo has two buildings, the 8-floor Sharma Corporate Tower in Gurugram and Sharma Arcade in Bengaluru (shops below, offices above), with ${DEMO_TENANTS.length} tenants and invoices and payments up to last month.`,
   today: (f) =>
-    `Today is the first screen after logging in: what's billed, collected and unpaid this month, then what needs doing. Notice the three tenants who haven't paid (${Object.keys(SPOTLIGHT.unpaid).join(", ")}), the reminder that ${f.month} invoices aren't made yet, the ${SPOTLIGHT.missingCertificates.length} TDS certificates past their due date (Q1's were due 15 August), coming rent increases, and ${SPOTLIGHT.expiringSoon}'s lease ending in 60 days. "Overdue" counts from each invoice's due date: 7 days after the invoice date in the tower and 10 in the arcade (setting <code>invoice.dueDays</code>, set on the arcade building).`,
+    `Today is the first screen after logging in: what's billed, collected and unpaid this month, then what needs doing. Notice the three tenants who haven't paid (${Object.keys(SPOTLIGHT.unpaid).join(", ")}), the reminder that ${f.month} invoices aren't made yet, the ${SPOTLIGHT.missingCertificates.length} TDS certificates past their due date (Q${demoTdsQuarters(f.today).overdue.quarter}'s were due ${formatDate(demoTdsQuarters(f.today).overdue.due)}), coming rent increases, and ${SPOTLIGHT.expiringSoon}'s lease ending in 60 days. "Overdue" counts from each invoice's due date: 7 days after the invoice date in the tower and 10 in the arcade (setting <code>invoice.dueDays</code>, set on the arcade building).`,
   "phone-today": () =>
     `The same Today screen on a phone, as an owner would check it. The cards stack in one column and every button is big enough to tap.`,
   "phone-leases": () =>
@@ -118,8 +121,8 @@ export const CAPTIONS: Record<string, (f: WalkthroughFacts) => string> = {
     `Tapping a line explains the amount: the area times the rate per sq ft, whether it's a full or part month, and how the tax was split. This is what the accountant checks against the lease, line by line.`,
   "send-check": (f) =>
     `"Send ${f.made.count} invoices" asks once more, with the count and the total. Each invoice is checked against its lease again before it gets a number, so an invoice whose lease changed after it was made isn't sent.`,
-  sent: () =>
-    `Sent: each invoice now has its number: the building's prefix (SCT for the tower, SA for the arcade), the financial year (26-27) and a running number with no gaps, carrying on from last month's (setting <code>invoice.numberFormat</code>, rules section 9). Tenants with an email address get the invoice by email.`,
+  sent: (f) =>
+    `Sent: each invoice now has its number: the building's prefix (SCT for the tower, SA for the arcade), the financial year (${financialYear(f.today).short}) and a running number with no gaps, carrying on from last month's (setting <code>invoice.numberFormat</code>, rules section 9). Tenants with an email address get the invoice by email.`,
   payment: (f) =>
     `Rangoli Media Labs, three months behind, pays two of its invoices: ${formatINR(f.rangoli.received)} reaches the bank and ${formatINR(f.rangoli.tds)} is TDS they kept back. The payment goes to the oldest invoices first (${f.rangoli.numbers.join(" and ")}), each paid in full: what was received plus the TDS on it (rules section 11).`,
   "payment-recorded": () =>
@@ -138,14 +141,16 @@ export const CAPTIONS: Record<string, (f: WalkthroughFacts) => string> = {
     `Vacancy: how much of each building is leased, and every empty unit. Office 703 shows the lease added in step 3 starting on the 1st; 704 is being fitted out.`,
   "report-expiry": () =>
     `Expiry schedule: leases ending in the next 12 months, soonest first, with the last day to give notice. ${SPOTLIGHT.expiringSoon} ends in 60 days; its 3-month notice day has already passed.`,
-  "report-collections": () =>
-    `Collections: money received this month, by payment and by tenant, with the TDS kept back shown separately: the hand-recorded payment from step 5 and the three from the bank statement. Received is what reached the bank; received plus TDS is what was settled.`,
+  "report-collections": (f) =>
+    `Collections: money received this month, by payment and by tenant, with the TDS kept back shown separately: the hand-recorded payment from step 5 and the ${words(f.statement.count)} from the bank statement. Received is what reached the bank; received plus TDS is what was settled.`,
   "report-ageing": () =>
     `Unpaid and ageing: what each tenant hasn't paid today, grouped by how long it has been overdue, and every unpaid invoice. Rangoli's two newest invoices are still here after step 5.`,
   "report-gst-summary": () =>
     `GST summary: a month's invoices and credit notes by GST rate, with CGST, SGST and IGST, and B2B (the tenant has a GSTIN) or B2C (Kumar Tailors), for the GST returns. The figures are copied from the sent invoices, never worked out again.`,
-  "report-tds-summary": () =>
-    `TDS summary: TDS kept back by each tenant, by quarter, and how much of it their Form 16A certificates cover. Q1's certificates were due on 15 August: ${SPOTLIGHT.missingCertificates.join(", ")} haven't sent theirs, so they show as overdue. Q2's aren't due until 15 November.`,
+  "report-tds-summary": (f) => {
+    const { overdue, next } = demoTdsQuarters(f.today);
+    return `TDS summary: TDS kept back by each tenant, by quarter, and how much of it their Form 16A certificates cover. Q${overdue.quarter}'s certificates were due on ${formatDate(overdue.due)}: ${SPOTLIGHT.missingCertificates.join(", ")} haven't sent theirs, so they show as overdue. Q${next.quarter}'s aren't due until ${formatDate(next.due)}.`;
+  },
   "report-tally": () =>
     `Tally export: sent invoices, credit notes and payments between two dates, as a file the accountant imports into TallyPrime.`,
 };

@@ -144,6 +144,38 @@ describe("walkthrough captions", () => {
     );
   });
 
+  it("names the TDS quarter and financial year from the run's date, not from October 2026", () => {
+    // Seeded on 24 Oct 2026: Q1's certificates were due 15 Aug, Q2's on 15 Nov.
+    expect(caption("today", facts)).toContain("Q1's were due 15-08-2026");
+    const tds = caption("report-tds-summary", facts);
+    expect(tds).toContain("Q1's certificates were due on 15-08-2026");
+    expect(tds).toContain("Q2's aren't due until 15-11-2026");
+    expect(caption("sent", facts)).toContain("the financial year (26-27)");
+    // Seeded on 20 Feb 2027: Q3's were due 15 Feb, Q4's on 15 Jun; still FY 26-27.
+    const feb = { ...facts, today: "2027-02-20", month: "Feb 2027" };
+    expect(caption("today", feb)).toContain("Q3's were due 15-02-2027");
+    expect(caption("report-tds-summary", feb)).toContain(
+      "Q4's aren't due until 15-06-2027",
+    );
+    expect(caption("sent", feb)).toContain("the financial year (26-27)");
+    // Seeded on 1 May 2027: invoices are numbered in FY 27-28.
+    expect(
+      caption("sent", { ...facts, today: "2027-05-01", month: "May 2027" }),
+    ).toContain("the financial year (27-28)");
+  });
+
+  it("counts the bank statement's lines from the run", () => {
+    expect(caption("report-collections", facts)).toContain(
+      "the three from the bank statement",
+    );
+    expect(
+      caption("report-collections", {
+        ...facts,
+        statement: { ...facts.statement, count: 2 },
+      }),
+    ).toContain("the two from the bank statement");
+  });
+
   it("falls back to the screen's name", () => {
     expect(caption("report-new-thing", facts)).toBe(
       "Screen: report new thing.",

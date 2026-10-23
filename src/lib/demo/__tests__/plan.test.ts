@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { addDays, compareDates } from "@/lib/billing/dates";
+import {
+  addDays,
+  compareDates,
+  financialYear,
+  fyQuarter,
+} from "@/lib/billing/dates";
 import { gstinProblem, isValidPan } from "@/lib/india/identifiers";
 import {
   DEMO_BUILDINGS,
@@ -8,6 +13,7 @@ import {
   SPOTLIGHT,
   demoLeases,
   demoStatementCsv,
+  demoTdsQuarters,
   historyMonths,
   paymentDate,
 } from "../plan";
@@ -155,6 +161,46 @@ describe("historyMonths", () => {
       "2026-06",
       "2026-07",
     ]);
+  });
+});
+
+describe("demoTdsQuarters", () => {
+  it("names the quarter whose certificates the demo leaves missing, and the next", () => {
+    // 24 Oct 2026: Q1 (Apr–Jun) was due 15 Aug; Q2 (Jul–Sep) is due 15 Nov.
+    expect(demoTdsQuarters(TODAY)).toEqual({
+      overdue: { financialYear: "2026-27", quarter: 1, due: "2026-08-15" },
+      next: { financialYear: "2026-27", quarter: 2, due: "2026-11-15" },
+    });
+  });
+
+  it("crosses the financial year", () => {
+    // 10 Aug 2026: Q4 of 2025-26 was due 15 Jun; Q1 of 2026-27 is due 15 Aug.
+    expect(demoTdsQuarters("2026-08-10")).toEqual({
+      overdue: { financialYear: "2025-26", quarter: 4, due: "2026-06-15" },
+      next: { financialYear: "2026-27", quarter: 1, due: "2026-08-15" },
+    });
+    // 20 Feb 2027: Q3 was due 15 Feb; Q4 is due 15 Jun 2027.
+    expect(demoTdsQuarters("2027-02-20")).toEqual({
+      overdue: { financialYear: "2026-27", quarter: 3, due: "2027-02-15" },
+      next: { financialYear: "2026-27", quarter: 4, due: "2027-06-15" },
+    });
+  });
+
+  it("is the quarter historyMonths reaches back to", () => {
+    for (const day of [TODAY, "2026-08-10", "2026-12-01", "2027-02-20"]) {
+      const { overdue } = demoTdsQuarters(day);
+      const months = historyMonths(day);
+      // The overdue quarter's last month is in the history, and no earlier quarter is.
+      const inOverdue = months.filter((m) => {
+        const q = fyQuarter(`${m}-01`);
+        return (
+          q.quarter === overdue.quarter &&
+          financialYear(q.start).label === overdue.financialYear
+        );
+      });
+      expect(inOverdue.length, day).toBeGreaterThan(0);
+      expect(months[0], day).toBe(inOverdue[0]);
+    }
   });
 });
 

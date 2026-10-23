@@ -222,8 +222,11 @@ export async function freshDraft(
 export async function leasesToBill(
   s: Scoped,
   runMonth: YearMonth,
+  except: ReadonlySet<string> = new Set(),
 ): Promise<number> {
-  const rows = await billableLeases(s, runMonth);
+  const rows = (await billableLeases(s, runMonth)).filter(
+    (r) => !except.has(r.lease.id),
+  );
   const terms = await leaseTerms(
     s,
     rows.map((r) => r.lease.id),
@@ -234,6 +237,22 @@ export async function leasesToBill(
     if (worked.kind === "problem" || worked.draft) n++;
   }
   return n;
+}
+
+/**
+ * How many leases would bill something in `runMonth` (or need looking at)
+ * but have no invoice for it at all, draft or sent: a lease added after the
+ * month was made. The billing page offers "Make missing invoices" for them.
+ */
+export async function leasesWithoutInvoice(
+  s: Scoped,
+  runMonth: YearMonth,
+): Promise<number> {
+  const made = await s.tx
+    .select({ leaseId: invoices.leaseId })
+    .from(invoices)
+    .where(s.where(invoices, eq(invoices.runMonth, startOfMonth(runMonth))));
+  return leasesToBill(s, runMonth, new Set(made.map((m) => m.leaseId)));
 }
 
 /** Delete one draft invoice and its lines, logged. */

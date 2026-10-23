@@ -18,7 +18,7 @@ import {
   sendAllConsequence,
   tooEarlyToSend,
 } from "@/lib/invoices/forms";
-import { invoicesForMonth } from "@/lib/invoices/run";
+import { invoicesForMonth, leasesWithoutInvoice } from "@/lib/invoices/run";
 import { draftTenantsWithoutEmail } from "@/lib/invoices/send";
 import { todayInIndia } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -90,10 +90,11 @@ async function Month({
 
 async function MonthInvoices({ month }: { month: string }) {
   const member = await requireMember();
-  const [rows, noEmail] = await runScoped(appDb, member, (s) =>
+  const [rows, noEmail, missing] = await runScoped(appDb, member, (s) =>
     Promise.all([
       invoicesForMonth(s, month),
       draftTenantsWithoutEmail(s, month),
+      leasesWithoutInvoice(s, month),
     ]),
   );
   const canBill = can(member.role, "manage_billing");
@@ -116,13 +117,22 @@ async function MonthInvoices({ month }: { month: string }) {
           action={sendAllInvoices}
         />
       )}
-      {canBill && (
+      {/* Once every invoice made is sent, making the month again is only
+          for leases with no invoice yet (a lease added since). */}
+      {canBill && (rows.length === 0 || drafts.length > 0 || missing > 0) && (
         <RunBillingForm
           month={month}
           monthLabel={label}
           hasDrafts={drafts.length > 0}
+          missing={rows.length > 0 && drafts.length === 0}
+          primary={drafts.length === 0}
           action={runBillingNow}
         />
+      )}
+      {canBill && rows.length > 0 && drafts.length === 0 && missing === 0 && (
+        <p className="max-w-2xl text-sm">
+          Every {label} invoice is made and sent.
+        </p>
       )}
       {rows.length === 0 ? (
         <p className="max-w-2xl text-sm">

@@ -10,6 +10,7 @@ export function RunBillingForm({
   month,
   monthLabel,
   hasDrafts,
+  missing = false,
   primary = !hasDrafts,
   action,
 }: {
@@ -17,6 +18,8 @@ export function RunBillingForm({
   monthLabel: string;
   /** Running again replaces drafts, so say so. */
   hasDrafts: boolean;
+  /** Every invoice made is sent, and some leases have none yet. */
+  missing?: boolean;
   /** A filled button; by default only for a first run. */
   primary?: boolean;
   action: (state: FormState, form: FormData) => Promise<FormState>;
@@ -38,13 +41,17 @@ export function RunBillingForm({
             ? "Making invoices…"
             : hasDrafts
               ? `Make ${monthLabel} invoices again`
-              : `Make ${monthLabel} invoices`}
+              : missing
+                ? `Make missing ${monthLabel} invoices`
+                : `Make ${monthLabel} invoices`}
         </Button>
       </div>
       <p id={hintId} className="text-sm text-muted-foreground">
         {hasDrafts
           ? "Updates invoices not sent yet with any lease changes. Sent invoices stay as they are."
-          : "Works out every lease's invoice for the month. Nothing is sent until you send it."}
+          : missing
+            ? "Makes invoices only for leases that don't have one for the month yet, such as a lease added since. Sent invoices stay as they are."
+            : "Works out every lease's invoice for the month. Nothing is sent until you send it."}
       </p>
       <FormMessage message={state.message} tone={state.tone} />
       {state.problems && state.problems.length > 0 && (

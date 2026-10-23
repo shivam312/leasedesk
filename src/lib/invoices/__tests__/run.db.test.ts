@@ -10,7 +10,7 @@ import {
   type TestTx,
 } from "@/lib/db/__tests__/harness";
 import { issueCreditNote } from "../credit-notes";
-import { runBilling } from "../run";
+import { leasesWithoutInvoice, runBilling } from "../run";
 import { issueInvoice } from "../send";
 
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
@@ -74,6 +74,19 @@ describe.skipIf(skipDbTests)("monthly billing run", () => {
         quantityLabel: "1,300 sq ft",
         position: 1,
       });
+    });
+  });
+
+  it("counts leases with no invoice for the month, so only those make 'missing' invoices", async () => {
+    await inRollback(async (tx) => {
+      const a = await billableOrg(tx);
+      const scoped = <T>(fn: Parameters<typeof runScoped<T>>[2]) =>
+        runScoped(asDb(tx), { userId: a.userId, organizationId: a.org.id }, fn);
+      // Before the run, the one active lease has nothing for November.
+      expect(await scoped((s) => leasesWithoutInvoice(s, "2026-11"))).toBe(1);
+      await scoped((s) => runBilling(s, "2026-11"));
+      // A draft counts as made; once sent, it still does.
+      expect(await scoped((s) => leasesWithoutInvoice(s, "2026-11"))).toBe(0);
     });
   });
 

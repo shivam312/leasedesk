@@ -251,3 +251,10 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - The amount asked is what is left less TDS still expected, from the same `unpaidInvoices` the payment form uses, so the reminder and the payment form never disagree.
 - The words are built from the invoice's frozen copies (D18), in `src/lib/reminders/email.ts`.
 
+
+## D34. A bank statement import is logged as one activity entry, not one per line (2026-10-23)
+
+**Why:** a year's statement is hundreds of lines; an entry per line would bury the activity log, and the lines themselves are an exact copy of the bank's file that is never edited (their match status changes are logged one by one).
+**Consequences:**
+- `importStatement` (`src/lib/bank/imports.ts`) inserts the lines in batches and logs one `bank_statement_imports` entry with the import row (file, period, counts) and the rows it couldn't read. This is the one exception to "every change is logged" row by row (CLAUDE.md rule 7); the import id on each line links it to that entry.
+- Confirming, setting aside or freeing a line is logged on its own, as any other change.

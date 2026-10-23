@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { parseForm } from "@/lib/auth/forms";
 import { makeGstin } from "@/lib/india/identifiers";
-import { contactSchema, normalizePhone, tenantSchema } from "../forms";
+import {
+  contactSchema,
+  normalizePhone,
+  tenantSchema,
+  withAutoSend,
+} from "../forms";
 
 const form = (values: Record<string, string>) => {
   const data = new FormData();
@@ -141,5 +146,23 @@ describe("contacts", () => {
     ).toMatchObject({
       data: { phone: "+919820012345", whatsapp: true, email: null },
     });
+  });
+});
+
+describe("withAutoSend", () => {
+  it("sets or clears the tenant's own reminder setting, keeping the rest", () => {
+    const stored = { "invoice.dueDays": 10 };
+    expect(withAutoSend(stored, "false")).toEqual({
+      "invoice.dueDays": 10,
+      "reminders.autoSend": false,
+    });
+    expect(withAutoSend(stored, "true")).toEqual({
+      "invoice.dueDays": 10,
+      "reminders.autoSend": true,
+    });
+    // Blank: follow the business setting again.
+    expect(
+      withAutoSend({ ...stored, "reminders.autoSend": false }, ""),
+    ).toEqual({ "invoice.dueDays": 10 });
   });
 });

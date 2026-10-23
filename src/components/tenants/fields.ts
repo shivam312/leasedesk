@@ -24,7 +24,14 @@ interface TenantValues {
 
 const pct = (bp: number) => toFieldValue("gst.defaultRateBp", bp);
 
-export function tenantFields(t?: TenantValues): FormField[] {
+/**
+ * `reminders`: the business's automatic reminder setting, and this tenant's
+ * own if it has one (`reminders.autoSend`).
+ */
+export function tenantFields(
+  t?: TenantValues,
+  reminders: { business?: boolean; own?: boolean } = {},
+): FormField[] {
   const groups: FormField[] = TDS_GROUPS.flatMap(({ key, label }) => {
     const on = t?.[`deductsTds${key}`];
     const rate = t?.[`tdsRateBp${key}`];
@@ -107,6 +114,25 @@ export function tenantFields(t?: TenantValues): FormField[] {
       defaultValue: t ? pct(t.tdsRateBpRent) : "10",
     },
     ...groups,
+    {
+      name: "remindersAutoSend",
+      label: "Payment reminders",
+      type: "select",
+      advanced: true,
+      options: [
+        {
+          value: "",
+          label:
+            reminders.business === undefined
+              ? "Same as your business"
+              : `Same as your business: ${reminders.business ? "send automatically" : "don't send"}`,
+        },
+        { value: "true", label: "Send automatically" },
+        { value: "false", label: "Don't send; I'll remind them myself" },
+      ],
+      defaultValue: reminders.own === undefined ? "" : String(reminders.own),
+      hint: "Emails about unpaid invoices on the days set in Billing rules, in Settings.",
+    },
     {
       name: "notes",
       label: "Notes",

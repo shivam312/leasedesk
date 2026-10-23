@@ -2,6 +2,10 @@
 
 import { serve } from "inngest/next";
 import { inngest } from "@/lib/jobs/inngest";
-import { jobs } from "@/lib/jobs/monthly-billing";
+import { monthlyBilling } from "@/lib/jobs/monthly-billing";
+import { dailyReminders } from "@/lib/jobs/reminders";
 
-export const { GET, POST, PUT } = serve({ client: inngest, functions: jobs });
+export const { GET, POST, PUT } = serve({
+  client: inngest,
+  functions: [monthlyBilling, dailyReminders],
+});

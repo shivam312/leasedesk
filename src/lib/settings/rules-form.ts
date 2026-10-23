@@ -30,6 +30,7 @@ export function percentToBp(text: string): number | null {
 export function toFieldValue(key: SettingKey, value: unknown): string {
   const input = SETTING_LABELS[key]?.input;
   if (value === undefined || value === null) return "";
+  if (Array.isArray(value)) return value.join(", ");
   if (input?.kind === "percent" || input?.kind === "rupees") {
     const n = Number(value);
     const whole = Math.trunc(n / 100);
@@ -54,11 +55,18 @@ export function readSettingsForm(
   const errors: Record<string, string> = {};
   for (const key of keys) {
     const raw = String(form.get(fieldName(key)) ?? "").trim();
+    const input = SETTING_LABELS[key]?.input;
+    if (input?.kind === "dayList") {
+      const value = readDayList(raw);
+      const parsed = SETTINGS[key].schema.safeParse(value);
+      if (parsed.success) values[key] = parsed.data;
+      else errors[fieldName(key)] = messageFor(key);
+      continue;
+    }
     if (raw === "") {
       if (scope === "organization") values[key] = SETTINGS[key].default;
       continue;
     }
-    const input = SETTING_LABELS[key]?.input;
     let value: unknown = raw;
     if (input?.kind === "boolean") value = raw === "true";
     if (input?.kind === "days" || input?.kind === "dayOfMonth")
@@ -74,6 +82,13 @@ export function readSettingsForm(
     : { values: values as StoredSettings };
 }
 
+/** "15, 7 1,7" → [1, 7, 15]; blank → []; null if any part isn't a whole number. */
+function readDayList(raw: string): number[] | null {
+  const parts = raw.split(/[\s,]+/).filter(Boolean);
+  if (parts.some((p) => !/^\d{1,3}$/.test(p))) return null;
+  return [...new Set(parts.map(Number))].sort((a, b) => a - b);
+}
+
 function messageFor(key: SettingKey): string {
   switch (SETTING_LABELS[key]?.input.kind) {
     case "percent":
@@ -84,6 +99,8 @@ function messageFor(key: SettingKey): string {
       return "Enter a whole number of days, 0 to 180.";
     case "dayOfMonth":
       return "Enter a day of the month from 1 to 28.";
+    case "dayList":
+      return "Enter days as numbers separated by commas, like 1, 7, 15.";
     default:
       return key === "gst.defaultSac"
         ? "A SAC code is 6 digits, like 997212."

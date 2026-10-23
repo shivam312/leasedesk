@@ -10,6 +10,7 @@ import {
   normalizeId,
 } from "@/lib/india/identifiers";
 import { percentToBp } from "@/lib/settings/rules-form";
+import type { StoredSettings } from "@/lib/settings/schema";
 
 const blankToNull = z
   .string()
@@ -187,3 +188,19 @@ export const CONTACT_ROLE_LABELS = {
   legal: "Legal",
   other: "Other",
 } as const;
+
+/**
+ * The tenant's stored settings with "Payment reminders" from the tenant form:
+ * "true" or "false" sets `reminders.autoSend` for this tenant; blank follows
+ * the business setting again. Other stored keys are kept.
+ */
+export function withAutoSend(
+  stored: StoredSettings,
+  choice: string,
+): StoredSettings {
+  const rest = { ...stored };
+  delete rest["reminders.autoSend"];
+  return choice === "true" || choice === "false"
+    ? { ...rest, "reminders.autoSend": choice === "true" }
+    : rest;
+}

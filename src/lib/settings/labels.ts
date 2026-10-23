@@ -1,8 +1,8 @@
 // How each setting on Settings → Billing rules is shown: a plain label, what
 // it changes, how its value is entered, and words for each option
 // (docs/AUTONOMY.md, "How to add a setting", step 6). Only settings whose
-// behaviour is built are listed; reminders, alerts and invoice numbering
-// arrive with their features.
+// behaviour is built are listed; alerts and invoice numbering arrive with
+// their features.
 
 import type { Scope, SettingKey } from "./schema";
 
@@ -12,6 +12,8 @@ export type Input =
   | { kind: "percent" }
   | { kind: "rupees" }
   | { kind: "days" }
+  /** Several day counts, typed "1, 7, 15"; blank means none. */
+  | { kind: "dayList" }
   | { kind: "dayOfMonth" }
   | { kind: "text"; placeholder?: string };
 
@@ -119,6 +121,25 @@ export const SETTING_LABELS: Partial<Record<SettingKey, SettingLabel>> = {
     label: "Day to make invoices",
     help: "On the 1st: that month's invoices. On a later day, the next month's: the 25th makes November's invoices on 25 Oct. Nothing is sent until you send it.",
     input: { kind: "dayOfMonth" },
+  },
+  "reminders.autoSend": {
+    label: "Payment reminders",
+    help: "Emails tenants about unpaid invoices on the days below. Turn off to remind tenants yourself.",
+    input: {
+      kind: "boolean",
+      yes: "Send automatically",
+      no: "Don't send reminders",
+    },
+  },
+  "reminders.beforeDueDays": {
+    label: "Remind before the due date",
+    help: "Days before the due date. 3 means an invoice due 8 May gets a reminder on 5 May. Leave blank for none.",
+    input: { kind: "dayList" },
+  },
+  "reminders.afterDueDays": {
+    label: "Remind after the due date",
+    help: "Days after the due date, separated by commas, until it's paid. 1, 7, 15 means an invoice due 8 May gets reminders on 9, 15 and 23 May. Leave blank for none.",
+    input: { kind: "dayList" },
   },
   "tds.rounding": {
     label: "Expected TDS",

@@ -10,3 +10,4 @@ export * from "./invoices";
 export * from "./bank";
 export * from "./payments";
 export * from "./documents";
+export * from "./reminders";

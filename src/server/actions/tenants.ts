@@ -9,7 +9,9 @@ import { parseForm, type FormState } from "@/lib/auth/forms";
 import { insertLogged, updateLogged } from "@/lib/db/activity-log";
 import { tenantContacts, tenants } from "@/lib/db/schema";
 import { runScoped } from "@/lib/db/scoped";
-import { contactSchema, tenantSchema } from "@/lib/tenants/forms";
+import { parseStoredSettings } from "@/lib/settings/schema";
+import { saveSettings } from "@/lib/settings/store";
+import { contactSchema, tenantSchema, withAutoSend } from "@/lib/tenants/forms";
 import { guardedForm } from "./guard";
 
 /** The contact fields of the new-tenant form, prefixed "contact_". */
@@ -51,6 +53,13 @@ export async function saveTenant(
           ? await updateLogged(s, tenants, id, data)
           : await insertLogged(s, tenants, data);
         if (!saved) return { message: "This tenant isn't in your account." };
+        const stored = parseStoredSettings("tenant", saved.settings);
+        const next = withAutoSend(
+          stored,
+          String(form.get("remindersAutoSend") ?? ""),
+        );
+        if (next["reminders.autoSend"] !== stored["reminders.autoSend"])
+          await saveSettings(s, { scope: "tenant", id: saved.id }, next);
         if (contact)
           await insertLogged(s, tenantContacts, {
             ...contact.data,

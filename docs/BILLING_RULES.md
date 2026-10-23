@@ -156,3 +156,13 @@ The engine must pass these at all times. Keep them in `src/lib/billing/__tests__
 14. 5% every 12 months from 29 Feb 2028 → increases on 1 Mar 2029 and 1 Mar 2030.
 15. Lease from 31 Jan 2027 with 1 month rent-free → rent starts 1 Mar 2027; first rent invoice is March.
 16. ₹90,015.71 + 5% compounding, rupee rounding on → ₹94,516 (one rounding, not ₹94,517).
+
+## 14. Payment reminders
+
+Reminders never change what is owed; they only ask for it. `src/lib/reminders/`.
+
+- Automatic reminder emails go on the days in `reminders.beforeDueDays` (default 3 days before the due date) and `reminders.afterDueDays` (default 1, 7 and 15 days after it), for every sent invoice with something left to ask for. An empty list switches that kind off. `reminders.autoSend` (organization or tenant, default on) turns them off for everyone or for one tenant. `reminderDue` in `schedule.ts`.
+- A reminder asks for what is left on the invoice (section 11) less the TDS the tenant is still expected to deduct (section 10), never below ₹0. Nothing to ask (only TDS left) means no reminder. `amountToAsk`.
+- Each step goes at most once per invoice. If the daily job missed days, only the latest step whose day has come is sent, and only if it is at most 3 days late: a tenant never gets a burst of old reminders. A step that fell before the invoice was sent isn't used, and a "before the due date" reminder isn't sent once the due date has come (except a 0-day step, which is on the due date).
+- The job runs every day at 09:00 India time (`src/lib/jobs/reminders.ts`). It claims each reminder in the database before emailing, so a retry or a second run never emails twice; a send that never finished is not retried.
+- Reminders go to the same addresses as invoices (billing contacts, else the primary contact). A tenant with no email address gets none; the invoice page shows that.

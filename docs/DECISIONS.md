@@ -241,3 +241,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - `documents` rows say what each file is and whose; storage policies on the `documents` bucket let members read their organization's folder and owners, accounts and property managers upload into it (`drizzle/0020`).
 - Uploads are limited to 3 MB (PDF, PNG, JPG) so they fit a server action (D30's 4 MB limit).
 - The TDS tracker (`src/lib/tds/tracker.ts`, pure) groups active payments' TDS records by tenant and quarter; uploading a certificate marks that tenant-quarter's records received.
+
+## D33. Automatic reminders are claimed in the database before they are emailed (2026-10-23)
+
+**Why:** a reminder emailed twice, or a burst of old ones after the job was down, makes the landlord look careless; a missed one is caught by the next step.
+**Consequences:**
+- The daily job (`src/lib/jobs/reminders.ts`, 09:00 India time) inserts a `reminders` row per step due, under a unique (invoice, channel, step) index, commits, then emails. A crash between the two leaves the row `sending` and it is never retried.
+- Only the latest due step is sent, at most 3 days late (`CATCH_UP_DAYS`).
+- The amount asked is what is left less TDS still expected, from the same `unpaidInvoices` the payment form uses, so the reminder and the payment form never disagree.
+- The words are built from the invoice's frozen copies (D18), in `src/lib/reminders/email.ts`.
+

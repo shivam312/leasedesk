@@ -36,14 +36,18 @@ describe("amounts typed in rupees and percent", () => {
     expect(toFieldValue("gst.defaultRateBp", 1800)).toBe("18");
     expect(toFieldValue("tds.tolerancePaise", 150)).toBe("1.50");
     expect(toFieldValue("invoice.dueDays", undefined)).toBe("");
+    expect(toFieldValue("reminders.afterDueDays", [1, 7, 15])).toBe("1, 7, 15");
+    expect(toFieldValue("reminders.beforeDueDays", [])).toBe("");
   });
 });
 
 describe("what the page shows", () => {
   it("every shown setting has a label, and only built settings are shown", () => {
-    expect(shownKeys("organization", keysForScope)).not.toContain(
-      "reminders.autoSend",
-    );
+    const org = shownKeys("organization", keysForScope);
+    expect(org).toContain("reminders.beforeDueDays");
+    expect(org).toContain("reminders.afterDueDays");
+    expect(org).toContain("reminders.autoSend");
+    expect(org).not.toContain("alerts.expiryDays");
     expect(shownKeys("building", keysForScope).sort()).toEqual([
       "billing.defaultTiming",
       "billing.roundIncreasedRent",
@@ -115,6 +119,45 @@ describe("readSettingsForm", () => {
         invoice__dueDays: "Enter a whole number of days, 0 to 180.",
         gst__defaultRateBp: "Enter a percentage like 18 or 12.5.",
         gst__defaultSac: "A SAC code is 6 digits, like 997212.",
+      },
+    });
+  });
+});
+
+describe("reminder days", () => {
+  const keys = ["reminders.beforeDueDays", "reminders.afterDueDays"] as const;
+  const read = (before: string, after: string) =>
+    readSettingsForm(
+      "organization",
+      [...keys],
+      form({
+        "reminders.beforeDueDays": before,
+        "reminders.afterDueDays": after,
+      }),
+    );
+
+  it("reads a list of days in any order, each once", () => {
+    expect(read("3", "15, 7 1,7")).toEqual({
+      values: {
+        "reminders.beforeDueDays": [3],
+        "reminders.afterDueDays": [1, 7, 15],
+      },
+    });
+  });
+
+  it("blank means no reminders of that kind", () => {
+    expect(read("", "")).toEqual({
+      values: { "reminders.beforeDueDays": [], "reminders.afterDueDays": [] },
+    });
+  });
+
+  it("explains a bad list in plain words", () => {
+    expect(read("three", "1, 400")).toEqual({
+      errors: {
+        reminders__beforeDueDays:
+          "Enter days as numbers separated by commas, like 1, 7, 15.",
+        reminders__afterDueDays:
+          "Enter days as numbers separated by commas, like 1, 7, 15.",
       },
     });
   });

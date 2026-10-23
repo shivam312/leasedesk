@@ -8,6 +8,8 @@ import { tenantFields } from "@/components/tenants/fields";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
+import { parseStoredSettings } from "@/lib/settings/schema";
+import { loadSettings } from "@/lib/settings/store";
 import { getTenant } from "@/lib/tenants/queries";
 import { saveTenant } from "@/server/actions/tenants";
 
@@ -42,12 +44,19 @@ async function EditTenant({ params }: { params: Promise<{ id: string }> }) {
         back={{ href: "/tenants", label: "Back to Tenants" }}
       />
     );
-  const data = await runScoped(appDb, member, (s) => getTenant(s, id));
+  const data = await runScoped(appDb, member, async (s) => {
+    const found = await getTenant(s, id);
+    return found && { ...found, business: await loadSettings(s) };
+  });
   if (!data) notFound();
+  const own = parseStoredSettings("tenant", data.tenant.settings);
   return (
     <SimpleForm
       action={saveTenant.bind(null, id)}
-      fields={tenantFields(data.tenant)}
+      fields={tenantFields(data.tenant, {
+        business: data.business["reminders.autoSend"],
+        own: own["reminders.autoSend"],
+      })}
       submitLabel="Save tenant"
       pendingLabel="Saving…"
     />

@@ -5,6 +5,14 @@ import { keysForScope } from "@/lib/settings/schema";
 import { billingRuleFields, describeValue } from "../billing-rules";
 
 describe("describeValue", () => {
+  it("reads reminder days in words", () => {
+    expect(describeValue("reminders.afterDueDays", [1, 7, 15])).toBe(
+      "1, 7, 15 days",
+    );
+    expect(describeValue("reminders.beforeDueDays", [1])).toBe("1 day");
+    expect(describeValue("reminders.beforeDueDays", [])).toBe("None");
+  });
+
   it("shows rupee settings with Indian grouping (formatINR)", () => {
     // 1,00,000 rupees = 1,00,00,000 paise.
     expect(describeValue("tds.tolerancePaise", 10_000_000)).toBe("₹1,00,000");
@@ -40,6 +48,16 @@ describe("billingRuleFields", () => {
   });
 
   it("leaves out a setting that isn't on screen yet", () => {
-    expect(billingRuleFields(["reminders.autoSend"], {})).toEqual([]);
+    expect(billingRuleFields(["alerts.expiryDays"], {})).toEqual([]);
+  });
+
+  it("reminder days: typed as a list, blank allowed (no reminders)", () => {
+    const [field] = billingRuleFields(["reminders.afterDueDays"], {});
+    expect(field).toMatchObject({
+      name: "reminders__afterDueDays",
+      defaultValue: "1, 7, 15",
+      required: false,
+      inputMode: undefined,
+    });
   });
 });

@@ -40,6 +40,12 @@ export function describeValue(key: SettingKey, value: unknown): string {
       return `${String(value)} ${value === 1 ? "day" : "days"}`;
     case "dayOfMonth":
       return `The ${ordinal(Number(value))}`;
+    case "dayList": {
+      const list = value as number[];
+      return list.length === 0
+        ? "None"
+        : `${list.join(", ")} ${list.length === 1 && list[0] === 1 ? "day" : "days"}`;
+    }
     default:
       return String(value);
   }
@@ -101,8 +107,13 @@ export function billingRuleFields(
     }
     return {
       ...base,
+      // A day list needs a comma, which number keypads don't have.
       inputMode:
-        input.kind === "text" ? ("numeric" as const) : ("decimal" as const),
+        input.kind === "dayList"
+          ? undefined
+          : input.kind === "text"
+            ? ("numeric" as const)
+            : ("decimal" as const),
       defaultValue: toFieldValue(
         key,
         current ?? (inherited ? undefined : def.default),
@@ -110,7 +121,8 @@ export function billingRuleFields(
       hint: inherited
         ? `${label.help} Leave blank for ${fallbackWords}.`
         : label.help,
-      required: !inherited,
+      // A blank day list means no reminders of that kind.
+      required: !inherited && input.kind !== "dayList",
     };
   });
 }

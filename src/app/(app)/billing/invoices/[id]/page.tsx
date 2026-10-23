@@ -20,6 +20,9 @@ import { CREDIT_REASONS } from "@/lib/invoices/credit-note-document";
 import { lineWorking, totalWorking } from "@/lib/invoices/explain";
 import { tooEarlyToSend } from "@/lib/invoices/forms";
 import { getInvoice } from "@/lib/invoices/queries";
+import { reminderStepWords } from "@/lib/reminders/email";
+import { remindersFor } from "@/lib/reminders/queries";
+import { loadSettings } from "@/lib/settings/store";
 import { todayInIndia } from "@/lib/today";
 import { emailInvoiceAgain, sendInvoice } from "@/server/actions/billing";
 
@@ -45,10 +48,19 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
   const member = await requireMember();
   const data = await runScoped(appDb, member, async (s) => {
     const saved = await getInvoice(s, id);
-    return saved ? { ...saved, credits: await creditNotesFor(s, id) } : null;
+    return saved
+      ? {
+          ...saved,
+          credits: await creditNotesFor(s, id),
+          reminders: await remindersFor(s, id),
+          autoRemind: (await loadSettings(s, { tenantId: saved.tenant.id }))[
+            "reminders.autoSend"
+          ],
+        }
+      : null;
   });
   if (!data) notFound();
-  const { credits } = data;
+  const { credits, reminders, autoRemind } = data;
   const { invoice, tenant, building, lines } = data;
   const status = INVOICE_STATUS[invoice.status];
   const canBill = can(member.role, "manage_billing");
@@ -306,10 +318,69 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
               )}
           </section>
         )}
+
+        {(reminders.length > 0 ||
+          ["sent", "part_paid", "overdue"].includes(invoice.status)) && (
+          <section className="flex flex-col gap-2">
+            <h2 className="font-medium">Reminders</h2>
+            {reminders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {autoRemind
+                  ? "No reminders sent yet. While this invoice is unpaid, the tenant gets an email on the days set in "
+                  : "Automatic reminders are off for this tenant. Change that on the tenant's page or in "}
+                <Link href="/settings/billing-rules" className="underline">
+                  Billing rules
+                </Link>
+                .
+              </p>
+            ) : (
+              <ul className="flex flex-col divide-y rounded-lg border">
+                {reminders.map((r) => (
+                  <li
+                    key={r.id}
+                    className="flex flex-wrap items-center justify-between gap-2 p-4 text-sm"
+                  >
+                    <span className="flex min-w-0 flex-col">
+                      <span className="font-medium">
+                        {formatDate(todayInIndia(r.sentAt))} ·{" "}
+                        {reminderStepWords(r.step)}
+                      </span>
+                      <span className="break-words text-muted-foreground">
+                        {r.status === "no_email" ? (
+                          <>
+                            Not sent. Add an email address on{" "}
+                            <Link
+                              href={`/tenants/${tenant.id}`}
+                              className="underline"
+                            >
+                              the tenant&apos;s page
+                            </Link>
+                            .
+                          </>
+                        ) : (
+                          `${REMINDER_STATUS[r.status]} ${r.sentTo.join(", ")}`
+                        )}
+                      </span>
+                    </span>
+                    <span className="tabular-nums">
+                      {formatINR(r.amountAsked)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
       </div>
     </>
   );
 }
+
+const REMINDER_STATUS = {
+  sending: "Sending now to",
+  sent: "Emailed to",
+  failed: "Email failed. Check the address:",
+} as const;
 
 /** Points right when closed, down when its <details> is open. */
 function Chevron() {

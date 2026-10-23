@@ -35,5 +35,3 @@ export const monthlyBilling = inngest.createFunction(
     return results;
   },
 );
-
-export const jobs = [monthlyBilling];

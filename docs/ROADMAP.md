@@ -91,7 +91,7 @@ Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice 
 - [x] (human) Allow installing SheetJS (`xlsx`, from cdn.sheetjs.com, already on the approved list) so Excel bank statements can be read; installed 0.20.3 on 2026-10-23 and Excel (.xlsx, .xls) statements now import
 - [x] Matching suggestions and bulk confirm
 - [x] TDS tracker by tenant and quarter, certificate upload
-- [ ] Reminders: automatic emails
+- [x] Reminders: automatic emails
 - [ ] Reminders: one-tap WhatsApp link
 - [ ] Tenant ledger with running balance
 - [ ] (human) Get one real bank statement export (CSV or Excel) per major bank the pilots use, personal details removed, into `tests/fixtures/bank/`

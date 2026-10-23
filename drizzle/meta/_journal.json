@@ -148,6 +148,20 @@
       "when": 1792760474753,
       "tag": "0020_documents_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792766189970,
+      "tag": "0021_reminders",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792766201437,
+      "tag": "0022_reminders_rules",
+      "breakpoints": true
     }
   ]
 }

@@ -24,6 +24,11 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-012 | E-invoicing (IRN) for landlords over ₹5 crore turnover | ca | no | open |
 | D-013 | Signature and "Original for recipient" on emailed invoices | ca | no | open |
 | D-014 | How credit notes work out GST, round off and the time limit | ca | no | open |
+| D-015 | One invoice number series per building prefix | ca | no | open |
+| D-016 | Sending an invoice before its date, or weeks late | ca | no | open |
+| D-017 | Expected TDS after a credit note | ca | no | open |
+| D-018 | Billing a month again after its invoice was credited in full | product | no | open |
+| D-019 | Credit notes against an invoice that's already paid | product | no | open |
 
 ## Human tasks
 
@@ -218,6 +223,68 @@ Things only a person can do. Tick them when done.
   - C) Round every credit note's total to the rupee, like invoices
 - Recommendation: A for the pilot; ask your CA whether B is needed for late corrections.
 - Done meanwhile: A, in `src/lib/billing/credit-note.ts` (`creditNoteAmounts`, `creditNoteDeadline`) and BILLING_RULES section 12, marked [CA].
+- Answer:
+
+### D-015: One invoice number series per building prefix
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: GST lets a business keep several invoice series, as long as each number is unique in the financial year. We keep one series per GSTIN, year and building prefix, so Building B1 and Building B2 each count from 0001 (`B1/26-27/0001`, `B2/26-27/0001`). To keep every number unique, a custom number format must include the prefix and year, and a credit note prefix can't be any building's invoice prefix under the same GSTIN.
+- Options:
+  - A) As built: one series per building prefix
+  - B) One series per GSTIN: all buildings share one counter, e.g. `INV/26-27/0001`, `INV/26-27/0002` across buildings
+- Recommendation: A, because accountants can tell the building from the number and each building's run is consecutive; ask your CA to confirm.
+- Done meanwhile: A, in `src/lib/invoices/numbering.ts`; `invoice.numberFormat` must include `{prefix}`, `{fy}` and `{seq}`; building prefixes are checked (`prefixClash`). BILLING_RULES section 9, marked [CA].
+- Answer:
+
+### D-016: Sending an invoice before its date, or weeks late
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: A month's invoices are dated the 1st. With the run day set to the 25th, November's invoices can be sent on 26 October, so they are dated in the future. A draft sent late (October's, sent in December) keeps its 1 October date but gets a number after November's, so numbers don't follow dates.
+- Options:
+  - A) As built: send any draft whenever; it keeps its 1st-of-month date
+  - B) Refuse to send before the invoice date (send on or after the 1st)
+  - C) B, and a draft sent after its month is re-dated to the day it is sent
+- Recommendation: B for the pilot, because an invoice dated after it was issued is the easiest thing for a GST officer to question; ask your CA about C.
+- Done meanwhile: B, the conservative reading: `tooEarlyToSend` in `src/lib/invoices/forms.ts`, checked in `issueInvoice`; the Billing and invoice pages say "Invoices dated 01-11-2026 can be sent from that day, not before." Late drafts keep their date (A's part of C not built).
+- Answer:
+
+### D-017: Expected TDS after a credit note
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: A ₹1,18,000 invoice expects ₹10,000 TDS, so the tenant is asked for ₹1,08,000. After a ₹59,000 credit note (₹50,000 rent + GST), the tenant would deduct TDS only on the ₹50,000 left, so ₹5,000, and pay ₹54,000. We don't yet reduce the expected TDS when a credit note is issued.
+- Options:
+  - A) Work out expected TDS again on the taxable value left after credit notes, and ask for that balance
+  - B) Keep the invoice's expected TDS and let the accountant adjust when the payment comes in
+- Recommendation: A, because it matches what the tenant will actually pay, so M5 can match the payment automatically.
+- Done meanwhile: an invoice with any credit note prints no amount to pay and no amount in its UPI QR (like a part-paid invoice), so the tenant is never asked for too much. Payments (M5) will need the answer.
+- Answer:
+
+### D-018: Billing a month again after its invoice was credited in full
+- Status: open
+- Type: product
+- Blocking: no
+- Context: Sometimes the whole invoice is wrong: you credit it in full and want a corrected invoice for the same month. Clicking "Make invoices" again for that month could make a new draft, but then a month waived on purpose would be billed again by accident.
+- Options:
+  - A) Never automatically: a fully credited month is left alone; a button on the credited invoice, "Make a corrected invoice for this month", makes a new draft on purpose
+  - B) Making the month again always makes a new draft for a fully credited invoice
+- Recommendation: A, because waiving a month is common and billing it again by accident is the worse mistake.
+- Done meanwhile: making the month again never bills a fully credited month (`billedLeaseIds` in `src/lib/invoices/run.ts`). There is no button for a corrected invoice yet (backlog).
+- Answer:
+
+### D-019: Credit notes against an invoice that's already paid
+- Status: open
+- Type: product
+- Blocking: no
+- Context: A credit note can be issued against any sent invoice, including one marked paid or part-paid. Then the tenant has paid more than they owe. Until payments (M5) can hold that as an advance or record a refund, nothing shows the extra.
+- Options:
+  - A) Allow it; from M5 the extra becomes an advance on the tenant's ledger, used against their next invoice
+  - B) Allow it; from M5 the extra is shown as a refund to pay
+  - C) Refuse credit notes on paid invoices
+- Recommendation: A, because most landlords adjust against next month's rent instead of paying refunds.
+- Done meanwhile: allowed (A), with no advance shown until M5.
 - Answer:
 
 ## Applied

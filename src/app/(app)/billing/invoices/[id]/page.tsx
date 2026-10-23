@@ -18,6 +18,7 @@ import { formatDate, formatINR, formatMonth } from "@/lib/format";
 import { creditNotesFor } from "@/lib/invoices/credit-notes";
 import { CREDIT_REASONS } from "@/lib/invoices/credit-note-document";
 import { lineWorking, totalWorking } from "@/lib/invoices/explain";
+import { tooEarlyToSend } from "@/lib/invoices/forms";
 import { getInvoice } from "@/lib/invoices/queries";
 import { todayInIndia } from "@/lib/today";
 import { emailInvoiceAgain, sendInvoice } from "@/server/actions/billing";
@@ -52,6 +53,7 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
   const status = INVOICE_STATUS[invoice.status];
   const canBill = can(member.role, "manage_billing");
   const month = invoice.runMonth.slice(0, 7);
+  const early = tooEarlyToSend(invoice.invoiceDate, todayInIndia());
   const interState = invoice.supplyType === "inter_state";
   const totals: [string, number][] = [
     ["Before GST", invoice.taxableTotal],
@@ -85,7 +87,10 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
             with any lease changes.
           </p>
         )}
-        {invoice.status === "draft" && canBill && (
+        {invoice.status === "draft" && canBill && early && (
+          <p className="text-sm">{early}</p>
+        )}
+        {invoice.status === "draft" && canBill && !early && (
           <SendInvoiceForm
             invoiceId={invoice.id}
             tenantName={tenant.companyName}

@@ -83,6 +83,19 @@ describe.skipIf(!ready)("issueInvoice (skipped until pnpm db:migrate)", () => {
     });
   });
 
+  it("refuses to send before the invoice date, and takes no number", async () => {
+    await inRollback(async (tx) => {
+      const { ctx, invoice } = await madeDraft(tx);
+      // 25 Oct 2026 in India; the November invoice is dated 01-11-2026.
+      await expect(
+        runScoped(asDb(tx), ctx, (s) =>
+          issueInvoice(s, invoice.id, new Date("2026-10-25T06:00:00Z")),
+        ),
+      ).rejects.toThrow(/can be sent from that day/);
+      expect(await tx.select().from(schema.invoiceSeries)).toHaveLength(0);
+    });
+  });
+
   it("refuses without a GSTIN and gives the number back", async () => {
     await inRollback(async (tx) => {
       const a = await withGstin(tx, null);

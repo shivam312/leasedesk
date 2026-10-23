@@ -19,10 +19,12 @@ import type { EmailDriver } from "@/lib/email";
 import { EmailError } from "@/lib/email";
 import { formatMonth } from "@/lib/format";
 import { loadSettings } from "@/lib/settings/store";
+import { todayInIndia } from "@/lib/today";
 import { propertyLine, recipientCopy, supplierCopy } from "./copies";
 import type { InvoiceDocument } from "./document";
 import { draftChanged } from "./draft-rows";
 import { invoiceEmail, invoiceRecipients } from "./email";
+import { tooEarlyToSend } from "./forms";
 import { takeNumber } from "./numbering";
 import { getInvoice, leaseUnitCodes } from "./queries";
 import { freshDraft } from "./run";
@@ -129,6 +131,8 @@ export async function issueInvoice(
     throw new SendError(
       `Add the GSTIN for ${entity.legalName} in Settings → Business details, then send again.`,
     );
+  const early = tooEarlyToSend(invoice.invoiceDate, todayInIndia(sentAt));
+  if (early) throw new SendError(early);
   // The lease, its charges or a billing rule may have changed since the
   // month's invoices were made: never send the old amounts.
   const month = monthOf(invoice.runMonth);

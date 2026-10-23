@@ -5,6 +5,7 @@ import {
   monthChoices,
   runSummary,
   sendAllConsequence,
+  tooEarlyToSend,
   sendSummary,
 } from "../forms";
 
@@ -178,5 +179,17 @@ describe("sendAllConsequence", () => {
     expect(sendAllConsequence(["Acme", "Birla", "Cipla"])).toMatch(
       /3 tenants have no email address \(Acme, Birla, Cipla\), so their invoices will be numbered but not emailed: download the PDFs and send them yourself\.$/,
     );
+  });
+});
+
+describe("tooEarlyToSend", () => {
+  it("refuses to send before the invoice date, and allows it from that day", () => {
+    // November's invoices are dated 01-11-2026 (D23): a run on 25 October
+    // makes them, but they can't be issued with a future date (D-016).
+    expect(tooEarlyToSend("2026-11-01", "2026-10-25")).toBe(
+      "Invoices dated 01-11-2026 can be sent from that day, not before.",
+    );
+    expect(tooEarlyToSend("2026-11-01", "2026-11-01")).toBeNull();
+    expect(tooEarlyToSend("2026-11-01", "2026-12-03")).toBeNull();
   });
 });

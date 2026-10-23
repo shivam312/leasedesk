@@ -91,6 +91,8 @@ Example: ₹90,000/month, rent commences 16 Sep (30 days): 15 billable days → 
 - Maximum 16 characters, using letters, digits, `-` and `/` only.
 - Default format `{prefix}/{fy}/{seq}`, e.g. `B1/26-27/0001` (13 characters). Prefix is a building setting.
 - Numbers are assigned when an invoice is sent, inside a database transaction with a row lock on the series.
+- An invoice can't be sent before its invoice date (the 1st of its month, D23): drafts made on an earlier run day wait. A draft sent late keeps its date. **[CA]** (D-016)
+- Before numbering, the draft is worked out again from its lease and settings; if anything changed since it was made, sending is refused until the month is made again.
 - Credit notes use their own series in the same format with a different prefix, e.g. `CN/26-27/0001`.
 - The invoice PDF carries everything in the india-compliance skill's "GST tax invoice: required content" list, marked "Original for recipient", with an empty "Authorised signatory" line and "This is a computer-generated invoice." **[CA]** (D-013)
 - No e-invoicing (IRN) in v1: a landlord with turnover over ₹5 crore must register invoices on the portal themselves. **[CA]** (D-012)

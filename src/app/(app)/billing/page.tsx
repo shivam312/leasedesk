@@ -8,11 +8,13 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
+import { startOfMonth } from "@/lib/billing/dates";
 import { formatINR, formatMonth } from "@/lib/format";
 import {
   billingMonth,
   monthChoices,
   sendAllConsequence,
+  tooEarlyToSend,
 } from "@/lib/invoices/forms";
 import { invoicesForMonth } from "@/lib/invoices/run";
 import { draftTenantsWithoutEmail } from "@/lib/invoices/send";
@@ -81,9 +83,14 @@ async function MonthInvoices({ month }: { month: string }) {
   const canBill = can(member.role, "manage_billing");
   const label = formatMonth(month);
   const drafts = rows.filter((r) => r.status === "draft");
+  // A month's invoices are dated its 1st (D23).
+  const early = tooEarlyToSend(startOfMonth(month), todayInIndia());
   return (
     <div className="flex flex-col gap-6">
-      {canBill && drafts.length > 0 && (
+      {canBill && drafts.length > 0 && early && (
+        <p className="max-w-2xl text-sm">{early}</p>
+      )}
+      {canBill && drafts.length > 0 && !early && (
         <SendAllForm
           month={month}
           monthLabel={label}

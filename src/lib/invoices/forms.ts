@@ -1,8 +1,14 @@
 // The Billing page's month and the words for a billing run's result.
 
 import { z } from "zod";
-import { addMonthsToMonth, monthOf, type YearMonth } from "@/lib/billing/dates";
-import { formatMonth } from "@/lib/format";
+import {
+  addMonthsToMonth,
+  compareDates,
+  monthOf,
+  type PlainDate,
+  type YearMonth,
+} from "@/lib/billing/dates";
+import { formatDate, formatMonth } from "@/lib/format";
 import type { RunResult } from "./run";
 import type { EmailResult } from "./send";
 
@@ -74,6 +80,19 @@ export function sendAllConsequence(noEmail: string[]): string {
       ? `${noEmail[0]} has no email address, so its invoice will be numbered but not emailed: download the PDF and send it yourself.`
       : `${noEmail.length} tenants have no email address (${noEmail.join(", ")}), so their invoices will be numbered but not emailed: download the PDFs and send them yourself.`;
   return `${base} ${who}`;
+}
+
+/**
+ * Why invoices dated `invoiceDate` can't be sent `today`, or null. An invoice
+ * is never issued before its own date (D-016) [CA].
+ */
+export function tooEarlyToSend(
+  invoiceDate: PlainDate,
+  today: PlainDate,
+): string | null {
+  return compareDates(today, invoiceDate) < 0
+    ? `Invoices dated ${formatDate(invoiceDate)} can be sent from that day, not before.`
+    : null;
 }
 
 export type SendOutcome = {

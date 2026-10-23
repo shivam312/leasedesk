@@ -14,6 +14,11 @@ const SECTIONS = [
     description: "Your name, GSTINs and the bank account on invoices.",
   },
   {
+    href: "/settings/billing-rules",
+    title: "Billing rules",
+    description: "Rounding, GST, TDS and building defaults.",
+  },
+  {
     href: "/settings/team",
     title: "Team",
     description: "See who can use your account, and invite people.",
@@ -25,7 +30,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        description="Your business details, team and account."
+        description="Your business details, billing rules, team and account."
       />
       <ul className="flex max-w-2xl flex-col divide-y rounded-lg border">
         {SECTIONS.map((s) => (

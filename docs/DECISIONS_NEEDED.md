@@ -38,6 +38,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-026 | Which month an invoice or credit note counts in on the GST summary | ca | no | open |
 | D-027 | How payments, TDS and reversals go into Tally | ca | no | open |
 | D-028 | Bringing in what tenants already owe when a landlord starts | product | no | open |
+| D-029 | How users reach LeaseDesk support | product | no | open |
 
 ## Human tasks
 
@@ -420,6 +421,19 @@ Things only a person can do. Tick them when done.
   - C) Leave old dues in the old system until they are paid
 - Recommendation: A, because it is one number per tenant that the accountant already has, it can't clash with GST invoice numbering, and payments and reminders then work from day one.
 - Done meanwhile: nothing; the import covers buildings, units, tenants and leases. The tenant ledger says there is no opening balance yet.
+- Answer:
+
+### D-029: How users reach LeaseDesk support
+- Status: open
+- Type: product
+- Blocking: no
+- Context: The error pages say "contact support" or "tell us what you were doing", but the app has no support email or WhatsApp number anywhere, so a pilot landlord who hits an error has no way to reach you from the screen (UX review M8).
+- Options:
+  - A) A support email (e.g. support@yourdomain.in), as a mailto link on the error pages and in Settings
+  - B) A WhatsApp number, as a wa.me link (most owners are on their phones)
+  - C) Both: WhatsApp for owners, email for accountants
+- Recommendation: B for the pilot, because owners already report problems on WhatsApp and it needs no new account; add email when there are paying customers.
+- Done meanwhile: nothing; the error pages still say "contact support" / "tell us" with no link. Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
 - Answer:
 
 ## Applied

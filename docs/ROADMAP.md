@@ -139,6 +139,8 @@ Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: the lease import'
 - [ ] (human) Usability test with an accountant who hasn't seen the app
 - [ ] (human) Chartered accountant reviews `docs/BILLING_RULES.md` and the `ca` entries in `docs/DECISIONS_NEEDED.md`
 
+Reviewed by the billing and UX reviewers on 2026-10-24. Fixed: error reports to Sentry no longer carry an error's text (a failed query lists the names, GSTINs and amounts it tried to save), breadcrumbs or query strings; a reset link's `next` can't send someone to another site with a tab or newline; a reset page saved after the session ended explains that the link expired; plainer reset and invite pages; the journey test checks Today's collected money. The rest is in `docs/BACKLOG.md`; D-029 (how users reach support) is open.
+
 ## Later (v2, in order)
 
 Online payment links, tenant portal, full Tally / Zoho Books sync, metered utilities, renewals pipeline, WhatsApp Business API, AI lease extraction, maintenance tickets, analytics, custom roles. See `docs/PRODUCT_PLAN.md`.

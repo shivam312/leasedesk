@@ -40,7 +40,7 @@ async function Buildings() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
-      {editable && (
+      {editable && list.length > 0 && (
         <div>
           <Button asChild>
             <Link href="/leases/buildings/new">Add building</Link>
@@ -48,11 +48,16 @@ async function Buildings() {
         </div>
       )}
       {list.length === 0 ? (
-        <Card>
+        <Card className="flex flex-col items-start gap-3">
           <p className="text-sm">
             No buildings yet. Add your first building, then its units; leases
             come next.
           </p>
+          {editable && (
+            <Button asChild>
+              <Link href="/leases/buildings/new">Add building</Link>
+            </Button>
+          )}
         </Card>
       ) : (
         <ul className="flex flex-col gap-2">

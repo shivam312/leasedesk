@@ -106,7 +106,8 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
         {contacts.length === 0 ? (
           <Card className="mb-4">
             <p className="text-sm">
-              No contacts yet. Add the person who receives invoices.
+              No contacts yet.
+              {editable && " Add the person who receives invoices below."}
             </p>
           </Card>
         ) : (

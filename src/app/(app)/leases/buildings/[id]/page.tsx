@@ -48,7 +48,7 @@ async function Building({ params }: { params: Promise<{ id: string }> }) {
           description={`${building.address}, ${building.city}, ${GST_STATES[building.stateCode] ?? building.stateCode}`}
         />
         <div className="-mt-3 flex flex-wrap gap-2">
-          {editable && (
+          {editable && units.length > 0 && (
             <Button asChild>
               <Link href={`/leases/buildings/${building.id}/units/new`}>
                 Add unit
@@ -75,14 +75,21 @@ async function Building({ params }: { params: Promise<{ id: string }> }) {
           Units ({units.length})
         </h2>
         {units.length === 0 ? (
-          <Card className="max-w-xl">
+          <Card className="flex max-w-xl flex-col items-start gap-3">
             <p className="text-sm">
               No units yet. Add each office, shop or floor you rent out
               {floors.length === 0
-                ? "; add floors first if the building has them"
+                ? "; add floors below first if the building has them"
                 : ""}
               .
             </p>
+            {editable && (
+              <Button asChild>
+                <Link href={`/leases/buildings/${building.id}/units/new`}>
+                  Add unit
+                </Link>
+              </Button>
+            )}
           </Card>
         ) : (
           <UnitList

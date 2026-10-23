@@ -37,7 +37,7 @@ async function Tenants() {
 
   return (
     <div className="flex flex-col gap-4">
-      {editable && (
+      {editable && list.length > 0 && (
         <div>
           <Button asChild>
             <Link href="/tenants/new">Add tenant</Link>
@@ -45,11 +45,16 @@ async function Tenants() {
         </div>
       )}
       {list.length === 0 ? (
-        <Card className="max-w-xl">
+        <Card className="flex max-w-xl flex-col items-start gap-3">
           <p className="text-sm">
             No tenants yet. Add your first tenant with their GSTIN and the
             contact who receives invoices.
           </p>
+          {editable && (
+            <Button asChild>
+              <Link href="/tenants/new">Add tenant</Link>
+            </Button>
+          )}
         </Card>
       ) : (
         <TenantList tenants={list} />

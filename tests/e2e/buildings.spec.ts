@@ -12,9 +12,21 @@ test("an owner adds a building, a floor and units", async ({ page }) => {
   await page.goto("/leases");
   await page.getByRole("link", { name: /Buildings and units/ }).click();
   await expect(page.getByText(/No buildings yet/)).toBeVisible();
+  await expect(
+    page
+      .getByText(/No buildings yet/)
+      .locator("..")
+      .getByRole("link", { name: "Add building" }),
+  ).toBeVisible();
 
   await addBuilding(page);
   await expect(page.getByText(/No units yet/)).toBeVisible();
+  await expect(
+    page
+      .getByText(/No units yet/)
+      .locator("..")
+      .getByRole("link", { name: "Add unit" }),
+  ).toBeVisible();
 
   await page.getByLabel("New floor").fill("3rd");
   await page.getByRole("button", { name: "Add floor" }).click();

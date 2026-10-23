@@ -10,6 +10,13 @@ test("an owner adds a tenant with a contact, then finds them in the list", async
     .getByRole("link", { name: "Tenants" })
     .click();
   await expect(page.getByText(/No tenants yet/)).toBeVisible();
+  // The empty state carries its first action (UX rule 8).
+  await expect(
+    page
+      .getByText(/No tenants yet/)
+      .locator("..")
+      .getByRole("link", { name: "Add tenant" }),
+  ).toBeVisible();
 
   await page.getByRole("link", { name: "Add tenant" }).click();
   await page.getByLabel("Tenant name").fill("Acme Software Pvt Ltd");

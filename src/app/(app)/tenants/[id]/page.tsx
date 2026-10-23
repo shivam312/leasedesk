@@ -139,7 +139,13 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
         <p className="mb-3 text-sm">
           {owed > 0
             ? `${formatINR(owed)} unpaid on ${unpaid.length} ${unpaid.length === 1 ? "invoice" : "invoices"}.`
-            : "Nothing unpaid."}
+            : "Nothing unpaid."}{" "}
+          <Link
+            href={`/tenants/${t.id}/ledger`}
+            className="inline-flex min-h-11 items-center underline md:min-h-0"
+          >
+            See the ledger
+          </Link>
         </p>
         {credit > 0 && (
           <Card className="mb-3 flex flex-col gap-2">

@@ -93,7 +93,7 @@ Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice 
 - [x] TDS tracker by tenant and quarter, certificate upload
 - [x] Reminders: automatic emails
 - [x] Reminders: one-tap WhatsApp link
-- [ ] Tenant ledger with running balance
+- [x] Tenant ledger with running balance
 - [ ] (human) Get one real bank statement export (CSV or Excel) per major bank the pilots use, personal details removed, into `tests/fixtures/bank/`
 
 On `main`. All migrations to `drizzle/0020` are applied locally, and the database tests no longer skip when a table is missing: they fail. Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`).

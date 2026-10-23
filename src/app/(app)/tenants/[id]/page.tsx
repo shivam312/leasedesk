@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { SimpleForm } from "@/components/forms/SimpleForm";
 import { ApplyCreditForm } from "@/components/payments/ApplyCreditForm";
+import { LEASE_STATUS } from "@/components/leases/status";
 import { PaymentList } from "@/components/payments/PaymentList";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { contactFields } from "@/components/tenants/fields";
@@ -12,8 +13,9 @@ import { Badge, Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
-import { formatINR } from "@/lib/format";
+import { formatDate, formatINR } from "@/lib/format";
 import { GST_STATES } from "@/lib/india/identifiers";
+import { listLeases } from "@/lib/leases/queries";
 import {
   paymentSettings,
   paymentsFor,
@@ -54,17 +56,19 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
     const found = await getTenant(s, id);
     if (!found) return null;
     const settings = await paymentSettings(s, id);
-    const [payments, credits, unpaid] = await Promise.all([
+    const [leases, payments, credits, unpaid] = await Promise.all([
+      listLeases(s, id),
       paymentsFor(s, id),
       paymentsWithCredit(s, id),
       unpaidInvoices(s, id, settings),
     ]);
-    return { ...found, payments, credits, unpaid };
+    return { ...found, leases, payments, credits, unpaid };
   });
   if (!data) notFound();
-  const { tenant: t, contacts, payments, credits, unpaid } = data;
+  const { tenant: t, contacts, leases, payments, credits, unpaid } = data;
   const editable = can(member.role, "manage_tenants");
   const canBill = can(member.role, "manage_billing");
+  const canLease = can(member.role, "manage_leases");
   const credit = credits.reduce((sum, c) => sum + c.creditPaise, 0);
   const owed = unpaid.reduce((sum, i) => sum + i.outstandingPaise, 0);
   const tds = [
@@ -125,11 +129,40 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
         <h2 id="leases-heading" className="mb-2 text-lg font-semibold">
           Leases
         </h2>
-        <Card>
-          <p className="text-sm">
-            No leases yet. Leases and unpaid invoices will show here.
-          </p>
-        </Card>
+        {leases.length === 0 ? (
+          <Card className="flex flex-col items-start gap-2">
+            <p className="text-sm">No leases yet for {t.companyName}.</p>
+            {canLease && (
+              <Link
+                href="/leases/new"
+                className="inline-flex min-h-11 items-center text-sm underline md:min-h-0"
+              >
+                Add lease
+              </Link>
+            )}
+          </Card>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {leases.map((l) => (
+              <li key={l.id}>
+                <Link
+                  href={`/leases/${l.id}`}
+                  className="block rounded-md border p-3 hover:bg-muted"
+                >
+                  <span className="flex flex-wrap items-center gap-2 font-medium">
+                    {l.buildingName}
+                    <Badge tone={LEASE_STATUS[l.status].tone}>
+                      {LEASE_STATUS[l.status].label}
+                    </Badge>
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {formatDate(l.startDate)} to {formatDate(l.endDate)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section aria-labelledby="payments-heading" className="max-w-2xl">
@@ -165,8 +198,19 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
           </Card>
         )}
         {payments.length === 0 ? (
-          <Card>
-            <p className="text-sm">No payments recorded yet.</p>
+          <Card className="flex flex-col items-start gap-2">
+            <p className="text-sm">
+              No payments yet. When {t.companyName} pays, record it so their
+              invoices show as paid.
+            </p>
+            {canBill && (
+              <Link
+                href={`/billing/payments/new?tenant=${t.id}`}
+                className="inline-flex min-h-11 items-center text-sm underline md:min-h-0"
+              >
+                Record payment
+              </Link>
+            )}
           </Card>
         ) : (
           <PaymentList payments={payments} />

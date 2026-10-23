@@ -11,9 +11,11 @@ test("an owner records an advance payment, then reverses it", async ({
   await page.getByLabel("Contact name").fill("Priya Shah");
   await page.getByLabel("Contact email (optional)").fill("accounts@acme.test");
   await page.getByRole("button", { name: "Add tenant" }).click();
-  await expect(page.getByText("No payments recorded yet.")).toBeVisible();
+  await expect(
+    page.getByText("No payments yet.", { exact: false }),
+  ).toBeVisible();
 
-  await page.getByRole("link", { name: "Record payment" }).click();
+  await page.getByRole("link", { name: "Record payment" }).first().click();
   await expect(page.getByText("Nothing unpaid right now.")).toBeVisible();
   await page.getByLabel("Amount received").fill("1,08,000");
   await expect(

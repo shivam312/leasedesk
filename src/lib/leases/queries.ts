@@ -21,7 +21,8 @@ import type { BuiltLease } from "./draft";
 import type { UnitBooking } from "./forms";
 import { chargeToRow, ruleToRow, savedLeaseInput } from "./rows";
 
-export async function listLeases(s: Scoped) {
+/** All leases, or one tenant's. */
+export async function listLeases(s: Scoped, tenantId?: string) {
   return s.tx
     .select({
       id: leases.id,
@@ -35,7 +36,9 @@ export async function listLeases(s: Scoped) {
     .from(leases)
     .innerJoin(tenants, eq(tenants.id, leases.tenantId))
     .innerJoin(buildings, eq(buildings.id, leases.buildingId))
-    .where(s.where(leases))
+    .where(
+      s.where(leases, tenantId ? eq(leases.tenantId, tenantId) : undefined),
+    )
     .orderBy(asc(tenants.companyName), desc(leases.version));
 }
 

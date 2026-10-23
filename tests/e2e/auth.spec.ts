@@ -112,3 +112,18 @@ test("an expired reset link says so and offers a new one", async ({ page }) => {
     page.getByText("That link has expired or was already used."),
   ).toBeVisible();
 });
+
+test("a reset page left open after the session ended explains why", async ({
+  page,
+}) => {
+  await signUpNewOwner(page);
+  await page.goto("/reset-password");
+  await page.context().clearCookies();
+  await page.getByLabel("New password").fill("new-password-456");
+  await page.getByLabel("Type it again").fill("new-password-456");
+  await page.getByRole("button", { name: "Save new password" }).click();
+  await expect(page).toHaveURL("/forgot-password?expired=1");
+  await expect(
+    page.getByText("That link has expired or was already used."),
+  ).toBeVisible();
+});

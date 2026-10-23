@@ -129,7 +129,8 @@ export async function setNewPassword(
   form: FormData,
 ): Promise<FormState> {
   const user = await currentUser();
-  if (!user) redirect("/forgot-password");
+  // The session ended while the page was open: say so, not just bounce.
+  if (!user) redirect("/forgot-password?expired=1");
   const parsed = parseForm(newPasswordSchema, form);
   if ("state" in parsed) return parsed.state;
 

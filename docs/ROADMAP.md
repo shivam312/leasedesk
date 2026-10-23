@@ -126,6 +126,8 @@ Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: "invoices aren't 
 - [x] Excel import for tenants and leases, with row-level error messages
 - [ ] (human) Get a sample Tally XML export from a pilot accountant's TallyPrime into `tests/fixtures/tally/`
 
+Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: the lease import's rent column is now "Rent at lease start (₹)", with a "Rent today (₹)" column required once an increase has been billed and checked against the engine, so today's rent typed as the starting rent isn't increased twice; increases can be counted from rent start; a whole rent typed as a rate per sq ft is refused; negative amounts in Excel exports show their minus sign; imports link to the next step; empty reports say what to do; 44px buttons on phones. The rest is in `docs/BACKLOG.md`; no new founder decisions.
+
 ## M8. Pilot readiness (week 10)
 
 - [ ] Sentry and error reporting in code, a no-op without `SENTRY_DSN`

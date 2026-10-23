@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button } from "@/components/ui/button";
 import { logOut } from "@/server/actions/auth";
 
 export const metadata: Metadata = { title: "Settings" };
+
+const SECTIONS = [
+  {
+    href: "/settings/team",
+    title: "Team",
+    description: "Invite people and choose what each can do.",
+  },
+] as const;
 
 export default function SettingsPage() {
   return (
@@ -12,6 +22,24 @@ export default function SettingsPage() {
         title="Settings"
         description="Your business details, building defaults (GST, due days, invoice prefix) and team members."
       />
+      <ul className="flex max-w-2xl flex-col divide-y rounded-lg border">
+        {SECTIONS.map((s) => (
+          <li key={s.href}>
+            <Link
+              href={s.href}
+              className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+            >
+              <span>
+                <span className="block font-medium">{s.title}</span>
+                <span className="block text-sm text-muted-foreground">
+                  {s.description}
+                </span>
+              </span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            </Link>
+          </li>
+        ))}
+      </ul>
       <form action={logOut} className="mt-10 border-t pt-6">
         <Button type="submit" variant="outline">
           Log out

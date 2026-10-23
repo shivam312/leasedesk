@@ -104,3 +104,11 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Consequences:**
 - `withBuildingDefaults` (`src/lib/settings/charge-defaults.ts`) fills a new charge's blank timing, GST rate and SAC code from the building's resolved settings. The lease form calls it on save (M3); a charge's own value, including 0%, wins.
 - The billing engine keeps `gstRateBp` and `sacCode` required on `Charge` and never falls back to a building default. Changing a building default affects only charges added afterwards; the settings page says so.
+
+## D17. Invites are links the owner shares (2026-10-23)
+
+**Why:** The email adapter arrives in M4, and owners in India often share things on WhatsApp anyway. A link works with or without email.
+**Consequences:**
+- Settings → Team: the owner enters an email and role and gets a one-time link to copy or share on WhatsApp. Only a SHA-256 hash of its token is stored (`memberships.invite_token_hash`); inviting the same email again replaces the link.
+- `/invite/<token>`: the person sets a password (or enters their existing one) and joins. The login's email must be the invited email. One organization per login in v1, so a login that already belongs to another organization is refused.
+- Links don't expire on a timer; they work once and are replaced by a new invite. When the email adapter exists, "Send invite by email" can reuse the same link.

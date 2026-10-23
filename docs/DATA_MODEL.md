@@ -10,7 +10,7 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 **organizations**: name, legal_name, pan, logo_path, settings (jsonb).
 
-**memberships**: user_id (Supabase auth user; null until an invited person accepts), email (lower-case; unique per organization, as is user_id), role (`owner`, `accounts`, `property_manager`, `viewer`), invited_by, status (`invited`, `active`, `removed`).
+**memberships**: user_id (Supabase auth user; null until an invited person accepts), email (lower-case; unique per organization, as is user_id), role (`owner`, `accounts`, `property_manager`, `viewer`), invited_by, status (`invited`, `active`, `removed`), invite_token_hash (SHA-256 of the invite link's token while the invite is open; unique; cleared on accept).
 
 **billing_entities**: the GSTIN an invoice is issued from. legal_name, gstin, state_code, address, bank_account_name, bank_account_number, ifsc, upi_id, settings (jsonb).
 

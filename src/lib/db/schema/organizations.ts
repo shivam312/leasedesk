@@ -48,6 +48,8 @@ export const memberships = pgTable(
     email: text().notNull(),
     role: membershipRole().notNull(),
     invitedBy: uuid().references(() => authUsers.id, { onDelete: "restrict" }),
+    // SHA-256 of the invite link's token, while the invite is open; cleared on accept.
+    inviteTokenHash: text(),
     status: membershipStatus().notNull().default("invited"),
     ...timestamps,
   },
@@ -56,6 +58,7 @@ export const memberships = pgTable(
     index().on(t.userId),
     uniqueIndex().on(t.organizationId, t.email),
     uniqueIndex().on(t.organizationId, t.userId),
+    uniqueIndex().on(t.inviteTokenHash),
   ],
 ).enableRLS();
 

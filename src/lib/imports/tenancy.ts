@@ -6,6 +6,13 @@
 // Pure: rows in, form inputs or row errors out.
 
 import { parseBankDate } from "@/lib/bank/statement";
+import { chargeBaseAmount } from "@/lib/billing/charges";
+import { compareDates, type PlainDate } from "@/lib/billing/dates";
+import { amountSteps } from "@/lib/billing/escalation";
+import { mulDiv } from "@/lib/billing/money";
+import type { LeaseInput } from "@/lib/billing/schedule";
+import type { BillingSettings } from "@/lib/billing/types";
+import { formatINR } from "@/lib/format";
 import type { LeaseFormErrors, LeaseFormInput } from "@/lib/leases/draft";
 import { rupeesToPaise } from "@/lib/settings/rules-form";
 import { contactSchema, tenantSchema } from "@/lib/tenants/forms";
@@ -38,7 +45,8 @@ export const LEASE_COLUMNS = [
   { key: "rentFreeDays", heading: "Rent-free days" },
   { key: "deposit", heading: "Deposit (₹)" },
   { key: "area", heading: "Area" },
-  { key: "rent", heading: "Rent (₹)", required: true },
+  { key: "rent", heading: "Rent at lease start (₹)", required: true },
+  { key: "rentToday", heading: "Rent today (₹)" },
   { key: "rentBasis", heading: "Rent is" },
   { key: "rentFrequency", heading: "Rent billed" },
   { key: "increase", heading: "Rent increase (%)" },
@@ -265,6 +273,61 @@ export function leaseRowInput(
   };
 }
 
+/**
+ * The imported rent is the rent at lease start; the engine applies every
+ * increase since. When an increase has already been billed, "Rent today"
+ * must match what the engine works out, so a landlord who typed today's
+ * rent as the starting rent isn't billed the increases twice. Within half a
+ * paisa per sq ft (a rate typed to the paisa) and a rupee (rounding).
+ * Returns the row's message, or null when it's right. Pure.
+ */
+export function rentTodayProblem(
+  lease: LeaseInput,
+  billing: BillingSettings,
+  rentToday: string,
+  today: PlainDate,
+): string | null {
+  const charge = lease.charges.find((c) => c.type === "rent");
+  if (
+    !charge ||
+    compareDates(today, lease.startDate) < 0 ||
+    compareDates(today, lease.endDate) > 0
+  )
+    return null;
+  const steps = amountSteps({
+    charge,
+    lease,
+    rules: lease.escalationRules,
+    custom: lease.customEscalations,
+    settings: billing,
+  });
+  const at = steps.findLastIndex((s) => compareDates(s.from, today) <= 0);
+  const typed = rentToday.trim();
+  if (typed === "" && at <= 0) return null;
+  const quarterly = charge.frequency === "quarterly";
+  const monthly = (amount: number) =>
+    quarterly ? mulDiv(amount, 1, 3) : amount;
+  const expected = monthly(steps[Math.max(at, 0)]!.amount);
+  const show = (paise: number) => `${formatINR(paise)} a month`;
+  if (typed === "")
+    return `Rent today (₹): this lease's rent has gone up since it started. Type the rent billed now, so the app can check the increases: from the rent at lease start they come to ${show(expected)}.`;
+  const paise = rupeesToPaise(typed.replace(/,/g, ""));
+  if (paise === null)
+    return "Rent today (₹): type an amount in rupees, like 1,05,000 or 89.50.";
+  const per =
+    charge.basis === "fixed"
+      ? paise
+      : charge.basis === "per_sqft"
+        ? monthly(chargeBaseAmount({ ...charge, ratePaise: paise }).amount)
+        : null;
+  if (per === null) return null;
+  const tolerance =
+    100 +
+    (charge.basis === "per_sqft" ? Math.ceil(charge.areaHundredths / 200) : 0);
+  if (Math.abs(per - expected) <= tolerance) return null;
+  return `Rent today (₹): the rent at lease start with its increases comes to ${show(expected)} today, not ${formatINR(per)}. Type the rent from the lease's first month under Rent at lease start.`;
+}
+
 const FIELD_COLUMNS: Record<string, string> = {
   startDate: "Lease starts",
   endDate: "Last day",
@@ -350,7 +413,9 @@ export const TENANCY_TEMPLATE = {
         rentFreeDays: "Optional; months or days, not both",
         deposit: "Optional, rupees",
         area: "Billed (default) or Carpet: which area the per sq ft amounts use",
-        rent: "Per sq ft per month, or the whole rent per month (billed quarterly, three months at a time)",
+        rent: "The rent in the lease's first month, before any increase: per sq ft per month, or the whole rent per month (billed quarterly, three months at a time)",
+        rentToday:
+          "Needed when the rent has already gone up: what you bill now, per sq ft or per month like the rent at lease start. The app checks it against the increases",
         rentBasis: '"per sq ft" (default) or "per month"',
         rentFrequency: "Monthly (default) or Quarterly",
         increase:

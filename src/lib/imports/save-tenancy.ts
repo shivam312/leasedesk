@@ -23,6 +23,7 @@ import {
   leaseErrorMessage,
   leaseRowInput,
   readTenantRow,
+  rentTodayProblem,
   TENANT_COLUMNS,
 } from "./tenancy";
 
@@ -155,6 +156,16 @@ export async function importTenancy(
             checked.message ??
               leaseErrorMessage(checked.errors, mapped.sources),
           );
+          continue;
+        }
+        const rentToday = rentTodayProblem(
+          checked.built.lease,
+          checked.built.billing,
+          values.rentToday,
+          today,
+        );
+        if (rentToday) {
+          err(rentToday);
           continue;
         }
         await createLease(

@@ -145,7 +145,7 @@ test("an owner imports tenants and leases from Excel after the units", async ({
           "Units",
           "Lease starts",
           "Last day",
-          "Rent (₹)",
+          "Rent at lease start (₹)",
         ],
         [
           "Beta Foods LLP",

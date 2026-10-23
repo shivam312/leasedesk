@@ -167,4 +167,35 @@ describe.skipIf(skipDbTests)("importTenancy", () => {
         },
       ]);
     }));
+
+  it("refuses a lease whose rent today doesn't match its increases", () =>
+    inRollback(async (tx) => {
+      const { ctx } = await withUnit102(tx);
+      // Typed today's ₹1,20,000 as the rent at start of a lease from
+      // 01-04-2025: with 5% from 01-04-2026 it would bill ₹1,26,000.
+      const attempt = runScoped(asDb(tx), ctx, (s) =>
+        importTenancy(
+          s,
+          [
+            tenantsSheet(beta),
+            leasesSheet({
+              ...betaLease,
+              start: "01-04-2025",
+              rentToday: "1,20,000",
+            }),
+          ],
+          "2026-10-23",
+        ),
+      );
+      await expect(attempt).rejects.toBeInstanceOf(ImportRefused);
+      const errors = await attempt.catch((e: ImportRefused) => e.errors);
+      expect(errors).toEqual([
+        {
+          sheet: "Leases",
+          row: 2,
+          message:
+            "Rent today (₹): the rent at lease start with its increases comes to ₹1,26,000 a month today, not ₹1,20,000. Type the rent from the lease's first month under Rent at lease start.",
+        },
+      ]);
+    }));
 });

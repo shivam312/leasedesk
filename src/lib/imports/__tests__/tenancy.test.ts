@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "@/lib/billing/__tests__/billing-settings";
+import type { LeaseInput } from "@/lib/billing/schedule";
+import type { Charge } from "@/lib/billing/types";
 import { parseLeaseForm } from "@/lib/leases/draft";
 import {
+  rentTodayProblem,
   threeMonths,
   LEASE_COLUMNS,
   leaseErrorMessage,
@@ -219,5 +223,107 @@ describe("threeMonths", () => {
     expect(threeMonths("1,00,000")).toBe("300000.00");
     expect(threeMonths("33333.33")).toBe("99999.99");
     expect(threeMonths("lots")).toBe("lots");
+  });
+});
+
+describe("rentTodayProblem", () => {
+  // 01-04-2025 to 31-03-2030, 5% every 12 months from lease start.
+  const lease = (charge: Partial<Charge>): LeaseInput => ({
+    id: "l1",
+    startDate: "2025-04-01",
+    endDate: "2030-03-31",
+    charges: [
+      {
+        id: "rent",
+        type: "rent",
+        basis: "fixed",
+        amountPaise: 10_000_000,
+        startDate: "2025-04-01",
+        gstRateBp: 1800,
+        sacCode: "997212",
+        ...charge,
+      } as Charge,
+    ],
+    escalationRules: [
+      { percentBp: 500, everyMonths: 12, anchor: "lease_start" },
+    ],
+  });
+  const fixed = lease({});
+
+  it("no increase yet: Rent today can stay blank", () => {
+    expect(rentTodayProblem(fixed, DEFAULT_SETTINGS, "", "2026-02-01")).toBe(
+      null,
+    );
+  });
+
+  it("an increase already billed: Rent today is needed", () => {
+    // ₹1,00,000 × 1.05 = ₹1,05,000 from 01-04-2026
+    expect(rentTodayProblem(fixed, DEFAULT_SETTINGS, "", "2026-11-01")).toBe(
+      "Rent today (₹): this lease's rent has gone up since it started. Type the rent billed now, so the app can check the increases: from the rent at lease start they come to ₹1,05,000 a month.",
+    );
+  });
+
+  it("Rent today matching the increases is accepted", () => {
+    expect(
+      rentTodayProblem(fixed, DEFAULT_SETTINGS, "1,05,000", "2026-11-01"),
+    ).toBe(null);
+  });
+
+  it("today's rent typed as the starting rent is refused, not billed twice increased", () => {
+    // Typed 1,05,000 as the rent at start: × 1.05 = ₹1,10,250 today,
+    // while the landlord bills ₹1,05,000.
+    const typedToday = lease({ amountPaise: 10_500_000 });
+    expect(
+      rentTodayProblem(typedToday, DEFAULT_SETTINGS, "1,05,000", "2026-11-01"),
+    ).toBe(
+      "Rent today (₹): the rent at lease start with its increases comes to ₹1,10,250 a month today, not ₹1,05,000. Type the rent from the lease's first month under Rent at lease start.",
+    );
+  });
+
+  it("per sq ft: today's rate rounded to the paisa is accepted", () => {
+    // ₹85.50 × 1,250.50 sq ft = ₹1,06,917.75; × 1.05 = ₹1,12,263.64,
+    // rounded to ₹1,12,264. Today's rate 1,12,264 ÷ 1,250.50 = ₹89.775…
+    // typed as 89.78: × 1,250.50 = ₹1,12,269.89, within half a paisa a
+    // sq ft (₹6.26) and a rupee of rounding.
+    const perSqft = lease({
+      basis: "per_sqft",
+      ratePaise: 8_550,
+      areaHundredths: 125_050,
+    } as Partial<Charge>);
+    expect(
+      rentTodayProblem(perSqft, DEFAULT_SETTINGS, "89.78", "2026-11-01"),
+    ).toBe(null);
+    // 89.78 typed as the starting rate: ₹1,17,877 today, not ₹1,12,270.
+    const typedToday = lease({
+      basis: "per_sqft",
+      ratePaise: 8_978,
+      areaHundredths: 125_050,
+    } as Partial<Charge>);
+    expect(
+      rentTodayProblem(typedToday, DEFAULT_SETTINGS, "89.78", "2026-11-01"),
+    ).toMatch(/^Rent today \(₹\): the rent at lease start/);
+  });
+
+  it("quarterly: Rent today is per month, like the rent", () => {
+    // ₹3,00,000 a quarter, ₹1,05,000 a month after the first increase
+    const quarterly = lease({
+      amountPaise: 30_000_000,
+      frequency: "quarterly",
+    });
+    expect(
+      rentTodayProblem(quarterly, DEFAULT_SETTINGS, "1,05,000", "2026-11-01"),
+    ).toBe(null);
+  });
+
+  it("a lease not running today isn't checked", () => {
+    expect(rentTodayProblem(fixed, DEFAULT_SETTINGS, "", "2031-01-01")).toBe(
+      null,
+    );
+  });
+
+  it("Rent today that isn't an amount is refused", () => {
+    expect(
+      rentTodayProblem(fixed, DEFAULT_SETTINGS, "about 1 lakh", "2026-11-01"),
+    ).toBe("Rent today (₹): type an amount in rupees, like 1,05,000 or 89.50.");
   });
 });

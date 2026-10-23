@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { InvoiceStatusBadge } from "@/components/invoices/StatusBadge";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
@@ -10,6 +11,7 @@ import { runScoped } from "@/lib/db/scoped";
 import { formatDate, formatINR } from "@/lib/format";
 import { ledgerFor } from "@/lib/payments/ledger";
 import { getTenant } from "@/lib/tenants/queries";
+import { todayInIndia } from "@/lib/today";
 
 export const metadata: Metadata = { title: "Ledger" };
 
@@ -44,6 +46,26 @@ function hrefOf(e: LedgerEntry) {
     default:
       return `/billing/payments/${e.sourceId}`;
   }
+}
+
+type InvoiceStatuses = Awaited<ReturnType<typeof ledgerFor>>["invoiceStatus"];
+
+/** An invoice row's status, e.g. "Overdue", beside its label. */
+function Status({
+  e,
+  statuses,
+  today,
+}: {
+  e: LedgerEntry;
+  statuses: InvoiceStatuses;
+  today: string;
+}) {
+  const invoice = e.kind === "invoice" ? statuses.get(e.sourceId) : undefined;
+  return invoice ? (
+    <span className="ml-2 inline-block">
+      <InvoiceStatusBadge invoice={invoice} today={today} />
+    </span>
+  ) : null;
 }
 
 function What({ e }: { e: LedgerEntry }) {
@@ -85,6 +107,7 @@ async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
   });
   if (!data) notFound();
   const { tenant, ledger } = data;
+  const today = todayInIndia();
 
   return (
     <>
@@ -125,6 +148,11 @@ async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
                   <td className="py-2 tabular-nums">{formatDate(e.date)}</td>
                   <td className="py-2 break-words">
                     <What e={e} />
+                    <Status
+                      e={e}
+                      statuses={ledger.invoiceStatus}
+                      today={today}
+                    />
                   </td>
                   <td className="py-2 text-right tabular-nums">
                     {amount(e.debitPaise)}
@@ -164,6 +192,11 @@ async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
                 <span className="flex justify-between gap-2">
                   <span className="min-w-0 break-words">
                     <What e={e} />
+                    <Status
+                      e={e}
+                      statuses={ledger.invoiceStatus}
+                      today={today}
+                    />
                   </span>
                   <span className="shrink-0 tabular-nums">{cardAmount(e)}</span>
                 </span>

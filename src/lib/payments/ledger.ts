@@ -80,5 +80,10 @@ export async function ledgerFor(s: Scoped, tenantId: string) {
           },
     ),
   ];
-  return tenantLedger(sources);
+  // Each invoice's stored status and due date, for its "Overdue" badge
+  // (src/lib/invoices/status.ts).
+  const invoiceStatus = new Map(
+    sent.map((i) => [i.id, { status: i.status, dueDate: i.dueDate }]),
+  );
+  return { ...tenantLedger(sources), invoiceStatus };
 }

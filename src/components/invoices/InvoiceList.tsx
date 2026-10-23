@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/field";
 import { formatDate, formatINR } from "@/lib/format";
-import { INVOICE_STATUS, type InvoiceStatus } from "./status";
+import { InvoiceStatusBadge } from "./StatusBadge";
+import type { InvoiceStatus } from "./status";
 
 export interface InvoiceRow {
   id: string;
@@ -16,7 +16,13 @@ export interface InvoiceRow {
 }
 
 /** A month's invoices: cards on phones, a table from 768px. */
-export function InvoiceList({ invoices }: { invoices: InvoiceRow[] }) {
+export function InvoiceList({
+  invoices,
+  today,
+}: {
+  invoices: InvoiceRow[];
+  today: string;
+}) {
   return (
     <>
       <table className="hidden w-full text-sm md:table">
@@ -55,9 +61,7 @@ export function InvoiceList({ invoices }: { invoices: InvoiceRow[] }) {
                 {formatINR(i.grandTotal)}
               </td>
               <td className="py-2 pl-4">
-                <Badge tone={INVOICE_STATUS[i.status].tone}>
-                  {INVOICE_STATUS[i.status].label}
-                </Badge>
+                <InvoiceStatusBadge invoice={i} today={today} />
               </td>
             </tr>
           ))}
@@ -82,9 +86,7 @@ export function InvoiceList({ invoices }: { invoices: InvoiceRow[] }) {
                   {formatDate(i.periodEnd)} · due {formatDate(i.dueDate)}
                 </span>
                 <span className="shrink-0">
-                  <Badge tone={INVOICE_STATUS[i.status].tone}>
-                    {INVOICE_STATUS[i.status].label}
-                  </Badge>
+                  <InvoiceStatusBadge invoice={i} today={today} />
                 </span>
               </span>
             </Link>

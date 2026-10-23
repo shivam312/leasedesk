@@ -7,6 +7,7 @@ import {
   SendInvoiceForm,
 } from "@/components/invoices/SendForms";
 import { INVOICE_STATUS } from "@/components/invoices/status";
+import { shownStatus } from "@/lib/invoices/status";
 import { Working } from "@/components/invoices/Working";
 import { WhatsappReminderLink } from "@/components/reminders/WhatsappReminderLink";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -68,7 +69,7 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
   if (!data) notFound();
   const { credits, reminders, autoRemind, whatsapp } = data;
   const { invoice, tenant, building, lines } = data;
-  const status = INVOICE_STATUS[invoice.status];
+  const status = INVOICE_STATUS[shownStatus(invoice, todayInIndia())];
   const month = invoice.runMonth.slice(0, 7);
   const early = tooEarlyToSend(invoice.invoiceDate, todayInIndia());
   const interState = invoice.supplyType === "inter_state";

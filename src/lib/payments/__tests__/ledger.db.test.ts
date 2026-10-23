@@ -80,6 +80,11 @@ describe.skipIf(skipDbTests)("ledgerFor", () => {
       expect(ledger.entries[1]!.label).toBe(
         "Payment received (NEFT, ref UTR1)",
       );
+      // Each invoice row carries its stored status and due date, for its badge.
+      expect(ledger.invoiceStatus.get(ledger.entries[0]!.sourceId)).toEqual({
+        status: "part_paid",
+        dueDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      });
 
       // The balance is what is left on the invoices (no credit unapplied).
       const unpaid = await run(async (s) =>

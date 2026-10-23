@@ -1,7 +1,8 @@
 // Invoice statuses in the glossary's words (docs/UX_PRINCIPLES.md).
 
-export type InvoiceStatus =
-  "draft" | "sent" | "part_paid" | "paid" | "overdue" | "cancelled";
+import type { InvoiceStatus } from "@/lib/invoices/status";
+
+export type { InvoiceStatus };
 
 export const INVOICE_STATUS: Record<
   InvoiceStatus,

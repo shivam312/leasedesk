@@ -136,7 +136,7 @@ async function MonthInvoices({ month }: { month: string }) {
           <h2 className="font-medium">
             {label} invoices ({rows.length})
           </h2>
-          <InvoiceList invoices={rows} />
+          <InvoiceList invoices={rows} today={todayInIndia()} />
         </section>
       )}
     </div>

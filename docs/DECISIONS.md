@@ -168,3 +168,12 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Drafts show the amount to pay but no QR (no invoice number yet). Cancelled and paid invoices show a notice and ask for nothing; part-paid ones have a QR without an amount until payments (M5) know the balance.
 - A sent invoice prints only from the copies made when it was sent (D18), now including the property line (building, address, units) in `invoices.recipient.property`; printing one without its copies is an error, never a silent fall back to current details.
 
+
+## D25. Sending numbers an invoice in one transaction, then emails it; the PDF is printed from the frozen copies (2026-10-23)
+
+**Why:** An invoice number must never be given to an invoice that wasn't sent, nor used twice (BILLING_RULES section 9). An email can't be taken back, so it can't be inside a transaction that might still roll back.
+**Consequences:**
+- `issueInvoice` (`src/lib/invoices/send.ts`) locks the draft, takes the number (`takeNumber`, dated by the invoice date, so the financial year is the invoice's), copies the supplier and tenant details (D18), sets `sent_at` and `sent_to`, and logs a `send`. A second click finds it no longer a draft and does nothing. Each invoice of "Send all" is its own transaction, numbered in building then tenant order, so one problem (no GSTIN, a prefix too long) leaves only that invoice not sent yet.
+- After the commit, the PDF is rendered from the frozen copies and emailed (`emailInvoice`). A failed email leaves the invoice sent; the summary says so, and the invoice page has "Email again", which goes to the tenant's billing contacts as they are now. Every attempt is in the activity log (`invoice_email`, `send`). No delivery status column yet (backlog).
+- Recipients are the tenant's billing contacts with an email, or the primary contact's if there are none (`invoiceRecipients`). A tenant with no address is still sent (numbered), and the summary asks the user to send the PDF themselves.
+- `pdf_path` stays empty for now: a sent invoice's PDF is rendered on demand from its frozen copies, which give the same content every time. Storing the file in Supabase Storage is backlogged.

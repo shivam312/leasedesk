@@ -77,7 +77,7 @@ Built on branch `m3-leases-schema`; the lease migrations (`drizzle/0008`–`0011
 - [x] Move invoice number formatting from `src/lib/billing/invoice-number.ts` to `src/lib/invoices/` with sequence assignment (D9)
 - [x] Email adapter with a console driver (writes to `.local-outbox/`) used when `RESEND_API_KEY` is missing
 - [x] Invoice PDF with GST fields, bank details and UPI QR code
-- [ ] Review drafts and "Send all": assign numbers, generate PDFs, email through the adapter
+- [x] Review drafts and "Send all": assign numbers, generate PDFs, email through the adapter
 - [ ] "Explain this amount" on every line
 - [ ] Credit notes
 - [ ] (human) Create a Resend account, verify the sending domain and put `RESEND_API_KEY` in `.env.local`

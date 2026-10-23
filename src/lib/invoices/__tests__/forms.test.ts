@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { billingMonth, monthChoices, runSummary } from "../forms";
+import {
+  billingMonth,
+  emailAgainMessage,
+  monthChoices,
+  runSummary,
+  sendSummary,
+} from "../forms";
 
 const base = {
   runMonth: "2026-11",
@@ -65,5 +71,94 @@ describe("runSummary", () => {
       tone: "success",
       problems: ["Acme: Add the GSTIN."],
     });
+  });
+});
+
+describe("sendSummary", () => {
+  const emailed = (tenantName: string, number: string) => ({
+    tenantName,
+    number,
+    email: { kind: "emailed" as const, to: ["a@b.in"] },
+  });
+
+  it("counts the invoices sent", () => {
+    expect(
+      sendSummary({
+        sent: [
+          emailed("Acme", "B1/26-27/0001"),
+          emailed("Zen", "B1/26-27/0002"),
+        ],
+        alreadySent: 0,
+        problems: [],
+      }),
+    ).toEqual({ message: "Sent 2 invoices.", tone: "success", problems: [] });
+  });
+
+  it("says which tenants have no email and which emails failed, with what to do", () => {
+    const s = sendSummary({
+      sent: [
+        emailed("Acme", "B1/26-27/0001"),
+        {
+          tenantName: "Bee",
+          number: "B1/26-27/0002",
+          email: { kind: "no_email" },
+        },
+        {
+          tenantName: "Cee",
+          number: "B1/26-27/0003",
+          email: { kind: "failed", message: "The email couldn't be sent." },
+        },
+      ],
+      alreadySent: 0,
+      problems: [
+        {
+          tenantName: "Dee",
+          message:
+            "Add the GSTIN for X in Settings → Business details, then send again.",
+        },
+      ],
+    });
+    expect(s.tone).toBe("success");
+    expect(s.message).toBe(
+      "Sent 3 invoices. 1 tenant has no email address: open the invoice, download the PDF and send it yourself, or add a billing contact on the tenant's page. 1 email couldn't be sent: open the invoice and choose Email again.",
+    );
+    expect(s.problems).toEqual([
+      "Dee: Add the GSTIN for X in Settings → Business details, then send again. It wasn't sent.",
+      "Bee (B1/26-27/0002): no email address.",
+      "Cee (B1/26-27/0003): the invoice was sent but the email failed (The email couldn't be sent). Open it and choose Email again.",
+    ]);
+  });
+
+  it("is an error when nothing could be sent", () => {
+    const s = sendSummary({
+      sent: [],
+      alreadySent: 0,
+      problems: [{ tenantName: "Dee", message: "Too long." }],
+    });
+    expect(s).toMatchObject({
+      message: "No invoices were sent.",
+      tone: "error",
+    });
+  });
+
+  it("says when someone else already sent them", () => {
+    expect(
+      sendSummary({ sent: [], alreadySent: 4, problems: [] }).message,
+    ).toBe("These invoices were already sent.");
+  });
+});
+
+describe("emailAgainMessage", () => {
+  it("names the addresses, or says what to do", () => {
+    expect(
+      emailAgainMessage({ kind: "emailed", to: ["a@b.in", "c@d.in"] }),
+    ).toEqual({
+      message: "Emailed to a@b.in, c@d.in.",
+      tone: "success",
+    });
+    expect(emailAgainMessage({ kind: "no_email" }).tone).toBe("error");
+    expect(
+      emailAgainMessage({ kind: "failed", message: "Down." }).message,
+    ).toBe("Down. Try again in a few minutes.");
   });
 });

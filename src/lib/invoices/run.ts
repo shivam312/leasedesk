@@ -158,7 +158,10 @@ export async function runBilling(
         eq(invoices.runMonth, startOfMonth(runMonth)),
         ne(invoices.status, "cancelled"),
       ),
-    );
+    )
+    // Locked, so an invoice being sent right now is seen as sent once that
+    // commits, and never deleted as a draft (D25).
+    .for("update");
   for (const draft of month.filter((i) => i.status === "draft"))
     await deleteDraft(s, draft.id);
   const sent = new Set(

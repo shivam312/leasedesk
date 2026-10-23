@@ -3,16 +3,17 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { InvoiceList } from "@/components/invoices/InvoiceList";
 import { RunBillingForm } from "@/components/invoices/RunBillingForm";
+import { SendAllForm } from "@/components/invoices/SendForms";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
-import { formatMonth } from "@/lib/format";
+import { formatINR, formatMonth } from "@/lib/format";
 import { billingMonth, monthChoices } from "@/lib/invoices/forms";
 import { invoicesForMonth } from "@/lib/invoices/run";
 import { todayInIndia } from "@/lib/today";
 import { cn } from "@/lib/utils";
-import { runBillingNow } from "@/server/actions/billing";
+import { runBillingNow, sendAllInvoices } from "@/server/actions/billing";
 
 export const metadata: Metadata = { title: "Billing" };
 
@@ -71,14 +72,23 @@ async function MonthInvoices({ month }: { month: string }) {
   );
   const canBill = can(member.role, "manage_billing");
   const label = formatMonth(month);
-  const drafts = rows.filter((r) => r.status === "draft").length;
+  const drafts = rows.filter((r) => r.status === "draft");
   return (
     <div className="flex flex-col gap-6">
+      {canBill && drafts.length > 0 && (
+        <SendAllForm
+          month={month}
+          monthLabel={label}
+          count={drafts.length}
+          total={formatINR(drafts.reduce((sum, r) => sum + r.grandTotal, 0))}
+          action={sendAllInvoices}
+        />
+      )}
       {canBill && (
         <RunBillingForm
           month={month}
           monthLabel={label}
-          hasDrafts={drafts > 0}
+          hasDrafts={drafts.length > 0}
           action={runBillingNow}
         />
       )}

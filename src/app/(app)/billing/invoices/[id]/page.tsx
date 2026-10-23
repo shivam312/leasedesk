@@ -2,14 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import {
+  EmailAgainForm,
+  SendInvoiceForm,
+} from "@/components/invoices/SendForms";
 import { INVOICE_STATUS } from "@/components/invoices/status";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
+import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { formatDate, formatINR, formatMonth } from "@/lib/format";
 import { getInvoice } from "@/lib/invoices/queries";
+import { todayInIndia } from "@/lib/today";
+import { emailInvoiceAgain, sendInvoice } from "@/server/actions/billing";
 
 export const metadata: Metadata = { title: "Invoice" };
 
@@ -35,6 +42,7 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
   if (!data) notFound();
   const { invoice, tenant, building, lines } = data;
   const status = INVOICE_STATUS[invoice.status];
+  const canBill = can(member.role, "manage_billing");
   const month = invoice.runMonth.slice(0, 7);
   const interState = invoice.supplyType === "inter_state";
   const totals: [string, number][] = [
@@ -69,6 +77,27 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
             with any lease changes.
           </p>
         )}
+        {invoice.status === "draft" && canBill && (
+          <SendInvoiceForm
+            invoiceId={invoice.id}
+            tenantName={tenant.companyName}
+            total={formatINR(invoice.grandTotal)}
+            action={sendInvoice}
+          />
+        )}
+        {invoice.status !== "draft" && invoice.sentAt && (
+          <p className="text-sm text-muted-foreground">
+            Sent on {formatDate(todayInIndia(invoice.sentAt))}
+            {invoice.sentTo && invoice.sentTo.length > 0
+              ? ` to ${invoice.sentTo.join(", ")}.`
+              : ". The tenant had no email address then."}
+          </p>
+        )}
+        {invoice.status !== "draft" &&
+          invoice.status !== "cancelled" &&
+          canBill && (
+            <EmailAgainForm invoiceId={invoice.id} action={emailInvoiceAgain} />
+          )}
         <a
           href={`/billing/invoices/${invoice.id}/pdf`}
           target="_blank"

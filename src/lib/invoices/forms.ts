@@ -4,6 +4,7 @@ import { z } from "zod";
 import { addMonthsToMonth, monthOf, type YearMonth } from "@/lib/billing/dates";
 import { formatMonth } from "@/lib/format";
 import type { RunResult } from "./run";
+import type { EmailResult } from "./send";
 
 export const runMonthSchema = z.object({
   month: z
@@ -59,3 +60,93 @@ export function runSummary(result: RunResult): {
     problems: result.problems.map((p) => `${p.tenantName}: ${p.message}`),
   };
 }
+
+export type SendOutcome = {
+  tenantName: string;
+  number: string;
+  email: EmailResult;
+};
+
+export type SendAllResult = {
+  sent: SendOutcome[];
+  /** Drafts someone else sent meanwhile. */
+  alreadySent: number;
+  /** Drafts that couldn't be sent; they stay not sent yet. */
+  problems: { tenantName: string; message: string }[];
+};
+
+/**
+ * What "Send all" did, e.g. "Sent 42 invoices. 3 tenants have no email
+ * address: download their PDFs from the invoice and send them yourself.",
+ * with one line per invoice that needs attention.
+ */
+export function sendSummary(result: SendAllResult): {
+  message: string;
+  tone: "success" | "error";
+  problems: string[];
+} {
+  const noEmail = result.sent.filter((o) => o.email.kind === "no_email");
+  const failed = result.sent.filter((o) => o.email.kind === "failed");
+  const parts: string[] = [];
+  if (result.sent.length > 0)
+    parts.push(`Sent ${plural(result.sent.length, "invoice", "invoices")}.`);
+  else if (result.problems.length === 0)
+    parts.push(
+      result.alreadySent > 0
+        ? "These invoices were already sent."
+        : "There are no invoices to send.",
+    );
+  else parts.push("No invoices were sent.");
+  if (noEmail.length > 0)
+    parts.push(
+      `${plural(noEmail.length, "tenant has", "tenants have")} no email address: open the invoice, download the PDF and send it yourself, or add a billing contact on the tenant's page.`,
+    );
+  if (failed.length > 0)
+    parts.push(
+      `${plural(failed.length, "email", "emails")} couldn't be sent: open the invoice and choose Email again.`,
+    );
+  return {
+    message: parts.join(" "),
+    tone:
+      result.sent.length === 0 && result.problems.length > 0
+        ? "error"
+        : "success",
+    problems: [
+      ...result.problems.map(
+        (p) => `${p.tenantName}: ${p.message} It wasn't sent.`,
+      ),
+      ...noEmail.map((o) => `${o.tenantName} (${o.number}): no email address.`),
+      ...failed.map(
+        (o) =>
+          `${o.tenantName} (${o.number}): the invoice was sent but the email failed (${o.email.kind === "failed" ? o.email.message.replace(/\.$/, "") : ""}). Open it and choose Email again.`,
+      ),
+    ],
+  };
+}
+
+/** What emailing one invoice again did. */
+export function emailAgainMessage(result: EmailResult): {
+  message: string;
+  tone: "success" | "error";
+} {
+  switch (result.kind) {
+    case "emailed":
+      return {
+        message: `Emailed to ${result.to.join(", ")}.`,
+        tone: "success",
+      };
+    case "no_email":
+      return {
+        message:
+          "This tenant has no email address. Add a billing contact on the tenant's page, or download the PDF and send it yourself.",
+        tone: "error",
+      };
+    case "failed":
+      return {
+        message: `${result.message} Try again in a few minutes.`,
+        tone: "error",
+      };
+  }
+}
+
+export const invoiceIdSchema = z.object({ invoiceId: z.uuid() });

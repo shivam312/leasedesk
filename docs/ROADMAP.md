@@ -132,7 +132,8 @@ Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: the lease import'
 
 - [x] Sentry and error reporting in code, a no-op without `SENTRY_DSN`
 - [x] Full end-to-end test: new org → import → billing run → send → payment → reports (`tests/e2e/journey.spec.ts`)
-- [x] UX review of every screen by the `ux-reviewer` agent (must-fixes done or backlogged in `docs/BACKLOG.md`, 2026-10-24)
+- [x] UX review by the `ux-reviewer` agent of log in, password reset, invite, billing (invoice list, run, send, credit note), Match payments, TDS, the lease list and lease form, the building page, the tenant page and ledger, and Settings (team, Tally, GSTINs); must-fixes done or backlogged in `docs/BACKLOG.md` (2026-10-24)
+- [ ] UX review by the `ux-reviewer` agent of the screens the first pass didn't cover: Today, the lease page, tenants list / new / edit, Excel import, units and stacking plan, payments list / new / detail, bank import detail, Reports, Settings → Billing rules and business entities, Welcome, Sign up. Fix the must-fixes or backlog them, and add a table to `docs/milestones/M8.md`: screen, outcome (ok / fixed / backlogged), backlog row (found by Codex review M8)
 - [ ] (human) Create Sentry, Supabase cloud (Mumbai), Vercel and Inngest accounts; put the keys in `.env.local`
 - [ ] (human) Set up the staging environment and turn on database backups
 - [ ] (human) Load a pilot landlord's real data via import; compare one month's invoices against their Excel line by line

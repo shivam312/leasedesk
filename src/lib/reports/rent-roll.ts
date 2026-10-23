@@ -180,7 +180,8 @@ export function rentRoll(
     sections: [
       {
         title: "Leases",
-        empty: "No lease is running on this date.",
+        empty:
+          "No lease is running on this date. Choose another date, or add a lease in Leases.",
         columns: [
           { key: "tenant", label: "Tenant", kind: "text" },
           { key: "building", label: "Building", kind: "text" },

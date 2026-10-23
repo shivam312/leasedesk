@@ -78,8 +78,8 @@ async function Ledgers() {
           })),
           ...list.map((t) => ({
             name: partyField(t.id),
-            label: `${t.name}: party ledger`,
-            hint: "Leave blank to use the tenant's name.",
+            label: `${t.name}: name in Tally (optional)`,
+            hint: "Leave blank if it is the same as their name here.",
             defaultValue:
               parseStoredSettings("tenant", t.settings)["tally.partyLedger"] ??
               "",

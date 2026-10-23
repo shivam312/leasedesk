@@ -119,6 +119,7 @@ export function SimpleForm({
           type="submit"
           variant={secondary ? "outline" : "default"}
           disabled={pending}
+          className="h-11 md:h-9"
         >
           {pending ? pendingLabel : submitLabel}
         </Button>

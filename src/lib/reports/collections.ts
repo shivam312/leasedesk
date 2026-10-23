@@ -79,7 +79,8 @@ export function collections(
     sections: [
       {
         title: "Payments",
-        empty: "No payments received in these dates.",
+        empty:
+          "No payments received between these dates. Choose other dates, or record a payment in Billing.",
         columns: [
           { key: "date", label: "Received on", kind: "date" },
           { key: "tenant", label: "Tenant", kind: "text" },
@@ -95,7 +96,8 @@ export function collections(
       },
       {
         title: "By tenant",
-        empty: "No payments received in these dates.",
+        empty:
+          "No payments received between these dates. Choose other dates, or record a payment in Billing.",
         columns: [
           { key: "tenant", label: "Tenant", kind: "text" },
           { key: "received", label: "Received", kind: "money" },

@@ -342,8 +342,10 @@ export const TENANCY_TEMPLATE = {
         units: "Unit numbers, separated by commas",
         start: "DD-MM-YYYY",
         end: "The lease's last day, DD-MM-YYYY",
-        lockIn: "Optional",
-        notice: "Optional, whole months",
+        lockIn:
+          "Optional. The date before which the tenant can't leave, DD-MM-YYYY",
+        notice:
+          "Optional. How many months' notice either side must give, whole months",
         rentFreeMonths: "Optional; rent isn't billed for these months",
         rentFreeDays: "Optional; months or days, not both",
         deposit: "Optional, rupees",
@@ -351,7 +353,8 @@ export const TENANCY_TEMPLATE = {
         rent: "Per sq ft per month, or the whole rent per month (billed quarterly, three months at a time)",
         rentBasis: '"per sq ft" (default) or "per month"',
         rentFrequency: "Monthly (default) or Quarterly",
-        increase: "Optional, like 5: rent goes up this much",
+        increase:
+          "Optional, like 5 for 5%: rent goes up by this much every time",
         increaseEvery: "Blank is 12",
         camPerSqft: "Optional",
         camPerMonth: "Optional; per sq ft or per month, not both",

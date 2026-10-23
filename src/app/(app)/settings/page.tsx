@@ -56,7 +56,7 @@ export default function SettingsPage() {
         ))}
       </ul>
       <form action={logOut} className="mt-10 border-t pt-6">
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" className="h-11 md:h-9">
           Log out
         </Button>
       </form>

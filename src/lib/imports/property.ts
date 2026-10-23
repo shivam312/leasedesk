@@ -163,7 +163,7 @@ export function planPropertyImport(
             gstin
               ? `${gstin} isn't one of your GSTINs. Add it in Settings → Business details first, or leave it blank.`
               : existing.entities.length === 0
-                ? "Add your business details in Settings first."
+                ? "Add your business details first: Settings → Business details."
                 : "You bill from more than one GSTIN: type which one this building bills from in Our GSTIN.",
           );
           continue;

@@ -96,7 +96,10 @@ async function Body({
           No sent invoices, credit notes or payments from {formatDate(from)} to{" "}
           {formatDate(to)}. Choose other dates, or send this month&apos;s
           invoices from{" "}
-          <Link href="/billing" className="underline">
+          <Link
+            href="/billing"
+            className="inline-flex min-h-11 items-center underline md:min-h-0"
+          >
             Billing
           </Link>
           .
@@ -131,7 +134,8 @@ async function Body({
               role="status"
               className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200"
             >
-              {repeated} of these were already in a Tally file made on{" "}
+              {repeated} of these {vouchers.length}{" "}
+              {repeated === 1 ? "is" : "are"} already in a Tally file made on{" "}
               {formatDate(todayInIndia(earlier[0]!.createdAt))} (for{" "}
               {formatDate(earlier[0]!.periodStart)} to{" "}
               {formatDate(earlier[0]!.periodEnd)}). Importing them again makes

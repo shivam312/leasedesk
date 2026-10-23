@@ -65,6 +65,11 @@ async function Imports() {
           <ImportForm
             action={importProperty}
             submitLabel="Import buildings and units"
+            fileOf="buildings and units"
+            next={{
+              href: "#leases-heading",
+              label: "Next: import tenants and leases",
+            }}
           />
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -95,7 +100,9 @@ async function Imports() {
           <ImportForm
             action={importTenantsAndLeases}
             submitLabel="Import tenants and leases"
-            primary={false}
+            fileOf="tenants and leases"
+            next={{ href: "/leases", label: "See your leases" }}
+            primary={!property}
           />
         ) : (
           <p className="text-sm text-muted-foreground">

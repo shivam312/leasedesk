@@ -56,7 +56,7 @@ export function tdsSummary(
     sections: [
       {
         title: "By tenant and quarter",
-        empty: `No TDS recorded for FY ${financialYear}.`,
+        empty: `No TDS recorded for FY ${financialYear}. Choose another year, or record TDS when you record a payment.`,
         columns: [
           { key: "tenant", label: "Tenant", kind: "text" },
           { key: "pan", label: "Tenant PAN", kind: "text" },

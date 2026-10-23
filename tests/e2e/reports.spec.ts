@@ -42,13 +42,13 @@ test("an owner reads the rent roll and vacancy", async ({ page }) => {
   await page.getByLabel("As on").fill("2020-01-01");
   await page.getByRole("button", { name: "Show" }).click();
   await expect(
-    page.getByText("No lease is running on this date."),
+    page.getByText(/^No lease is running on this date\./),
   ).toBeVisible();
 
   // The lease ends three years from this month: listed from two years on.
   await page.goto("/reports/expiry");
   await expect(
-    page.getByText("No lease ends in the 12 months from this date.").first(),
+    page.getByText(/^No lease ends in the 12 months from this date\./),
   ).toBeVisible();
   const later = `${Number(today.slice(0, 4)) + 2}-${today.slice(5, 7)}-15`;
   await page.goto(`/reports/expiry?asOf=${later}`);
@@ -131,7 +131,7 @@ test("an owner reads unpaid rent and collections", async ({ page }) => {
   expect((await tally).suggestedFilename()).toMatch(/^tally-.+\.xml$/);
   await page.reload();
   await expect(
-    page.getByText(/2 of these were already in a Tally file/),
+    page.getByText(/2 of these \d+ are already in a Tally file/),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Download Tally file anyway" }),

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useId } from "react";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/field";
@@ -9,10 +10,16 @@ import type { FormState } from "@/lib/auth/forms";
 export function ImportForm({
   action,
   submitLabel,
+  fileOf,
+  next,
   primary = true,
 }: {
   action: (state: FormState, form: FormData) => Promise<FormState>;
   submitLabel: string;
+  /** What the file holds, read out to screen readers: "buildings and units". */
+  fileOf: string;
+  /** Where to go after a successful import. */
+  next?: { href: string; label: string };
   primary?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
@@ -20,7 +27,7 @@ export function ImportForm({
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <label htmlFor={id} className="text-sm font-medium">
-        Excel file (.xlsx)
+        Excel file (.xlsx)<span className="sr-only"> with {fileOf}</span>
       </label>
       <input
         id={id}
@@ -49,6 +56,14 @@ export function ImportForm({
             message={state.message}
             tone={state.tone === "success" ? "success" : "error"}
           />
+          {state.tone === "success" && next && (
+            <Link
+              href={next.href}
+              className="inline-flex min-h-11 items-center self-start text-sm font-medium underline underline-offset-4 md:min-h-9"
+            >
+              {next.label}
+            </Link>
+          )}
           {state.problems && state.problems.length > 0 && (
             <ul
               aria-label="Rows to fix"

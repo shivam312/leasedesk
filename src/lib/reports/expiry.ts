@@ -92,7 +92,7 @@ export function expirySchedule(
     sections: [
       {
         title: "Leases ending",
-        empty: `No lease ends in the ${EXPIRY_WINDOW_MONTHS} months from this date.`,
+        empty: `No lease ends in the ${EXPIRY_WINDOW_MONTHS} months from this date. Choose another date.`,
         columns: [
           { key: "end", label: "Lease ends", kind: "date" },
           { key: "days", label: "Days left", kind: "count" },
@@ -126,7 +126,7 @@ export function expirySchedule(
       },
       {
         title: "By quarter",
-        empty: `No lease ends in the ${EXPIRY_WINDOW_MONTHS} months from this date.`,
+        empty: "Nothing to add up by quarter.",
         columns: [
           { key: "quarter", label: "Quarter", kind: "text" },
           { key: "leases", label: "Leases ending", kind: "count" },

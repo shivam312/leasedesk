@@ -26,7 +26,10 @@ export interface OrgContext {
   organizationId: string;
 }
 
-export interface Scoped extends OrgContext {
+export interface Scoped {
+  /** Null for a background job (system scope); logged as no actor. */
+  userId: string | null;
+  organizationId: string;
   tx: Tx;
   /** `organization_id = <current org>`, and any further conditions. */
   where(table: { organizationId: PgColumn }, ...more: (SQL | undefined)[]): SQL;
@@ -45,14 +48,40 @@ export async function runScoped<T>(
       sql`select set_config('request.jwt.claims', ${claims}, true)`,
     );
     await tx.execute(sql`set local role authenticated`);
-    return fn({
-      ...ctx,
-      tx,
-      where: (table, ...more) =>
-        and(eq(table.organizationId, ctx.organizationId), ...more)!,
-      values: (row) => ({ ...row, organizationId: ctx.organizationId }),
-    });
+    return fn(scopedTx(tx, ctx.userId, ctx.organizationId));
   });
+}
+
+function scopedTx(
+  tx: Tx,
+  userId: string | null,
+  organizationId: string,
+): Scoped {
+  return {
+    userId,
+    organizationId,
+    tx,
+    where: (table, ...more) =>
+      and(eq(table.organizationId, organizationId), ...more)!,
+    values: (row) => ({ ...row, organizationId }),
+  };
+}
+
+/**
+ * A background job's access to one organization: no signed-in user, so it
+ * runs as the database owner (row-level security doesn't apply, D14) and
+ * every query still adds the organization filter. Activity is logged with no
+ * actor. Only for trusted server paths: the scheduled billing run and the
+ * seed script, never a screen.
+ */
+export async function runAsSystem<T>(
+  database: Transactional,
+  organizationId: string,
+  fn: (scoped: Scoped) => Promise<T>,
+): Promise<T> {
+  return database.transaction(async (tx) =>
+    fn(scopedTx(tx, null, organizationId)),
+  );
 }
 
 /** Run `fn` as `ctx.userId` inside `ctx.organizationId`, with row-level security on. */

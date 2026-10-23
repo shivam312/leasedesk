@@ -11,6 +11,10 @@ import { rentCommencement } from "../src/lib/billing/rent-free";
 import { addDays, addMonths } from "../src/lib/billing/dates";
 import { billingSettings } from "../src/lib/settings/billing";
 import { defaultSettings } from "../src/lib/settings/schema";
+import { monthOf } from "../src/lib/billing/dates";
+import { runBilling } from "../src/lib/invoices/run";
+import { runAsSystem, type Transactional } from "../src/lib/db/scoped";
+import { todayInIndia } from "../src/lib/today";
 import { connectForScript } from "./db-env";
 
 const DEMO_ORG_NAME = "Demo Properties";
@@ -28,7 +32,7 @@ async function main() {
       return;
     }
 
-    await db.transaction(async (tx) => {
+    const orgId = await db.transaction(async (tx) => {
       const org = only(
         await tx
           .insert(schema.organizations)
@@ -94,7 +98,18 @@ async function main() {
       });
       const tenants = await seedTenants(tx, org.id);
       await seedLeases(tx, tenants, [...andheriUnits, ...whitefieldUnits]);
+      return org.id;
     });
+    // This month's invoices, not sent yet, so Billing has drafts to review.
+    const run = await runAsSystem(db as unknown as Transactional, orgId, (s) =>
+      runBilling(s, monthOf(todayInIndia())),
+    );
+    console.info(
+      `Made ${run.drafted} draft invoices for ${run.runMonth}` +
+        (run.problems.length
+          ? ` (${run.problems.length} leases skipped).`
+          : "."),
+    );
     console.info(`Seeded the demo organization into the ${where}.`);
   } finally {
     await sql.end();

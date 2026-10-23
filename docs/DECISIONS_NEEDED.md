@@ -20,6 +20,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-008 | Approve shadcn's `cn` and `radix-ui` packages? | package | no | open |
 | D-009 | GST on a month split by a rent increase, shown as one line | ca | no | open |
 | D-010 | Building GST rates other than 18%, and 0% invoices | ca | no | open |
+| D-011 | Billing from a business with no GSTIN | ca | no | open |
 
 ## Human tasks
 
@@ -164,6 +165,18 @@ Things only a person can do. Tick them when done.
   - B) Allow only the standard GST rates, and print a bill of supply when every line is 0%
 - Recommendation: B before the first paying customer, pending your CA. A is built meanwhile because it bills no tax that isn't owed.
 - Done meanwhile: A. Rates are whole basis points 0–10000 (`src/lib/settings/schema.ts`), copied onto charges when a lease is saved (D16).
+- Answer:
+
+### D-011: Billing from a business with no GSTIN
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: A building's invoices come from one of your businesses (Settings → Business details). A business can be saved without a GSTIN, for a landlord who isn't GST-registered. An unregistered business mustn't charge GST, and its bills are a "bill of supply", not a tax invoice. The app only makes tax invoices with GST so far.
+- Options:
+  - A) Don't make invoices for a building whose business has no GSTIN; the monthly run lists those leases and says to add the GSTIN
+  - B) Make bills of supply with no GST for those buildings
+- Recommendation: A for now. A landlord with 20–100 commercial tenants is above the GST threshold, so almost every one is registered; B can follow if a pilot needs it.
+- Done meanwhile: A. `runBilling` (`src/lib/invoices/run.ts`) skips the lease and reports "Add the GSTIN for … in Settings → Business details, then run billing again."
 - Answer:
 
 ## Applied

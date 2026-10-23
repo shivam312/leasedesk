@@ -38,6 +38,8 @@ export interface FormState {
   /** How to show `message`; errors by default. */
   tone?: "error" | "success";
   fieldErrors?: Partial<Record<string, string>>;
+  /** Things that need attention, one sentence each, listed under `message`. */
+  problems?: string[];
   /** What the user typed, so the form keeps it after an error (never the password). */
   values?: Partial<Record<string, string>>;
 }

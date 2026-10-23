@@ -139,3 +139,12 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 **Why:** Sent invoices and their charges must stay as they were (CLAUDE.md rule 5), and the safe default is never to bill a tenant for days after they've left.
 **Consequences:** `terminateLease` sets the lease's end date to the tenant's last day, ends open charges on that day, moves the expiry date to it and closes later key dates. A charge that would only start after the exit is left as it is: the engine bills only dates inside the lease, so none of it is ever billed, and nothing is deleted. Anything already billed in advance past the exit date is refunded with a credit note (M4).
+
+## D22. The monthly run makes drafts and can be run again; background jobs use a system scope (2026-10-23)
+
+**Why:** Leases change after a run (a rent fixed, a charge added). If a second run skipped leases that already had a draft, the draft would silently disagree with the lease.
+**Consequences:**
+- `runBilling` (`src/lib/invoices/run.ts`) makes one draft per lease per run month (`invoices.run_month`, unique unless cancelled). Running it again deletes that month's drafts and makes them afresh; a lease whose invoice for the month is already sent is left alone. Every insert and delete is in the activity log.
+- The amounts come only from `draftInvoice` (`src/lib/billing/draft-invoice.ts`), which joins the engine's lines, GST, totals and expected TDS. Settings are resolved per lease (lease → tenant → building → billing entity → organization).
+- Leases in every saved status are considered (a `renewed` or ended lease still bills to its end date, and arrears up to three months after it); the engine decides whether there is anything to bill.
+- `runAsSystem` (`src/lib/db/scoped.ts`) gives trusted background code (the scheduled run, the seed script) an organization scope with no user: it runs as the database owner, still filters by organization, and logs activity with no actor. Screens never use it.

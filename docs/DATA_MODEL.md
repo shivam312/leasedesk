@@ -2,7 +2,7 @@
 
 Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `created_at`, `updated_at`, and row-level security restricting rows to members of the organization. Money columns are `bigint` paise, percentages are `integer` basis points, areas are `integer` hundredths of a sq ft, dates are `date`. Statuses are Postgres enums.
 
-**Status (M2, in progress):** built so far: `organizations`, `memberships`, `billing_entities` (`src/lib/db/schema/organizations.ts`). Every table is created with row-level security on; until its policies exist (M2 RLS task), signed-in users can't read it at all. Database tests are `*.db.test.ts` and run against the local stack inside a rolled-back transaction (`src/lib/db/__tests__/harness.ts`). Schema files go in `src/lib/db/schema/` (one file per table group below, re-exported from `index.ts`), migrations in `drizzle/` (D12). Drizzle uses `casing: "snake_case"`, so TypeScript names are camelCase and columns are the snake_case names written here.
+**Status (M2, in progress):** built so far: `organizations`, `memberships`, `billing_entities` (`src/lib/db/schema/organizations.ts`); `buildings`, `floors`, `units` (`property.ts`). Child tables reference their parent together with `organization_id` (composite foreign keys), so a row can never point at another organization's row. Every table is created with row-level security on; until its policies exist (M2 RLS task), signed-in users can't read it at all. Database tests are `*.db.test.ts` and run against the local stack inside a rolled-back transaction (`src/lib/db/__tests__/harness.ts`). Schema files go in `src/lib/db/schema/` (one file per table group below, re-exported from `index.ts`), migrations in `drizzle/` (D12). Drizzle uses `casing: "snake_case"`, so TypeScript names are camelCase and columns are the snake_case names written here.
 
 **Settings columns:** `organizations`, `billing_entities`, `buildings`, `tenants` and `leases` each have `settings` (jsonb, default `{}`). Keys and defaults are in `docs/SETTINGS.md`; only values that differ from the default are stored. They're validated by `src/lib/settings/schema.ts` and read only through `src/lib/settings/resolve.ts` (lease → tenant → building → organization → default; billing-entity keys apply to that entity's invoice series).
 
@@ -16,11 +16,11 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 ## Property
 
-**buildings**: name, address, city, state_code, billing_entity_id, invoice_prefix, credit_note_prefix, default_gst_rate_bp, default_sac_code, default_due_days, settings (jsonb).
+**buildings**: name, address, city, state_code, billing_entity_id, invoice_prefix, credit_note_prefix, settings (jsonb). The building defaults for GST rate, SAC code, due days and charge timing are setting overrides in `settings`, not columns (D13).
 
 **floors**: building_id, label, sort_order. Optional; small buildings can skip floors.
 
-**units**: building_id, floor_id (nullable), code, carpet_area (hundredths sq ft), chargeable_area (hundredths sq ft), status (`vacant`, `leased`, `fit_out`, `blocked`).
+**units**: building_id, floor_id (nullable), code (unique per building), carpet_area (hundredths sq ft), chargeable_area (hundredths sq ft), status (`vacant`, `leased`, `fit_out`, `blocked`).
 
 ## Tenants and leases
 

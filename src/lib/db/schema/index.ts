@@ -2,3 +2,4 @@
 // Use the db-change skill when adding a table.
 
 export * from "./organizations";
+export * from "./property";

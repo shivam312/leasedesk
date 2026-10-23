@@ -76,3 +76,11 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Drizzle manages only the `public` schema (`schemaFilter`), and uses `casing: "snake_case"`: TypeScript names are camelCase, columns are snake_case as in `docs/DATA_MODEL.md`.
 - The client uses `postgres` (postgres.js) with `prepare: false`, so it also works through Supabase's transaction pooler.
 - `db:migrate` and `db:seed` refuse any database that isn't on this machine unless `ALLOW_REMOTE_DB=yes` is set (`src/lib/db/url.ts`).
+
+## D13. Building defaults are settings, not columns (2026-10-23)
+
+**Why:** `docs/DATA_MODEL.md` listed `default_gst_rate_bp`, `default_sac_code` and `default_due_days` as building columns, while `docs/SETTINGS.md` lists the same values as building-scope settings (`gst.defaultRateBp`, `gst.defaultSac`, `invoice.dueDays`). Two places for one value would drift.
+**Consequences:**
+- They live only in `buildings.settings` (jsonb) and are read through `src/lib/settings/resolve.ts`, like every other setting.
+- `invoice_prefix` and `credit_note_prefix` stay columns: every building needs one and they identify an invoice series rather than change behaviour.
+- Child tables (floors, units, and later ones) reference their parent with `(organization_id, parent_id)` composite foreign keys, so the database itself refuses a row that points into another organization.

@@ -5,6 +5,7 @@ import {
   pgEnum,
   pgTable,
   text,
+  unique,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -78,5 +79,5 @@ export const billingEntities = pgTable(
     settings: settings(),
     ...timestamps,
   },
-  (t) => [index().on(t.organizationId)],
+  (t) => [index().on(t.organizationId), unique().on(t.organizationId, t.id)],
 ).enableRLS();

@@ -35,32 +35,112 @@ async function main() {
           .returning(),
       );
 
-      await tx.insert(schema.billingEntities).values([
-        {
-          organizationId: org.id,
-          legalName: "Demo Properties Private Limited",
-          gstin: "27AABCD1234E1Z5",
-          stateCode: "27",
-          address: "4th Floor, Demo House, Andheri East, Mumbai 400069",
-          bankAccountName: "Demo Properties Pvt Ltd",
-          bankAccountNumber: "000123456789",
-          ifsc: "HDFC0000123",
-          upiId: "demoproperties@hdfcbank",
-        },
-        {
-          organizationId: org.id,
-          legalName: "Demo Properties Private Limited (Karnataka)",
-          gstin: "29AABCD1234E1Z1",
-          stateCode: "29",
-          address: "2nd Floor, Demo Towers, Whitefield, Bengaluru 560066",
-          // No bank or UPI yet, so screens show the "add bank details" state.
-        },
-      ]);
+      const [mumbaiEntity, bengaluruEntity] = await tx
+        .insert(schema.billingEntities)
+        .values([
+          {
+            organizationId: org.id,
+            legalName: "Demo Properties Private Limited",
+            gstin: "27AABCD1234E1Z5",
+            stateCode: "27",
+            address: "4th Floor, Demo House, Andheri East, Mumbai 400069",
+            bankAccountName: "Demo Properties Pvt Ltd",
+            bankAccountNumber: "000123456789",
+            ifsc: "HDFC0000123",
+            upiId: "demoproperties@hdfcbank",
+          },
+          {
+            organizationId: org.id,
+            legalName: "Demo Properties Private Limited (Karnataka)",
+            gstin: "29AABCD1234E1Z1",
+            stateCode: "29",
+            address: "2nd Floor, Demo Towers, Whitefield, Bengaluru 560066",
+            // No bank or UPI yet, so screens show the "add bank details" state.
+          },
+        ])
+        .returning();
+      if (!mumbaiEntity || !bengaluruEntity)
+        throw new Error("Billing entities were not created");
+
+      await seedBuilding(tx, {
+        organizationId: org.id,
+        name: "Andheri Business Centre",
+        address: "Plot 12, MIDC, Andheri East",
+        city: "Mumbai",
+        stateCode: "27",
+        billingEntityId: mumbaiEntity.id,
+        invoicePrefix: "ABC",
+        creditNotePrefix: "ABCCN",
+        floorLabels: ["Ground", "1st", "2nd", "3rd", "4th", "5th"],
+      });
+      await seedBuilding(tx, {
+        organizationId: org.id,
+        name: "Whitefield Tech Park",
+        address: "EPIP Zone, Whitefield",
+        city: "Bengaluru",
+        stateCode: "29",
+        billingEntityId: bengaluruEntity.id,
+        invoicePrefix: "WTP",
+        creditNotePrefix: "WTPCN",
+        floorLabels: ["1st", "2nd", "3rd", "4th"],
+        // A building-level override, so the settings screens have one to show.
+        settings: { "invoice.dueDays": 10 },
+      });
     });
     console.info(`Seeded the demo organization into the ${where}.`);
   } finally {
     await sql.end();
   }
+}
+
+type Tx = Parameters<
+  Parameters<ReturnType<typeof drizzle<typeof schema>>["transaction"]>[0]
+>[0];
+
+/** A building with five units per floor; areas vary but are fixed, so reseeding gives the same data. */
+async function seedBuilding(
+  tx: Tx,
+  input: Omit<typeof schema.buildings.$inferInsert, "id"> & {
+    floorLabels: string[];
+  },
+) {
+  const { floorLabels, ...values } = input;
+  const building = only(
+    await tx.insert(schema.buildings).values(values).returning(),
+  );
+  const floors = await tx
+    .insert(schema.floors)
+    .values(
+      floorLabels.map((label, sortOrder) => ({
+        organizationId: building.organizationId,
+        buildingId: building.id,
+        label,
+        sortOrder,
+      })),
+    )
+    .returning();
+
+  const units = floors.flatMap((floor) =>
+    [1, 2, 3, 4, 5].map((n) => {
+      const carpetArea =
+        (800 + (((floor.sortOrder * 5 + n) * 137) % 1700)) * 100;
+      return {
+        organizationId: building.organizationId,
+        buildingId: building.id,
+        floorId: floor.id,
+        code: `${floor.sortOrder}0${n}`,
+        carpetArea,
+        // Chargeable (super built-up) area is about 30% more than carpet.
+        chargeableArea: Math.round((carpetArea * 13) / 1000) * 100,
+        status: (n === 5 && floor.sortOrder === 2
+          ? "fit_out"
+          : n === 4 && floor.sortOrder === 3
+            ? "blocked"
+            : "vacant") as "vacant" | "fit_out" | "blocked",
+      };
+    }),
+  );
+  await tx.insert(schema.units).values(units);
 }
 
 main().catch((error: unknown) => {

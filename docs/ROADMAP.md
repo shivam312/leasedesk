@@ -87,8 +87,8 @@ Built on branch `m3-leases-schema` (report: `docs/milestones/M4.md`). The invoic
 ## M5. Payments and TDS (week 8)
 
 - [x] Record a payment with TDS and allocation (auto oldest-first)
-- [x] Bank statement import with column mapping saved per account (CSV; Excel waits for the task below)
-- [ ] (human) Allow installing SheetJS (`xlsx`, from cdn.sheetjs.com, already on the approved list) so Excel bank statements can be read; the unattended run was refused permission to install packages
+- [x] Bank statement import with column mapping saved per account (CSV and Excel)
+- [x] (human) Allow installing SheetJS (`xlsx`, from cdn.sheetjs.com, already on the approved list) so Excel bank statements can be read; installed 0.20.3 on 2026-10-23 and Excel (.xlsx, .xls) statements now import
 - [x] Matching suggestions and bulk confirm
 - [x] TDS tracker by tenant and quarter, certificate upload
 - [ ] Reminders: automatic emails

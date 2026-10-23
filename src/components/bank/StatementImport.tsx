@@ -121,13 +121,18 @@ export function StatementImport({
     setFileError(null);
     if (!file) return;
     setFileName(file.name);
+    let next: string[][];
     if (/\.(xlsx|xls)$/i.test(file.name)) {
-      setFileError(
-        "Excel files can't be read yet. In Excel, choose File → Save As → CSV, then choose that file here.",
-      );
-      return;
-    }
-    const next = parseCsv(await file.text());
+      try {
+        const { parseSpreadsheet } = await import("@/lib/bank/xlsx");
+        next = parseSpreadsheet(await file.arrayBuffer());
+      } catch {
+        setFileError(
+          "This Excel file can't be read. Open it in Excel, choose File → Save As → CSV, then choose that file here.",
+        );
+        return;
+      }
+    } else next = parseCsv(await file.text());
     if (next.length === 0) {
       setFileError("That file is empty.");
       return;
@@ -192,13 +197,13 @@ export function StatementImport({
       <Field
         label="Statement file"
         htmlFor={`${base}-file`}
-        hint="CSV only for now: download it from net banking as CSV, or in Excel choose File → Save As → CSV."
+        hint="Download it from net banking as Excel or CSV."
         error={fileError ?? undefined}
       >
         <Input
           id={`${base}-file`}
           type="file"
-          accept=".csv,.tsv,.txt,text/csv"
+          accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv"
           onChange={(e) => onFile(e.target.files?.[0])}
         />
       </Field>

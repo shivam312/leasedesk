@@ -1,0 +1,61 @@
+// Excel bank statements (.xlsx and old .xls) read with SheetJS into the same
+// rows of strings as `parseCsv`, so `statement.ts` reads both alike. Date
+// cells become DD-MM-YYYY from their serial number (no Date, no time zone);
+// number cells become plain text, whole numbers as they are (cheque numbers)
+// and others rounded to two decimals (paise). Pure: bytes in, rows out.
+
+import { read, SSF, utils, type CellObject, type WorkSheet } from "xlsx";
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+function numberText(v: number): string {
+  if (Number.isInteger(v)) return String(v);
+  const paise = Math.round(Math.abs(v) * 100);
+  const sign = v < 0 ? "-" : "";
+  return `${sign}${Math.floor(paise / 100)}.${pad(paise % 100)}`;
+}
+
+function cellText(cell: CellObject | undefined, date1904: boolean): string {
+  if (!cell || cell.v === undefined || cell.v === null) return "";
+  if (cell.t === "n" && typeof cell.v === "number") {
+    if (cell.z && SSF.is_date(cell.z)) {
+      const d = SSF.parse_date_code(cell.v, { date1904 }) as {
+        y: number;
+        m: number;
+        d: number;
+      };
+      return `${pad(d.d)}-${pad(d.m)}-${d.y}`;
+    }
+    return numberText(cell.v);
+  }
+  if (cell.t === "e") return "";
+  return String(cell.v).trim();
+}
+
+function sheetRows(sheet: WorkSheet, date1904: boolean): string[][] {
+  const ref = sheet["!ref"];
+  if (!ref) return [];
+  const range = utils.decode_range(ref);
+  const rows: string[][] = [];
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const row: string[] = [];
+    for (let c = 0; c <= range.e.c; c++)
+      row.push(cellText(sheet[utils.encode_cell({ r, c })], date1904));
+    if (row.some((c) => c !== "")) rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * Rows of cells from the workbook's first sheet that has any, trimmed,
+ * blank rows left out. Throws if the bytes aren't a spreadsheet.
+ */
+export function parseSpreadsheet(data: ArrayBuffer | Uint8Array): string[][] {
+  const book = read(data, { type: "array", cellNF: true, dense: false });
+  const date1904 = Boolean(book.Workbook?.WBProps?.date1904);
+  for (const name of book.SheetNames) {
+    const rows = sheetRows(book.Sheets[name]!, date1904);
+    if (rows.length > 0) return rows;
+  }
+  return [];
+}

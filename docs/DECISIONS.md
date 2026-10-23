@@ -221,7 +221,7 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - `src/lib/bank/csv.ts` reads CSV (quotes, separators, BOM). `src/lib/bank/statement.ts` guesses the columns from their header words, finds the header row by its text (statements put a different number of lines above the table), reads Indian dates (day first, always) and amounts, and keeps credit lines only. The server reads the rows again with the same code before saving; nothing the browser worked out is trusted.
 - The mapping is saved by header text on the bank account, so the next statement imports in one step; if its headers differ, the user is asked again.
 - The file isn't stored, only the lines read from it (less personal data kept). Server action bodies may be up to 4 MB (`next.config.ts`) to fit a long statement's rows.
-- Excel (.xlsx) files are refused with a message to save as CSV until SheetJS can be installed (Human task).
+- Excel (.xlsx, .xls) files are read in the browser with SheetJS (`src/lib/bank/xlsx.ts`, loaded only when an Excel file is chosen) into the same rows as CSV. Date cells become DD-MM-YYYY from their serial number and number cells plain text rounded to paise, so `statement.ts` reads both alike. Added 2026-10-23; before that, Excel files were refused with a message to save as CSV.
 - One activity entry per import, with its counts, rather than one per line.
 
 ## D31. Bank credits are matched by evidence scores and recorded only when the user confirms (2026-10-23)

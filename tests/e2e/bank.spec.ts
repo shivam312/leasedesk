@@ -40,12 +40,13 @@ test("an owner imports a bank statement; the columns are remembered", async ({
   ).toBeVisible();
   await expect(page.getByText("Not matched yet").first()).toBeVisible();
 
-  // The same file again: the saved columns are used and nothing is new.
+  // The same statement again, as Excel: the saved columns are used and
+  // nothing is new.
   await page.goto("/billing/bank");
   await page.waitForLoadState("networkidle");
   await page
     .getByLabel("Statement file")
-    .setInputFiles(fixture("hdfc-like.csv"));
+    .setInputFiles(fixture("hdfc-like.xlsx"));
   await expect(
     page.getByText(/Using this account's saved columns/),
   ).toBeVisible();

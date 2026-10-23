@@ -51,6 +51,7 @@ export const LEASE_COLUMNS = [
   { key: "rentFrequency", heading: "Rent billed" },
   { key: "increase", heading: "Rent increase (%)" },
   { key: "increaseEvery", heading: "Increase every (months)" },
+  { key: "increaseFrom", heading: "Increase counted from" },
   { key: "camPerSqft", heading: "Maintenance (₹ per sq ft)" },
   { key: "camPerMonth", heading: "Maintenance (₹ per month)" },
   { key: "parkingSlots", heading: "Parking slots" },
@@ -139,6 +140,9 @@ export function threeMonths(rupees: string): string {
   return `${Math.trunc(quarter / 100)}.${String(quarter % 100).padStart(2, "0")}`;
 }
 
+/** The highest rent per sq ft a month taken as a rate: ₹2,000. */
+const MAX_RATE_PAISE = 200_000;
+
 /** Which charge each lease form charge row came from, for messages. */
 export type ChargeSource = "Rent" | "Maintenance" | "Parking";
 
@@ -192,6 +196,12 @@ export function leaseRowInput(
       error:
         'Type Monthly or Quarterly under "Rent billed", or leave it blank.',
     };
+  const from = word(v.increaseFrom);
+  if (from && !["lease start", "rent start"].includes(from))
+    return {
+      error:
+        'Type "Lease start" or "Rent start" under "Increase counted from", or leave it blank for lease start.',
+    };
   const months = v.rentFreeMonths.trim();
   const days = v.rentFreeDays.trim();
   if (months && days && months !== "0" && days !== "0")
@@ -202,6 +212,15 @@ export function leaseRowInput(
   const charges: Record<string, string>[] = [];
   const sources: ChargeSource[] = [];
   const fixed = basis === "per month" || basis === "fixed";
+  // A blank "Rent is" means per sq ft; a whole rent typed there would bill
+  // area × that amount. No Indian office rate comes near ₹2,000 a sq ft.
+  const ratePaise = fixed
+    ? null
+    : rupeesToPaise(v.rent.trim().replace(/,/g, ""));
+  if (ratePaise !== null && ratePaise > MAX_RATE_PAISE)
+    return {
+      error: `Rent at lease start (₹): ${formatINR(ratePaise)} per sq ft a month is more than ${formatINR(MAX_RATE_PAISE)}. If it is the whole rent, type "per month" under "Rent is".`,
+    };
   const quarterly = frequency === "quarterly";
   charges.push({
     type: "rent",
@@ -262,7 +281,8 @@ export function leaseRowInput(
               {
                 percent: v.increase.replace("%", ""),
                 everyMonths: v.increaseEvery || "12",
-                anchor: "lease_start",
+                anchor:
+                  from === "rent start" ? "rent_commencement" : "lease_start",
                 anchorDate: "",
                 compounding: true,
               },
@@ -421,6 +441,8 @@ export const TENANCY_TEMPLATE = {
         increase:
           "Optional, like 5 for 5%: rent goes up by this much every time",
         increaseEvery: "Blank is 12",
+        increaseFrom:
+          '"Lease start" (default) or "Rent start", as the lease deed says: with a rent-free period, rent start is later',
         camPerSqft: "Optional",
         camPerMonth: "Optional; per sq ft or per month, not both",
         parkingSlots: "Optional",

@@ -171,6 +171,47 @@ describe("leaseRowInput", () => {
     expect("input" in mapped && mapped.input.startDate).toBe("2025-04-01");
   });
 
+  it("counts increases from lease start, or from rent start when asked", () => {
+    const rule = (increaseFrom: string) => {
+      const mapped = leaseRowInput(
+        { ...leaseExample, increase: "5", increaseFrom },
+        lookup,
+      );
+      return "input" in mapped ? mapped.input.rules[0]?.anchor : mapped.error;
+    };
+    expect(rule("")).toBe("lease_start");
+    expect(rule("Lease start")).toBe("lease_start");
+    expect(rule("rent start")).toBe("rent_commencement");
+    const rentStart = leaseRowInput(
+      { ...leaseExample, increase: "5", increaseFrom: "Rent start" },
+      lookup,
+    );
+    expect("input" in rentStart && parseLeaseForm(rentStart.input).ok).toBe(
+      true,
+    );
+    expect(rule("someday")).toBe(
+      'Type "Lease start" or "Rent start" under "Increase counted from", or leave it blank for lease start.',
+    );
+  });
+
+  it("refuses a rate per sq ft that is surely the whole monthly rent", () => {
+    // 1,50,000 with "Rent is" blank would be ₹1,50,000 per sq ft a month.
+    expect(
+      leaseRowInput(
+        { ...leaseExample, rent: "1,50,000", rentBasis: "" },
+        lookup,
+      ),
+    ).toEqual({
+      error:
+        'Rent at lease start (₹): ₹1,50,000 per sq ft a month is more than ₹2,000. If it is the whole rent, type "per month" under "Rent is".',
+    });
+    // ₹2,000 per sq ft is still taken as a rate.
+    expect(
+      "input" in
+        leaseRowInput({ ...leaseExample, rent: "2000", rentBasis: "" }, lookup),
+    ).toBe(true);
+  });
+
   it("names an unknown tenant, building or unit, and refuses contradictions", () => {
     expect(leaseRowInput({ ...leaseExample, tenant: "Beta" }, lookup)).toEqual({
       error:

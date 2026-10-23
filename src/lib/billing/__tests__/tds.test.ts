@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "./billing-settings";
 import {
   expectedTds,
   settlePayment,
@@ -40,6 +41,7 @@ describe("expectedTds", () => {
   it("is the tenant's rate on the taxable value, excluding GST", () => {
     // 10% of ₹1,00,000 taxable = ₹10,000 (GST ₹18,000 not included)
     const tds = expectedTds({
+      settings: DEFAULT_SETTINGS,
       lines: [{ chargeType: "rent", taxablePaise: 10_000_000 }],
       tds: company,
     });
@@ -58,6 +60,7 @@ describe("expectedTds", () => {
       other: { deductsTds: true, tdsRateBp: 1000 },
     };
     const result = expectedTds({
+      settings: DEFAULT_SETTINGS,
       lines: [
         { chargeType: "rent", taxablePaise: 10_000_000 },
         { chargeType: "cam", taxablePaise: 2_500_000 },
@@ -86,6 +89,7 @@ describe("expectedTds", () => {
     // 10% = 8,219.355 → ₹8,219
     expect(
       expectedTds({
+        settings: DEFAULT_SETTINGS,
         lines: [
           { chargeType: "rent", taxablePaise: 3_612_903 },
           { chargeType: "rent", taxablePaise: 4_606_452 },
@@ -98,6 +102,7 @@ describe("expectedTds", () => {
   it("rounds to the nearest rupee", () => {
     // 2% of ₹1,06,917.75 = ₹2,138.355 → ₹2,138
     const tds = expectedTds({
+      settings: DEFAULT_SETTINGS,
       lines: [{ chargeType: "rent", taxablePaise: 10_691_775 }],
       tds: { ...company, rent: { deductsTds: true, tdsRateBp: 200 } },
     });
@@ -108,6 +113,7 @@ describe("expectedTds", () => {
     // 10% of ₹1,05,005 = ₹10,500.50 → ₹10,501
     expect(
       expectedTds({
+        settings: DEFAULT_SETTINGS,
         lines: [{ chargeType: "rent", taxablePaise: 10_500_500 }],
         tds: company,
       }).amount,
@@ -119,6 +125,7 @@ describe("expectedTds", () => {
     // Total ₹4,999.50 → ₹5,000 (rounding each type first would give ₹4,999)
     expect(
       expectedTds({
+        settings: DEFAULT_SETTINGS,
         lines: [
           { chargeType: "rent", taxablePaise: 4_999_495 },
           { chargeType: "cam", taxablePaise: 5 },
@@ -130,6 +137,7 @@ describe("expectedTds", () => {
 
   it("is zero when the tenant doesn't deduct TDS on any of the charges", () => {
     const result = expectedTds({
+      settings: DEFAULT_SETTINGS,
       lines: [{ chargeType: "rent", taxablePaise: 10_000_000 }],
       tds: tenantTdsDefaults({ deductsTds: false }),
     });
@@ -140,6 +148,7 @@ describe("expectedTds", () => {
   it("refuses a rate that isn't whole basis points ≥ 0", () => {
     expect(() =>
       expectedTds({
+        settings: DEFAULT_SETTINGS,
         lines: [{ chargeType: "rent", taxablePaise: 10_000_000 }],
         tds: { ...company, rent: { deductsTds: true, tdsRateBp: -1 } },
       }),
@@ -155,7 +164,13 @@ describe("settlePayment", () => {
 
   it("golden 12: ₹1,08,000 against ₹1,18,000 with ₹10,000 TDS is paid with TDS", () => {
     // 1,08,000 received + 10,000 TDS = 1,18,000 settled
-    expect(settlePayment({ ...invoice, receivedPaise: 10_800_000 })).toEqual({
+    expect(
+      settlePayment({
+        settings: DEFAULT_SETTINGS,
+        ...invoice,
+        receivedPaise: 10_800_000,
+      }),
+    ).toEqual({
       status: "paid_with_tds",
       tdsDeductedPaise: 1_000_000,
       settledPaise: 11_800_000,
@@ -166,28 +181,50 @@ describe("settlePayment", () => {
   it("allows up to ₹1 difference from the expected TDS", () => {
     // short by ₹10,000.80 = TDS ₹10,000 + ₹0.80 → still paid with TDS
     expect(
-      settlePayment({ ...invoice, receivedPaise: 10_799_920 }),
+      settlePayment({
+        settings: DEFAULT_SETTINGS,
+        ...invoice,
+        receivedPaise: 10_799_920,
+      }),
     ).toMatchObject({ status: "paid_with_tds", tdsDeductedPaise: 1_000_080 });
     // short by ₹9,999.00 = TDS − ₹1.00 → paid with TDS
     expect(
-      settlePayment({ ...invoice, receivedPaise: 10_800_100 }),
+      settlePayment({
+        settings: DEFAULT_SETTINGS,
+        ...invoice,
+        receivedPaise: 10_800_100,
+      }),
     ).toMatchObject({ status: "paid_with_tds", tdsDeductedPaise: 999_900 });
   });
 
   it("includes exactly ₹1 over the expected TDS, but not ₹1.01 [CA]", () => {
     // short by ₹10,001.00 = TDS + ₹1.00 → paid with TDS (tolerance inclusive)
     expect(
-      settlePayment({ ...invoice, receivedPaise: 10_799_900 }),
+      settlePayment({
+        settings: DEFAULT_SETTINGS,
+        ...invoice,
+        receivedPaise: 10_799_900,
+      }),
     ).toMatchObject({ status: "paid_with_tds", tdsDeductedPaise: 1_000_100 });
     // short by ₹10,001.01 = TDS + ₹1.01 → part-paid
     expect(
-      settlePayment({ ...invoice, receivedPaise: 10_799_899 }),
+      settlePayment({
+        settings: DEFAULT_SETTINGS,
+        ...invoice,
+        receivedPaise: 10_799_899,
+      }),
     ).toMatchObject({ status: "part_paid" });
   });
 
   it("is part-paid when the shortfall isn't the TDS", () => {
     // short by ₹10,001.50 — more than ₹1 off the expected TDS
-    expect(settlePayment({ ...invoice, receivedPaise: 10_799_850 })).toEqual({
+    expect(
+      settlePayment({
+        settings: DEFAULT_SETTINGS,
+        ...invoice,
+        receivedPaise: 10_799_850,
+      }),
+    ).toEqual({
       status: "part_paid",
       tdsDeductedPaise: 0,
       settledPaise: 10_799_850,
@@ -196,20 +233,31 @@ describe("settlePayment", () => {
   });
 
   it("is paid in full, and keeps any excess as credit", () => {
-    expect(settlePayment({ ...invoice, receivedPaise: 11_800_000 })).toEqual({
+    expect(
+      settlePayment({
+        settings: DEFAULT_SETTINGS,
+        ...invoice,
+        receivedPaise: 11_800_000,
+      }),
+    ).toEqual({
       status: "paid",
       tdsDeductedPaise: 0,
       settledPaise: 11_800_000,
       excessPaise: 0,
     });
     expect(
-      settlePayment({ ...invoice, receivedPaise: 12_000_000 }),
+      settlePayment({
+        settings: DEFAULT_SETTINGS,
+        ...invoice,
+        receivedPaise: 12_000_000,
+      }),
     ).toMatchObject({ status: "paid", excessPaise: 200_000 });
   });
 
   it("is part-paid for a short payment when no TDS is expected", () => {
     expect(
       settlePayment({
+        settings: DEFAULT_SETTINGS,
         invoiceTotalPaise: 11_800_000,
         expectedTdsPaise: 0,
         receivedPaise: 11_799_950,
@@ -220,11 +268,23 @@ describe("settlePayment", () => {
 
 describe("tdsQuarter", () => {
   it("files TDS in the FY quarter of the payment date", () => {
-    expect(tdsQuarter("2026-06-10")).toEqual({
+    expect(
+      tdsQuarter({
+        paymentDate: "2026-06-10",
+        invoiceDate: "2026-06-10",
+        settings: DEFAULT_SETTINGS,
+      }),
+    ).toEqual({
       financialYear: "2026-27",
       quarter: 1,
     });
-    expect(tdsQuarter("2027-02-01")).toEqual({
+    expect(
+      tdsQuarter({
+        paymentDate: "2027-02-01",
+        invoiceDate: "2027-02-01",
+        settings: DEFAULT_SETTINGS,
+      }),
+    ).toEqual({
       financialYear: "2026-27",
       quarter: 4,
     });

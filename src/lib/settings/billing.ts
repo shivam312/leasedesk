@@ -15,6 +15,9 @@ export function billingSettings(settings: Settings): BillingSettings {
     afterCustomIncrease: settings["billing.afterCustomIncrease"],
     skipZeroInvoices: settings["billing.skipZeroInvoices"],
     gstRounding: settings["gst.rounding"],
+    tdsRounding: settings["tds.rounding"],
+    tdsTolerancePaise: settings["tds.tolerancePaise"],
+    tdsQuarterBasis: settings["tds.quarterBasis"],
     dueDays: settings["invoice.dueDays"],
   };
 }

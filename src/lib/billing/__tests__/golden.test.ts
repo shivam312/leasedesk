@@ -238,10 +238,12 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
   it("12. ₹1,08,000 paid against ₹1,18,000 with ₹10,000 expected TDS → paid with TDS, TDS record ₹10,000", () => {
     // TDS 10% of taxable 1,00,000 = 10,000; 1,08,000 + 10,000 = 1,18,000
     const tds = expectedTds({
+      settings: DEFAULT_SETTINGS,
       lines: [{ chargeType: "rent", taxablePaise: 10_000_000 }],
       tds: tenantTdsDefaults({ deductsTds: true }),
     });
     const result = settlePayment({
+      settings: DEFAULT_SETTINGS,
       invoiceTotalPaise: 11_800_000,
       receivedPaise: 10_800_000,
       expectedTdsPaise: tds.amount,
@@ -251,7 +253,13 @@ describe("golden test cases (BILLING_RULES.md §13)", () => {
       tdsDeductedPaise: 1_000_000,
       settledPaise: 11_800_000,
     });
-    expect(tdsQuarter("2026-10-05")).toEqual({
+    expect(
+      tdsQuarter({
+        paymentDate: "2026-10-05",
+        invoiceDate: "2026-10-05",
+        settings: DEFAULT_SETTINGS,
+      }),
+    ).toEqual({
       financialYear: "2026-27",
       quarter: 3,
     });

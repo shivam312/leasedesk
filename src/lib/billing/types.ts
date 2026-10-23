@@ -103,6 +103,12 @@ export type BillingSettings = {
   skipZeroInvoices: boolean;
   /** gst.rounding: tax rounded on each line, or once per rate on the invoice total (section 8, D-004). */
   gstRounding: "per_line" | "per_invoice";
+  /** tds.rounding: expected TDS rounded once to the rupee or to the paisa (section 10). */
+  tdsRounding: "paisa" | "rupee";
+  /** tds.tolerancePaise: how far a short payment may be from expected TDS and still count as paid with TDS. */
+  tdsTolerancePaise: Paise;
+  /** tds.quarterBasis: which date files a TDS amount under its FY quarter. */
+  tdsQuarterBasis: "payment_date" | "invoice_date";
   /** invoice.dueDays: due date = invoice date + this many days (section 7). */
   dueDays: number;
 };

@@ -1,12 +1,9 @@
 import { financialYear, fyQuarter } from "./dates";
 import type { PlainDate } from "./dates";
 import { percent, rupees } from "./explain";
-import { sumOfPercentsToRupee, sumPaise } from "./money";
+import { sumOfPercentsToPaisa, sumOfPercentsToRupee, sumPaise } from "./money";
 import type { BasisPoints, Paise } from "./money";
-import type { ChargeType, Explained } from "./types";
-
-/** ₹1 tolerance per invoice, inclusive (docs/BILLING_RULES.md, section 10). */
-const TDS_TOLERANCE_PAISE = 100;
+import type { BillingSettings, ChargeType, Explained } from "./types";
 
 /** Charge types a tenant sets TDS for (utilities and signage count as other). */
 export type TdsGroup = "rent" | "cam" | "parking" | "other";
@@ -51,15 +48,17 @@ export function tdsGroup(type: ChargeType): TdsGroup {
 /**
  * Expected TDS on an invoice: for each charge type the tenant deducts on,
  * its rate on that type's taxable value (GST excluded); the total rounded
- * once to the nearest rupee (section 10) [CA]. Rates are tenant settings,
+ * once, to the rupee or the paisa (`tds.rounding`, section 10) [CA]. Rates are tenant settings,
  * never constants.
  */
 export function expectedTds({
   lines,
   tds,
+  settings,
 }: {
   lines: readonly { chargeType: ChargeType; taxablePaise: Paise }[];
   tds: TenantTds;
+  settings: Pick<BillingSettings, "tdsRounding">;
 }): Explained {
   const parts: { amount: Paise; bp: BasisPoints }[] = [];
   const steps: string[] = [];
@@ -95,8 +94,13 @@ export function expectedTds({
       },
     };
   }
-  const amount = sumOfPercentsToRupee(parts);
-  steps.push(`Expected TDS, to the nearest rupee = ${rupees(amount)}`);
+  const toRupee = settings.tdsRounding === "rupee";
+  const amount = toRupee
+    ? sumOfPercentsToRupee(parts)
+    : sumOfPercentsToPaisa(parts);
+  steps.push(
+    `Expected TDS, to the nearest ${toRupee ? "rupee" : "paisa"} = ${rupees(amount)}`,
+  );
   return {
     amount,
     explanation: { rule: "TDS on taxable value", steps, result: amount },
@@ -105,23 +109,32 @@ export function expectedTds({
 
 /**
  * How one payment settles one invoice: received + TDS deducted = settled.
- * A payment short by the expected TDS (within ₹1) is "paid with TDS", not
+ * A payment short by the expected TDS (within `tds.tolerancePaise`, default
+ * ₹1, inclusive) is "paid with TDS", not
  * "part-paid". Anything received above the total is excess credit.
  */
 export function settlePayment({
   invoiceTotalPaise,
   receivedPaise,
   expectedTdsPaise,
+  settings,
 }: {
   invoiceTotalPaise: Paise;
   receivedPaise: Paise;
   expectedTdsPaise: Paise;
+  settings: Pick<BillingSettings, "tdsTolerancePaise">;
 }): {
   status: "paid" | "paid_with_tds" | "part_paid";
   tdsDeductedPaise: Paise;
   settledPaise: Paise;
   excessPaise: Paise;
 } {
+  const tolerance = settings.tdsTolerancePaise;
+  if (!Number.isSafeInteger(tolerance) || tolerance < 0) {
+    throw new RangeError(
+      `TDS tolerance must be whole paise ≥ 0, got ${tolerance}`,
+    );
+  }
   const shortfall = invoiceTotalPaise - receivedPaise;
   if (shortfall <= 0) {
     return {
@@ -133,7 +146,7 @@ export function settlePayment({
   }
   if (
     expectedTdsPaise > 0 &&
-    Math.abs(shortfall - expectedTdsPaise) <= TDS_TOLERANCE_PAISE
+    Math.abs(shortfall - expectedTdsPaise) <= tolerance
   ) {
     return {
       status: "paid_with_tds",
@@ -150,13 +163,26 @@ export function settlePayment({
   };
 }
 
-/** TDS records are kept per tenant per FY quarter of the payment date. */
-export function tdsQuarter(paymentDate: PlainDate): {
+/**
+ * The FY quarter a TDS amount is tracked under: of the payment date (default)
+ * or the invoice date (`tds.quarterBasis`, section 10) [CA].
+ */
+export function tdsQuarter({
+  paymentDate,
+  invoiceDate,
+  settings,
+}: {
+  paymentDate: PlainDate;
+  invoiceDate: PlainDate;
+  settings: Pick<BillingSettings, "tdsQuarterBasis">;
+}): {
   financialYear: string;
   quarter: 1 | 2 | 3 | 4;
 } {
+  const date =
+    settings.tdsQuarterBasis === "invoice_date" ? invoiceDate : paymentDate;
   return {
-    financialYear: financialYear(paymentDate).label,
-    quarter: fyQuarter(paymentDate).quarter,
+    financialYear: financialYear(date).label,
+    quarter: fyQuarter(date).quarter,
   };
 }

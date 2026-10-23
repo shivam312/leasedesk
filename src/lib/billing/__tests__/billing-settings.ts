@@ -12,6 +12,9 @@ export const DEFAULT_SETTINGS: BillingSettings = {
   afterCustomIncrease: "stop_rule",
   skipZeroInvoices: true,
   gstRounding: "per_line",
+  tdsRounding: "rupee",
+  tdsTolerancePaise: 100,
+  tdsQuarterBasis: "payment_date",
   dueDays: 7,
 };
 

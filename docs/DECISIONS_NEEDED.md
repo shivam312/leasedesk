@@ -74,8 +74,8 @@ Things only a person can do. Tick them when done.
   - A) Round to the rupee; quarter of the payment date; every charge type at the rent rate by default, changeable per tenant and charge type
   - B) As A, but file TDS under the quarter of the invoice date (closer to what Form 16A shows)
   - C) Something else (describe the rounding, quarter and default rates)
-- Recommendation: A, pending your CA.
-- Done meanwhile: A built as fixed behaviour, not yet as settings: rupee rounding (`expectedTds` in `src/lib/billing/tds.ts`), quarter of the payment date (`tdsQuarter`), and TDS on/off and rate per charge type on the tenant (`TenantTds`, defaults in `tenantTdsDefaults`). Settings `tds.rounding` and `tds.quarterBasis` are planned for M2; per-type rates are already tenant inputs (`tds.rateBp`, `tds.appliesTo`).
+- Recommendation: A, pending your CA. Note for your CA on the quarter: under section 194-I, TDS is deducted when rent is credited or paid, whichever is earlier, so the invoice date (option B, setting `tds.quarterBasis` = `invoice_date`) may match Form 16A more often.
+- Done meanwhile: A built as fixed behaviour, not yet as settings: rupee rounding (`expectedTds` in `src/lib/billing/tds.ts`), quarter of the payment date (`tdsQuarter`), and TDS on/off and rate per charge type on the tenant (`TenantTds`, defaults in `tenantTdsDefaults`). Settings `tds.rounding` (paisa or rupee) and `tds.quarterBasis` (payment or invoice date, which covers option B) are built too, defaults as A; per-type rates are already tenant inputs (`tds.rateBp`, `tds.appliesTo`).
 - Answer:
 
 ### D-004: GST rounding and round-off line

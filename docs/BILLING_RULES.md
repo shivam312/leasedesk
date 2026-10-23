@@ -99,10 +99,10 @@ Tenants usually deduct TDS before paying rent. Section numbers and thresholds ch
 
 - TDS is set on the tenant per charge type: `rent`, `cam`, `parking` and `other` (utilities, signage and other charges). Each has its own `deductsTds` and `tdsRateBp`. Defaults: the same for every type, `tdsRateBp` 1000 (10%) and `deductsTds` `true` for companies. **[CA]**
 - Expected TDS on an invoice = Σ over the types the tenant deducts on (rate × that type's taxable value), rounded once on the total.
-- Expected TDS is calculated on the taxable value only (excluding GST), when GST is shown separately on the invoice, and rounded once to the nearest rupee (half up). **[CA]**
+- Expected TDS is calculated on the taxable value only (excluding GST), when GST is shown separately on the invoice, and rounded once to the nearest rupee (half up). **[CA]** Setting `tds.rounding` (organization or tenant): `rupee` (default) or `paisa` (rounded once on the sum, the same rounding as section 2: ₹10,691.775 → ₹10,691.78).
 - A payment settles: amount received + TDS deducted = amount settled against invoices.
-- A payment that is short by roughly the expected TDS (within ₹1 per invoice, inclusive: exactly ₹1 off still counts) is treated as "paid with TDS", not "part-paid". **[CA]**
-- Each TDS amount creates a TDS record per tenant per quarter (Apr–Jun, Jul–Sep, Oct–Dec, Jan–Mar) with `certificateReceived = false` until the accountant uploads the certificate.
+- A payment that is short by roughly the expected TDS (within `tds.tolerancePaise`, default ₹1 per invoice, inclusive: exactly ₹1 off still counts) is treated as "paid with TDS", not "part-paid". **[CA]**
+- Each TDS amount creates a TDS record per tenant per quarter (Apr–Jun, Jul–Sep, Oct–Dec, Jan–Mar) of the payment date, or of the invoice date with setting `tds.quarterBasis` = `invoice_date`, **[CA]** (D-003) with `certificateReceived = false` until the accountant uploads the certificate.
 
 ## 11. Payments and allocation
 

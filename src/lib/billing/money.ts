@@ -61,6 +61,22 @@ export function increaseByPercent(amount: Paise, bp: BasisPoints): Paise {
 }
 
 /**
+ * Σ amount × bp / 10000 over the parts, rounded once to the paisa (half away
+ * from zero). Used for expected TDS with `tds.rounding` = `paisa`.
+ */
+export function sumOfPercentsToPaisa(
+  parts: readonly { amount: Paise; bp: BasisPoints }[],
+): Paise {
+  let total = 0n;
+  for (const { amount, bp } of parts) {
+    assertSafeInteger(amount, "amount");
+    assertSafeInteger(bp, "basis points");
+    total += BigInt(amount) * BigInt(bp);
+  }
+  return roundDiv(total, BigInt(BP_DENOMINATOR));
+}
+
+/**
  * Σ (amount × bp ÷ 10000) over several parts, rounded once straight to the
  * nearest rupee. Rent ₹49,994.95 at 10% + CAM ₹0.05 at 10% = ₹4,999.50 → ₹5,000.
  */

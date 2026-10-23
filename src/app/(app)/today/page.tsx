@@ -52,9 +52,7 @@ export default function TodayPage() {
         title="Today"
         description="What to do now: send invoices, chase unpaid tenants, and plan for lease dates."
       />
-      <Suspense
-        fallback={<p className="text-sm text-muted-foreground">Loading…</p>}
-      >
+      <Suspense fallback={<TodayLoading />}>
         <Today />
       </Suspense>
     </>
@@ -167,6 +165,35 @@ async function Today() {
           )}
         </NoticeArea>
       </section>
+    </div>
+  );
+}
+
+/** Card-shaped placeholders for the three numbers and the list. */
+function TodayLoading() {
+  const bar = "animate-pulse rounded bg-muted";
+  return (
+    <div role="status" className="flex flex-col gap-8">
+      <span className="sr-only">Loading the numbers and list…</span>
+      <div aria-hidden className="grid gap-3 md:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <Card key={i} className="flex flex-col gap-2">
+            <div className={`${bar} h-4 w-28`} />
+            <div className={`${bar} h-8 w-36`} />
+            <div className={`${bar} h-4 w-24`} />
+          </Card>
+        ))}
+      </div>
+      <div aria-hidden className="flex flex-col gap-3">
+        <div className={`${bar} h-5 w-32`} />
+        {[0, 1, 2].map((i) => (
+          <Card key={i} className="flex flex-col gap-3">
+            <div className={`${bar} h-5 w-3/4`} />
+            <div className={`${bar} h-4 w-1/2`} />
+            <div className={`${bar} h-11 w-32 md:h-9`} />
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

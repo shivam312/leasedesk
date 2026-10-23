@@ -7,6 +7,10 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "../src/lib/db/schema";
 import { only } from "../src/lib/db/rows";
 import { makeGstin } from "../src/lib/india/identifiers";
+import { rentCommencement } from "../src/lib/billing/rent-free";
+import { addDays, addMonths } from "../src/lib/billing/dates";
+import { billingSettings } from "../src/lib/settings/billing";
+import { defaultSettings } from "../src/lib/settings/schema";
 import { connectForScript } from "./db-env";
 
 const DEMO_ORG_NAME = "Demo Properties";
@@ -64,7 +68,7 @@ async function main() {
       if (!mumbaiEntity || !bengaluruEntity)
         throw new Error("Billing entities were not created");
 
-      await seedBuilding(tx, {
+      const andheriUnits = await seedBuilding(tx, {
         organizationId: org.id,
         name: "Andheri Business Centre",
         address: "Plot 12, MIDC, Andheri East",
@@ -75,7 +79,7 @@ async function main() {
         creditNotePrefix: "ABCCN",
         floorLabels: ["Ground", "1st", "2nd", "3rd", "4th", "5th"],
       });
-      await seedBuilding(tx, {
+      const whitefieldUnits = await seedBuilding(tx, {
         organizationId: org.id,
         name: "Whitefield Tech Park",
         address: "EPIP Zone, Whitefield",
@@ -88,7 +92,8 @@ async function main() {
         // A building-level override, so the settings screens have one to show.
         settings: { "invoice.dueDays": 10 },
       });
-      await seedTenants(tx, org.id);
+      const tenants = await seedTenants(tx, org.id);
+      await seedLeases(tx, tenants, [...andheriUnits, ...whitefieldUnits]);
     });
     console.info(`Seeded the demo organization into the ${where}.`);
   } finally {
@@ -143,7 +148,7 @@ async function seedBuilding(
       };
     }),
   );
-  await tx.insert(schema.units).values(units);
+  return tx.insert(schema.units).values(units).returning();
 }
 
 const TENANT_NAMES = [
@@ -248,6 +253,82 @@ async function seedTenants(tx: Tx, organizationId: string) {
     ];
   });
   await tx.insert(schema.tenantContacts).values(contacts);
+  return tenants;
+}
+
+/**
+ * 45 leases, one vacant unit each: every tenant has one, and the first five
+ * have a second. Terms of 3 to 9 years starting between 2022 and 2026; some
+ * with a rent-free period (months or days), a few in notice and one draft.
+ */
+async function seedLeases(
+  tx: Tx,
+  tenants: (typeof schema.tenants.$inferSelect)[],
+  units: (typeof schema.units.$inferSelect)[],
+) {
+  const settings = billingSettings(defaultSettings());
+  const free = units.filter((u) => u.status === "vacant");
+  for (let i = 0; i < 45; i++) {
+    const tenant = tenants[i % tenants.length];
+    const unit = free[i];
+    if (!tenant || !unit) throw new Error("Not enough vacant units to seed");
+    const year = 2022 + (i % 5);
+    const month = 1 + ((i * 5) % 12);
+    const startDate = `${year}-${String(month).padStart(2, "0")}-${i % 4 === 1 ? "15" : "01"}`;
+    const years = 3 + (i % 7);
+    const endDate = addDays(
+      addMonths(startDate, years * 12, "roll_forward"),
+      -1,
+    );
+    const rentFreeMonths = i % 3 === 0 ? 2 : 0;
+    const rentFreeDays = !rentFreeMonths && i % 10 === 4 ? 45 : 0;
+    const status =
+      i === 44 ? "draft" : i % 11 === 7 ? "in_notice" : ("active" as const);
+    const areaBasis = i % 6 === 5 ? "carpet" : ("chargeable" as const);
+    const lease = only(
+      await tx
+        .insert(schema.leases)
+        .values({
+          organizationId: unit.organizationId,
+          tenantId: tenant.id,
+          buildingId: unit.buildingId,
+          status,
+          startDate,
+          endDate,
+          lockInEndDate: addDays(addMonths(startDate, 36, "roll_forward"), -1),
+          noticePeriodMonths: 3,
+          rentFreeMonths,
+          rentFreeDays,
+          rentCommencementDate: rentCommencement(
+            {
+              id: `seed-${i}`,
+              startDate,
+              endDate,
+              rentFreeMonths,
+              rentFreeDays,
+            },
+            settings,
+          ).date,
+          areaBasis,
+          // Three months of rent at roughly ₹90 per sq ft.
+          depositAmount: Math.round((unit.chargeableArea * 9000 * 3) / 100),
+        })
+        .returning(),
+    );
+    await tx.insert(schema.leaseUnits).values({
+      organizationId: unit.organizationId,
+      leaseId: lease.id,
+      buildingId: unit.buildingId,
+      unitId: unit.id,
+      area: areaBasis === "carpet" ? unit.carpetArea : unit.chargeableArea,
+    });
+    if (status !== "draft") {
+      await tx
+        .update(schema.units)
+        .set({ status: "leased" })
+        .where(eq(schema.units.id, unit.id));
+    }
+  }
 }
 
 main().catch((error: unknown) => {

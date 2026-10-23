@@ -95,6 +95,8 @@ export const units = pgTable(
     index().on(t.buildingId),
     unique().on(t.buildingId, t.code),
     unique().on(t.organizationId, t.id),
+    // Lets lease_units check that a unit is in the lease's building.
+    unique().on(t.organizationId, t.buildingId, t.id),
     foreignKey({
       columns: [t.organizationId, t.buildingId],
       foreignColumns: [buildings.organizationId, buildings.id],

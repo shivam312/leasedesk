@@ -50,14 +50,19 @@ export async function seedOrg(tx: TestTx, name: string, role: Role = "owner") {
       .values({ organizationId: org.id, buildingId: building.id, label: "1" })
       .returning(),
   );
-  await tx.insert(schema.units).values({
-    organizationId: org.id,
-    buildingId: building.id,
-    floorId: floor.id,
-    code: "101",
-    carpetArea: 100000,
-    chargeableArea: 130000,
-  });
+  const unit = only(
+    await tx
+      .insert(schema.units)
+      .values({
+        organizationId: org.id,
+        buildingId: building.id,
+        floorId: floor.id,
+        code: "101",
+        carpetArea: 100000,
+        chargeableArea: 130000,
+      })
+      .returning(),
+  );
   const tenant = only(
     await tx
       .insert(schema.tenants)
@@ -74,5 +79,25 @@ export async function seedOrg(tx: TestTx, name: string, role: Role = "owner") {
     tenantId: tenant.id,
     name: "Accounts",
   });
-  return { userId, org, entity, building, tenant };
+  const lease = only(
+    await tx
+      .insert(schema.leases)
+      .values({
+        organizationId: org.id,
+        tenantId: tenant.id,
+        buildingId: building.id,
+        startDate: "2026-04-01",
+        endDate: "2029-03-31",
+        rentCommencementDate: "2026-04-01",
+      })
+      .returning(),
+  );
+  await tx.insert(schema.leaseUnits).values({
+    organizationId: org.id,
+    leaseId: lease.id,
+    buildingId: building.id,
+    unitId: unit.id,
+    area: unit.chargeableArea,
+  });
+  return { userId, org, entity, building, unit, tenant, lease };
 }

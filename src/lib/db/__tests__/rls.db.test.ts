@@ -15,6 +15,8 @@ const orgTables = {
   units: schema.units,
   tenants: schema.tenants,
   tenantContacts: schema.tenantContacts,
+  leases: schema.leases,
+  leaseUnits: schema.leaseUnits,
 };
 
 const asDb = (tx: TestTx) => tx as unknown as Transactional;

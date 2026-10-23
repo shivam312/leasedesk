@@ -26,6 +26,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 Things only a person can do. Tick them when done.
 
 - [x] Install Docker Desktop and the Supabase CLI (M0; the pipeline stops until they're installed)
+- [ ] Let the pipeline apply local migrations, or run `pnpm db:migrate` yourself (M3). On 2026-10-23 the build stage was refused permission to run `pnpm db:migrate` against the local database, so `drizzle/0008_leases.sql` and `0009_leases_rls.sql` aren't applied and the new lease database tests fail with "relation leases does not exist". The work is on branch `m3-leases-schema`, not merged. After migrating, run `pnpm test` and `pnpm db:reset` (for the demo leases), then merge.
 - [ ] Create a Google OAuth client (Google Cloud console) and turn on Google login in Supabase Auth, for "Log in with Google" (M2; email and password login works without it)
 - [ ] Create a Resend account, verify the sending domain and put `RESEND_API_KEY` in `.env.local` (M4; until then emails go to `.local-outbox/`)
 - [ ] Get one real bank statement export (CSV or Excel) per major bank your pilots use, with personal details removed, in `tests/fixtures/bank/` (M5)

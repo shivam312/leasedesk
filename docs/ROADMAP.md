@@ -67,7 +67,7 @@ Each task is one commit. Tasks tagged `(human)` need a person and are listed in 
 - [x] Renewal (new version)
 - [x] Termination
 
-Merged into `main` on 2026-10-23; the lease migrations (`drizzle/0008`–`0011`) are applied. Adding a lease crashed until 2026-10-23 (a setting with no label); fixed, and `tests/e2e/flow.spec.ts` now adds one. Still to add: a Playwright test for renewing and ending a lease (`docs/BACKLOG.md`).
+Merged into `main` on 2026-10-23; the lease migrations (`drizzle/0008`–`0011`) are applied. Adding a lease crashed until 2026-10-23 (a setting with no label); fixed, and `tests/e2e/flow.spec.ts` now adds one. `tests/e2e/lease-versions.spec.ts` renews a lease and ends the new version early (added after Codex's M3 review, 2026-10-24).
 
 ## M4. Invoicing (week 7)
 

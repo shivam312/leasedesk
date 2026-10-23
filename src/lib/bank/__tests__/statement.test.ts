@@ -77,13 +77,19 @@ describe("parseBankAmount", () => {
     ["INR 1,000", 100_000, null],
     ["2,000.00 Cr", 200_000, "cr"],
     ["2,000.00Dr", 200_000, "dr"],
-    ["(500.00)", 50_000, null],
-    ["-500", 50_000, null],
     ["118000.000", 11_800_000, null],
     ["", 0, null],
     ["-", 0, null],
   ])("reads %j", (text, paise, side) => {
-    expect(parseBankAmount(text)).toEqual({ paise, side });
+    expect(parseBankAmount(text)).toEqual({ paise, side, negative: false });
+  });
+
+  it.each([
+    ["(500.00)", 50_000],
+    ["-500", 50_000],
+    ["-1,000.00 Cr", 100_000],
+  ])("reads %j as negative", (text, paise) => {
+    expect(parseBankAmount(text)).toMatchObject({ paise, negative: true });
   });
 
   it.each(["abc", "1.234", "12,34.5x"])("refuses %j", (text) => {
@@ -223,6 +229,60 @@ describe("readStatement", () => {
       problems: [
         "Row 2: couldn't read the date “32/11/2026”, so this credit was left out.",
         "Row 3: couldn't read the amount “ten”, so this row was left out.",
+      ],
+    });
+  });
+
+  it("never reads a minus or bracketed credit as money received", () => {
+    // A reversal shown as "(5,000.00)" or "-5000" in the credit column, or
+    // "-5000" marked Cr, is not ₹5,000 paid in: leave it out and say so.
+    // A signed debit column is fine: "-200" is ₹200 paid out.
+    const two: ColumnMapping = {
+      date: "Date",
+      description: "Narration",
+      reference: null,
+      credit: "Credit",
+      debit: "Debit",
+      amount: null,
+      drCr: null,
+    };
+    expect(
+      readStatement(
+        [
+          ["Date", "Narration", "Debit", "Credit"],
+          ["01/11/2026", "NEFT REV", "", "(5,000.00)"],
+          ["02/11/2026", "NEFT REV", "", "-5000"],
+          ["03/11/2026", "CHARGES", "-200", ""],
+        ],
+        two,
+      ),
+    ).toMatchObject({
+      lines: [],
+      debits: 1,
+      problems: [
+        "Row 2: couldn't read the amount “(5,000.00)”, so this row was left out.",
+        "Row 3: couldn't read the amount “-5000”, so this row was left out.",
+      ],
+    });
+    const single: ColumnMapping = {
+      ...two,
+      credit: null,
+      debit: null,
+      amount: "Amount",
+      drCr: "Type",
+    };
+    expect(
+      readStatement(
+        [
+          ["Date", "Narration", "Amount", "Type"],
+          ["01/11/2026", "NEFT REV", "-5000", "CR"],
+        ],
+        single,
+      ),
+    ).toMatchObject({
+      lines: [],
+      problems: [
+        "Row 2: couldn't read the amount “-5000 CR”, so this row was left out.",
       ],
     });
   });

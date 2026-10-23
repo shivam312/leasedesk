@@ -93,12 +93,13 @@ export function parseBankDate(text: string): PlainDate | null {
 /**
  * A statement amount in paise, or null if it isn't one. "1,18,000.00",
  * "₹ 500", "INR 500", "500.00 Cr" all work; empty, "-" and "0" are 0. The
- * sign is dropped (a debit column holds debits); "Dr"/"Cr" suffixes are
+ * sign is returned separately (a debit column may hold "-200"; a negative
+ * credit is a reversal, never money received); "Dr"/"Cr" suffixes are
  * returned separately for single-amount statements.
  */
 export function parseBankAmount(
   text: string,
-): { paise: Paise; side: "cr" | "dr" | null } | null {
+): { paise: Paise; side: "cr" | "dr" | null; negative: boolean } | null {
   let t = text
     .trim()
     .replace(/[₹,\s]/g, "")
@@ -109,13 +110,18 @@ export function parseBankAmount(
     side = suffix[1]!.toLowerCase() as "cr" | "dr";
     t = t.slice(0, -2);
   }
-  t = t.replace(/^\((.*)\)$/, "$1").replace(/^[-+]/, "");
-  if (t === "" || t === "-") return { paise: 0, side };
+  if (t === "" || t === "-") return { paise: 0, side, negative: false };
+  const bracketed = /^\((.*)\)$/.exec(t);
+  if (bracketed) t = bracketed[1]!;
+  const minus = t.startsWith("-");
+  t = t.replace(/^[-+]/, "");
   const m = /^(\d{1,12})(?:\.(\d{1,2})0*)?$/.exec(t);
   if (!m) return null;
+  const paise = Number(m[1]) * 100 + Number((m[2] ?? "").padEnd(2, "0"));
   return {
-    paise: Number(m[1]) * 100 + Number((m[2] ?? "").padEnd(2, "0")),
+    paise,
     side,
+    negative: paise > 0 && (Boolean(bracketed) || minus),
   };
 }
 
@@ -269,7 +275,7 @@ export function readStatement(
     if (at.credit >= 0) {
       const c = parseBankAmount(cell(at.credit));
       const d = at.debit >= 0 ? parseBankAmount(cell(at.debit)) : null;
-      if (!c) unreadable = cell(at.credit);
+      if (!c || c.negative) unreadable = cell(at.credit);
       else credit = c.paise;
       if (at.debit >= 0 && !d) unreadable ??= cell(at.debit);
       else if (d) debit = d.paise;
@@ -277,9 +283,11 @@ export function readStatement(
       const a = parseBankAmount(cell(at.amount));
       const side = normalizeHeader(cell(at.drCr));
       if (!a) unreadable = cell(at.amount);
-      else if (/^(cr|c|credit)$/.test(side) || a.side === "cr")
-        credit = a.paise;
-      else if (/^(dr|d|debit)$/.test(side) || a.side === "dr") debit = a.paise;
+      else if (/^(cr|c|credit)$/.test(side) || a.side === "cr") {
+        if (a.negative) unreadable = `${cell(at.amount)} ${cell(at.drCr)}`;
+        else credit = a.paise;
+      } else if (/^(dr|d|debit)$/.test(side) || a.side === "dr")
+        debit = a.paise;
       else if (a.paise > 0) unreadable = `${cell(at.amount)} ${cell(at.drCr)}`;
     }
     if (!date) {

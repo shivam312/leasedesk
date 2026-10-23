@@ -33,6 +33,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-021 | TDS certificate name and due dates under the new Income-tax Act | ca | no | open |
 | D-022 | A few paise left after a payment with TDS | ca | no | open |
 | D-023 | Money into one GSTIN's bank account paying another GSTIN's invoices | product | no | open |
+| D-024 | Codex review of M5: unresolved items | product | no | open |
 
 ## Human tasks
 
@@ -340,6 +341,22 @@ Things only a person can do. Tick them when done.
   - B) Only let a bank line pay invoices of the business that owns the account (typed payments can still pay any)
 - Recommendation: A, because it never blocks a landlord who collects into one account, and the warning catches mistakes.
 - Done meanwhile: nothing changed (it is allowed, with no warning yet); the warning is in `docs/BACKLOG.md`.
+- Answer:
+
+### D-024: Codex review of M5: unresolved items
+- Status: open
+- Type: product
+- Blocking: no
+- Context: Codex (the independent reviewer) and Claude still disagree on one item after two review rounds (`.pipeline/reviews/M5-codex-review-2.md`). It is about how a payment that isn't applied to any invoice is recorded, not about any amount being wrong.
+  - **Item 1: recording a payment as credit only** (`src/lib/payments/forms.ts`, payment form).
+    - Codex says: the payment form drops every invoice row set to 0, so a user can't clearly say "keep this whole payment as credit". Because a saved payment can't be edited, a wrong allocation can't be fixed later. It asks for an explicit way to record unapplied credit, a visible remainder, and a clear "Apply credit" action later.
+    - Claude says: this already works. Setting every invoice row to 0 saves the payment with nothing applied, the invoices stay unpaid and the whole amount is kept as credit (BILLING_RULES section 11). Dropping the 0 rows is required, because an allocation amount is never 0 (DATA_MODEL). The form already shows "Kept as credit for later invoices", and credit is only used when someone taps "Apply ₹… credit" on the tenant page. A database test now proves it ("keeps a payment applied to nothing as credit, with an invoice unpaid", `src/lib/payments/__tests__/payments.db.test.ts`). A wrong allocation is corrected the same way as any recorded payment: reverse it and record it again (rule 5). The only limit is on purpose: TDS can't be recorded with nothing applied, because TDS is always against an invoice.
+- Options:
+  - A) Leave it as now: to keep a payment as credit, set each invoice to 0
+  - B) Also add a one-tap "Keep it all as credit" link on the payment form that sets every invoice to 0 (screen change only; the money rules don't change)
+  - C) Also let a user change what a recorded payment was applied to, without reversing it (a new kind of correction entry)
+- Recommendation: B, because the behaviour is already correct and tested, and a single link makes "credit only" easy to find on a phone without touching how money is booked. C adds a new kind of entry for something reversing already handles.
+- Done meanwhile: A (no code change); the database test above was added. B is small and can be built once answered.
 - Answer:
 
 ## Applied

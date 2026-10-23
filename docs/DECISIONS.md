@@ -92,3 +92,8 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Organization data is read and written through `withOrg` (`src/lib/db/scoped.ts`), which sets `request.jwt.claims` and `set local role authenticated` inside a transaction. Queries still add `organization_id` themselves (`where`, `values`).
 - Only a few trusted server paths use the owner connection directly: creating an organization at sign-up, accepting an invite, and looking up the signed-in user's memberships. Each is a named function in `src/lib/`, never a screen.
 - Policy helpers live in the `app` schema (not exposed by Supabase's API). New tables call `app.apply_org_policies(table, write_roles, delete_roles)` in a custom migration; a test fails if any public table lacks a policy.
+
+## D15. Below the organization, a stored setting means "set here" (2026-10-23)
+
+**Why:** `docs/AUTONOMY.md` says only values that differ from the default are stored. Applied at every level, a building couldn't go back to the default when its organization had changed it (organization rounds to `none`, one building needs `rupee`, the default).
+**Consequences:** `saveSettings` (`src/lib/settings/store.ts`) drops default-equal values only at the organization level. At billing-entity, building, tenant and lease level, a key that is present is used as set, and a key that is absent follows the level above. Screens show "Use the organization's setting" as the way to clear one.

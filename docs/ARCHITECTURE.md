@@ -58,13 +58,13 @@ src/
       explain.ts             "Explain this amount" text for a line
       gst.ts                 CGST/SGST/IGST split, round-off
       tds.ts                 expected TDS on an invoice
-      invoice-number.ts      invoice number formatting (moves to invoices/ in M4, D9)
+      draft-invoice.ts       lease + month -> whole draft invoice (lines, GST, totals, TDS)
       __tests__/
     db/
       schema/                one file per table group
       index.ts               Drizzle client (postgres.js, prepare: false, snake_case; D12)
       url.ts                 which database to use; the local-only guard for scripts
-      scoped.ts              org-scoped query helpers (withOrg, runScoped)
+      scoped.ts              org-scoped query helpers (withOrg, runScoped; runAsSystem for background jobs, D22)
       activity-log.ts        audit logging helper (insertLogged, updateLogged)
       rows.ts                small helpers for reading query results
     auth/                    roles and PERMISSIONS (roles.ts), memberships, invites, sign-up form schemas
@@ -81,7 +81,7 @@ src/
                              BillingSettings for the engine (billing.ts), building defaults on charges (charge-defaults.ts),
                              Billing rules labels and form (labels.ts, rules-form.ts); docs/SETTINGS.md
     email/                   email adapter: console driver (.local-outbox/) without RESEND_API_KEY, resend driver
-    invoices/                numbering, PDF templates, sending
+    invoices/                monthly run (run.ts), number format (number.ts) and gap-free assignment (numbering.ts), queries, PDF templates, sending
     payments/                allocation, bank statement parsing and matching
     imports/                 Excel import for buildings, units, tenants, leases
     exports/                 Tally XML, Excel, PDF reports

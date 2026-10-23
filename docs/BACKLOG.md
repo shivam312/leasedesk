@@ -4,6 +4,7 @@ Improvements found during reviews that weren't urgent enough to fix in the miles
 
 | Added | Area | File | Problem | Suggested fix |
 | --- | --- | --- | --- | --- |
+| 2026-10-23 | settings | `src/app/(app)/settings/business/entities/[id]/page.tsx` | `invoice.numberFormat` and `invoice.startingNumber` are built (`src/lib/invoices/number.ts`) but can't be set on screen, so a landlord joining mid-year starts at 0001. | On the GSTIN page, under "More options": "Invoice number format" with a live example, and "First invoice number for FY 2026-27". |
 | 2026-10-23 | billing | `src/app/(app)/billing/invoices/[id]/page.tsx` | The invoice page says "CGST", "SGST", "IGST" and "SAC"; an owner may not know them (UX review). They are the words printed on the invoice itself, so changing them makes the screen harder to match to the PDF (as D19). | Keep the words, add a one-line hint on tap ("GST split between the centre and the state"); move SAC under "More details". |
 | 2026-10-23 | billing | `src/components/invoices/InvoiceList.tsx` | No search on a month's invoices; with 40+ tenants an accountant scrolls to find one. | A tenant/building search box like the lease list, with the "Send all" selection (M4). |
 | 2026-10-23 | leases | `src/components/leases/LeaseForm.tsx` | `billing.waivedDuringRentFree` can't be changed on the lease form: rent is always waived during the rent-free period and other charges never are. Some leases waive CAM or parking during fit-out too. | A "Free during the rent-free period" checkbox per charge under "More options", defaulting as now. |

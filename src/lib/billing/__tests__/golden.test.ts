@@ -8,7 +8,7 @@ import { chargeBaseAmount } from "../charges";
 import { amountSteps } from "../escalation";
 import { invoiceTotals, lineTax } from "../gst";
 import { invoiceForRun } from "../invoice-lines";
-import { invoiceNumber } from "../invoice-number";
+import { invoiceNumber } from "@/lib/invoices/number";
 import { rentSchedule } from "../schedule";
 import type { LeaseInput } from "../schedule";
 import {

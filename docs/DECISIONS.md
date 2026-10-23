@@ -51,6 +51,7 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 **Why:** Golden case 13 needs the formatter now, and sequence assignment (which needs the database) doesn't exist yet. Moving it early would split one feature across two half-built places.
 **Consequences:** `invoiceNumber` stays in `src/lib/billing/invoice-number.ts` (pure formatting and the 16-character check). It moves to `src/lib/invoices/` with sequence assignment in M4; there's a task for it in `docs/ROADMAP.md`.
+**Done (M4):** formatting is `src/lib/invoices/number.ts` (with `invoice.numberFormat` and `invoice.startingNumber`); `takeNumber` in `numbering.ts` creates the series if needed, locks its row, formats, then counts up, inside the sending transaction, so a failed send gives its number back.
 
 ## D10. TDS is set per charge type on the tenant (2026-10-22)
 

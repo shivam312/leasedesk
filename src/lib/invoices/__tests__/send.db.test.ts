@@ -10,6 +10,7 @@ import {
   type TestTx,
 } from "@/lib/db/__tests__/harness";
 import { draftTenantsWithoutEmail, issueInvoice, SendError } from "../send";
+import { madeDraft } from "./db-fixtures";
 
 const ready = await hasTables("invoices", "invoice_series");
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
@@ -29,9 +30,7 @@ describe.skipIf(!ready)("issueInvoice (skipped until pnpm db:migrate)", () => {
 
   it("numbers a draft, copies the details onto it and marks it sent, once", async () => {
     await inRollback(async (tx) => {
-      const a = await withGstin(tx);
-      const { invoice } = await draftInvoice(tx, a);
-      const ctx = { userId: a.userId, organizationId: a.org.id };
+      const { ctx, invoice } = await madeDraft(tx);
       const issue = () =>
         runScoped(asDb(tx), ctx, (s) => issueInvoice(s, invoice.id, SENT_AT));
       const first = await issue();
@@ -46,6 +45,7 @@ describe.skipIf(!ready)("issueInvoice (skipped until pnpm db:migrate)", () => {
         number: "T/26-27/0001",
         sentAt: SENT_AT,
         supplier: { legalName: "A", gstin: "27AAPFU0939F1ZV" },
+        grandTotal: 13_806_000,
         recipient: { property: "A Tower, Andheri, Mumbai · Unit 101" },
       });
       const sends = await tx
@@ -53,6 +53,22 @@ describe.skipIf(!ready)("issueInvoice (skipped until pnpm db:migrate)", () => {
         .from(schema.activityLog)
         .where(eq(schema.activityLog.action, "send"));
       expect(sends).toHaveLength(1);
+    });
+  });
+
+  it("refuses a draft whose lease changed after it was made, and takes no number", async () => {
+    await inRollback(async (tx) => {
+      const { a, ctx, invoice } = await madeDraft(tx);
+      // Ended 20 Nov: November is now ₹1,17,000 × 20/30 = ₹78,000, not the
+      // ₹1,17,000 on the draft.
+      await tx
+        .update(schema.leases)
+        .set({ endDate: "2026-11-20" })
+        .where(eq(schema.leases.id, a.lease.id));
+      await expect(
+        runScoped(asDb(tx), ctx, (s) => issueInvoice(s, invoice.id, SENT_AT)),
+      ).rejects.toThrow(/changed after this invoice was made/);
+      expect(await tx.select().from(schema.invoiceSeries)).toHaveLength(0);
     });
   });
 

@@ -64,7 +64,7 @@ export async function saveBillingRules(
       return {
         tone: "success",
         message:
-          "Saved. Invoices not sent yet will use these rules; sent invoices don't change.",
+          "Saved. Invoices you make from now on use these rules; sent invoices don't change. If this month's invoices are already made, make them again before sending.",
       };
     });
   });

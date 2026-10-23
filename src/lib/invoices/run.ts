@@ -10,8 +10,8 @@ import {
   startOfMonth,
   type YearMonth,
 } from "@/lib/billing/dates";
-import { draftInvoice } from "@/lib/billing/draft-invoice";
-import { supplyType } from "@/lib/billing/gst";
+import { draftInvoice, type DraftInvoice } from "@/lib/billing/draft-invoice";
+import { supplyType, type SupplyType } from "@/lib/billing/gst";
 import type { TenantTds } from "@/lib/billing/tds";
 import { deleteLogged, insertLogged } from "@/lib/db/activity-log";
 import {
@@ -29,6 +29,7 @@ import {
 import type { Scoped } from "@/lib/db/scoped";
 import { savedLeaseInput } from "@/lib/leases/rows";
 import { billingSettings } from "@/lib/settings/billing";
+import { invoiceRow, lineRows } from "./draft-rows";
 import { loadSettings } from "@/lib/settings/store";
 
 export type RunProblem = {
@@ -66,7 +67,11 @@ export function tenantTds(t: typeof tenants.$inferSelect): TenantTds {
 const ARREARS_REACH_MONTHS = 4;
 
 /** Every saved lease that could bill something in `runMonth`. */
-async function billableLeases(s: Scoped, runMonth: YearMonth) {
+async function billableLeases(
+  s: Scoped,
+  runMonth: YearMonth,
+  leaseId?: string,
+) {
   return s.tx
     .select({
       lease: leases,
@@ -90,6 +95,7 @@ async function billableLeases(s: Scoped, runMonth: YearMonth) {
           leases.endDate,
           startOfMonth(addMonthsToMonth(runMonth, -ARREARS_REACH_MONTHS)),
         ),
+        leaseId ? eq(leases.id, leaseId) : undefined,
       ),
     );
 }
@@ -132,6 +138,77 @@ export function billedLeaseIds(
   return new Set(
     month.filter((i) => i.status !== "draft").map((i) => i.leaseId),
   );
+}
+
+type LeaseRow = Awaited<ReturnType<typeof billableLeases>>[number];
+type Terms = Awaited<ReturnType<typeof leaseTerms>>;
+
+/**
+ * One lease's draft for `runMonth` from its saved terms and resolved
+ * settings: `draft` is null when there is nothing to bill.
+ */
+async function workOutDraft(
+  s: Scoped,
+  { lease, tenant, building, entity }: LeaseRow,
+  terms: Terms,
+  runMonth: YearMonth,
+): Promise<
+  | { kind: "draft"; draft: DraftInvoice | null; supply: SupplyType }
+  | { kind: "problem"; message: string }
+> {
+  if (!entity.gstin)
+    return {
+      kind: "problem",
+      message: `Add the GSTIN for ${entity.legalName} in Settings → Business details, then make the invoices again.`,
+    };
+  const input = savedLeaseInput(
+    lease,
+    terms.units.filter((u) => u.leaseId === lease.id),
+    terms.charges.filter((c) => c.leaseId === lease.id),
+    terms.rules.filter((r) => r.leaseId === lease.id),
+    terms.customs.filter((c) => c.leaseId === lease.id),
+  );
+  try {
+    const settings = billingSettings(
+      await loadSettings(s, {
+        billingEntityId: entity.id,
+        buildingId: building.id,
+        tenantId: tenant.id,
+        leaseSettings: lease.settings,
+      }),
+    );
+    const supply = supplyType({
+      billingGstin: entity.gstin,
+      buildingStateCode: building.stateCode,
+    });
+    const draft = draftInvoice({
+      lease: input,
+      runMonth,
+      settings,
+      supply,
+      tds: tenantTds(tenant),
+    });
+    return { kind: "draft", draft, supply };
+  } catch (error) {
+    return {
+      kind: "problem",
+      message: `Couldn't work out this lease's invoice. Open the lease and check its charges and dates. (${error instanceof Error ? error.message : String(error)})`,
+    };
+  }
+}
+
+/**
+ * What one lease bills for `runMonth` now, worked out exactly as the run
+ * does; used to check a draft is still right before it's sent.
+ */
+export async function freshDraft(
+  s: Scoped,
+  leaseId: string,
+  runMonth: YearMonth,
+) {
+  const row = (await billableLeases(s, runMonth, leaseId))[0];
+  if (!row) return { kind: "draft" as const, draft: null, supply: null };
+  return workOutDraft(s, row, await leaseTerms(s, [leaseId]), runMonth);
 }
 
 /** Delete one draft invoice and its lines, logged. */
@@ -182,56 +259,22 @@ export async function runBilling(
     rows.map((r) => r.lease.id),
   );
 
-  for (const { lease, tenant, building, entity } of rows) {
+  for (const row of rows) {
+    const { lease, tenant, building, entity } = row;
     if (sent.has(lease.id)) {
       result.alreadySent += 1;
       continue;
     }
-    if (!entity.gstin) {
+    const worked = await workOutDraft(s, row, terms, runMonth);
+    if (worked.kind === "problem") {
       result.problems.push({
         leaseId: lease.id,
         tenantName: tenant.companyName,
-        message: `Add the GSTIN for ${entity.legalName} in Settings → Business details, then make the invoices again.`,
+        message: worked.message,
       });
       continue;
     }
-    const input = savedLeaseInput(
-      lease,
-      terms.units.filter((u) => u.leaseId === lease.id),
-      terms.charges.filter((c) => c.leaseId === lease.id),
-      terms.rules.filter((r) => r.leaseId === lease.id),
-      terms.customs.filter((c) => c.leaseId === lease.id),
-    );
-    let draft;
-    let supply;
-    try {
-      const settings = billingSettings(
-        await loadSettings(s, {
-          billingEntityId: entity.id,
-          buildingId: building.id,
-          tenantId: tenant.id,
-          leaseSettings: lease.settings,
-        }),
-      );
-      supply = supplyType({
-        billingGstin: entity.gstin,
-        buildingStateCode: building.stateCode,
-      });
-      draft = draftInvoice({
-        lease: input,
-        runMonth,
-        settings,
-        supply,
-        tds: tenantTds(tenant),
-      });
-    } catch (error) {
-      result.problems.push({
-        leaseId: lease.id,
-        tenantName: tenant.companyName,
-        message: `Couldn't work out this lease's invoice. Open the lease and check its charges and dates. (${error instanceof Error ? error.message : String(error)})`,
-      });
-      continue;
-    }
+    const { draft, supply } = worked;
     if (!draft) {
       result.nothingToBill += 1;
       continue;
@@ -242,38 +285,14 @@ export async function runBilling(
       buildingId: building.id,
       billingEntityId: entity.id,
       runMonth: startOfMonth(runMonth),
-      invoiceDate: draft.invoiceDate,
-      dueDate: draft.dueDate,
-      periodStart: draft.periodStart,
-      periodEnd: draft.periodEnd,
       placeOfSupply: building.stateCode,
-      supplyType: supply,
-      taxableTotal: draft.totals.taxable,
-      cgstTotal: draft.totals.cgst,
-      sgstTotal: draft.totals.sgst,
-      igstTotal: draft.totals.igst,
-      roundOff: draft.totals.roundOff,
-      grandTotal: draft.totals.grandTotal,
-      expectedTds: draft.expectedTds.amount,
+      ...invoiceRow(draft, supply),
     });
-    for (const [i, line] of draft.lines.entries())
+    for (const line of lineRows(draft))
       await insertLogged(s, invoiceLines, {
         invoiceId: invoice.id,
         leaseId: lease.id,
-        chargeId: line.chargeId,
-        chargeType: line.chargeType,
-        position: i + 1,
-        description: line.description,
-        periodStart: line.periodStart,
-        periodEnd: line.periodEnd,
-        quantityLabel: line.quantityLabel,
-        sacCode: line.sacCode,
-        taxableAmount: line.taxablePaise,
-        gstRateBp: line.gstRateBp,
-        cgst: line.cgst,
-        sgst: line.sgst,
-        igst: line.igst,
-        explanation: { amount: line.explanation, tax: line.taxExplanation },
+        ...line,
       });
     result.drafted += 1;
   }

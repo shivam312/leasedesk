@@ -1,7 +1,8 @@
 // Sending invoices (docs/BILLING_RULES.md section 9) [CA]. Sending happens in
 // two parts:
 //
-// 1. issueInvoice, in one transaction: lock the draft, take the next number,
+// 1. issueInvoice, in one transaction: lock the draft, check it still matches
+//    what its lease bills now (else refuse), take the next number,
 //    copy the supplier and tenant details onto it (D18) and mark it sent. If
 //    anything fails the transaction rolls back and the number is given back.
 // 2. emailInvoice, after that transaction has committed: render the PDF from
@@ -10,18 +11,21 @@
 //    the user can email it again from the invoice page (D25).
 
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { startOfMonth, type YearMonth } from "@/lib/billing/dates";
+import { monthOf, startOfMonth, type YearMonth } from "@/lib/billing/dates";
 import { logActivity, updateLogged } from "@/lib/db/activity-log";
 import { buildings, invoices, tenantContacts, tenants } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
 import type { EmailDriver } from "@/lib/email";
 import { EmailError } from "@/lib/email";
+import { formatMonth } from "@/lib/format";
 import { loadSettings } from "@/lib/settings/store";
 import { propertyLine, recipientCopy, supplierCopy } from "./copies";
 import type { InvoiceDocument } from "./document";
+import { draftChanged } from "./draft-rows";
 import { invoiceEmail, invoiceRecipients } from "./email";
 import { takeNumber } from "./numbering";
 import { getInvoice, leaseUnitCodes } from "./queries";
+import { freshDraft } from "./run";
 
 /** The drafts of a run month, in the order they are numbered. */
 export async function draftsForMonth(s: Scoped, runMonth: YearMonth) {
@@ -121,6 +125,18 @@ export async function issueInvoice(
   if (!entity.gstin)
     throw new SendError(
       `Add the GSTIN for ${entity.legalName} in Settings → Business details, then send again.`,
+    );
+  // The lease, its charges or a billing rule may have changed since the
+  // month's invoices were made: never send the old amounts.
+  const month = monthOf(invoice.runMonth);
+  const fresh = await freshDraft(s, invoice.leaseId, month);
+  if (
+    fresh.kind === "problem" ||
+    !fresh.supply ||
+    draftChanged(saved, fresh.draft, fresh.supply)
+  )
+    throw new SendError(
+      `${tenant.companyName}'s lease or billing rules changed after this invoice was made. Make ${formatMonth(month)} invoices again, check it, then send.`,
     );
   const settings = await loadSettings(s, { billingEntityId: entity.id });
   let taken;

@@ -434,7 +434,7 @@ Things only a person can do. Tick them when done.
   - B) A WhatsApp number, as a wa.me link (most owners are on their phones)
   - C) Both: WhatsApp for owners, email for accountants
 - Recommendation: B for the pilot, because owners already report problems on WhatsApp and it needs no new account; add email when there are paying customers.
-- Done meanwhile: nothing; the error pages still say "contact support" / "tell us" with no link. Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
+- Done meanwhile: the error pages no longer promise a support contact; they say to try again, then go to Today (a page error) or ask the person who set up LeaseDesk (the whole app failed) (UX review M8, 2026-10-24). Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
 - Answer:
 
 ### D-030: Codex review of M8: unresolved items

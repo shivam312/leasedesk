@@ -19,15 +19,17 @@ export default function GlobalError({
 
   return (
     <html lang="en-IN">
-      <body className="flex min-h-full flex-col p-6 font-sans antialiased">
+      <body className="flex min-h-full flex-col bg-background p-6 font-sans text-foreground antialiased">
         <title>Something went wrong</title>
         <div className="flex max-w-xl flex-col gap-4">
           <h1 className="text-2xl font-semibold tracking-tight">
             Something went wrong
           </h1>
-          <p className="text-sm text-muted-foreground">
-            The app didn&apos;t load. Your data is safe. Wait a moment and try
-            again; if it keeps happening, contact support.
+          {/* No support contact yet (D-029): point to someone the user knows. */}
+          <p role="alert" className="text-sm text-muted-foreground">
+            The app didn&apos;t load. Your data is safe. Wait a minute and try
+            again. If it still doesn&apos;t load, ask the person who set up
+            LeaseDesk for you to check it.
           </p>
           <div className="flex flex-wrap gap-2">
             <button

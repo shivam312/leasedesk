@@ -27,9 +27,10 @@ export default function AppError({
       <h1 className="text-2xl font-semibold tracking-tight">
         Something went wrong
       </h1>
-      <p className="text-sm text-muted-foreground">
-        This page didn&apos;t load. Your data is safe. Try again, and if it
-        keeps happening, go back to Today and tell us what you were doing.
+      {/* No support contact yet (D-029): give a next step that works. */}
+      <p role="alert" className="text-sm text-muted-foreground">
+        This page didn&apos;t load. Your data is safe. Try again. If it keeps
+        happening, go to Today and open it again from the menu.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => retry()} className="h-11 md:h-9">

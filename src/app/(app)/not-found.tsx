@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+export const metadata = { title: "Not found" };
+
 export default function NotFound() {
   return (
     <div className="flex max-w-xl flex-col gap-4">

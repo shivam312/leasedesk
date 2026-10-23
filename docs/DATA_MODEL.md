@@ -68,7 +68,7 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 **bank_statement_lines**: bank_account_id, import_id, row_number (in the file), date, description, reference, credit_amount (> 0; only credits are kept, D30), fingerprint (date, amount, description, reference and its count in the file; unique per account, so overlapping statements don't import a line twice), match_status (`unmatched`, `suggested`, `matched`, `ignored`), suggested_tenant_id, suggested_invoice_ids, suggested_tds_amount (the TDS the suggestion expects, shown before confirming), confidence (0–100). Only the match columns change; never deleted. `payments.bank_statement_line_id` points here, at most one active payment per line.
 
-**exports**: kind (`tally_xml`, `excel`, `pdf`), parameters (jsonb), file_path, created_by.
+**exports**: kind (`tally_xml`; report Excel and PDF files aren't recorded, D38), period_start, period_end (the dates the file covers), document_ids (uuid array: the invoices, credit notes and payments in it), voucher_count, created_by. One row per Tally file downloaded, so the next file with any of the same documents warns before they are imported twice (D39). Members read; owners and accounts insert; never changed or deleted (`drizzle/0025`–`0026`).
 
 ## Supporting
 

@@ -118,4 +118,27 @@ test("an owner reads unpaid rent and collections", async ({ page }) => {
   await expect(
     page.getByText("₹10,000").filter({ visible: true }).first(),
   ).toBeVisible();
+
+  // The month's invoice and payment go to Tally; a second file warns.
+  await page.goto("/reports");
+  await page.getByRole("link", { name: /Tally export/ }).click();
+  await page.getByLabel("From").fill(`${today.slice(0, 7)}-01`);
+  await page.getByLabel("To").fill(today);
+  await page.getByRole("button", { name: "Show" }).click();
+  await expect(page.getByText(/1 invoice \(Sales vouchers\)/)).toBeVisible();
+  const tally = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download Tally file" }).click();
+  expect((await tally).suggestedFilename()).toMatch(/^tally-.+\.xml$/);
+  await page.reload();
+  await expect(
+    page.getByText(/2 of these were already in a Tally file/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Download Tally file anyway" }),
+  ).toBeVisible();
+
+  await page.goto("/settings/tally");
+  await page.getByLabel("Rent ledger").fill("Rent Received");
+  await page.getByRole("button", { name: "Save ledger names" }).click();
+  await expect(page.getByText(/^Saved\. The next Tally file/)).toBeVisible();
 });

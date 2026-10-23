@@ -19,6 +19,11 @@ const SECTIONS = [
     description: "Rounding, GST, TDS and building defaults.",
   },
   {
+    href: "/settings/tally",
+    title: "Tally",
+    description: "Ledger names for the Tally file your accountant imports.",
+  },
+  {
     href: "/settings/team",
     title: "Team",
     description: "See who can use your account, and invite people.",
@@ -30,7 +35,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        description="Your business details, billing rules, team and account."
+        description="Your business details, billing rules, Tally ledgers, team and account."
       />
       <ul className="flex max-w-2xl flex-col divide-y rounded-lg border">
         {SECTIONS.map((s) => (

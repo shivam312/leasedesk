@@ -32,6 +32,9 @@ const define = <S extends z.ZodType>(
 ): Definition<S> => ({ schema, default: defaultValue, scopes, shown });
 
 const days = z.array(z.int().min(0).max(366)).max(10);
+/** A Tally ledger name, set for the organization. */
+const ledger = (name: string) =>
+  define(z.string().trim().min(1).max(100), name, ["organization"], "advanced");
 const basisPoints = z.int().min(0).max(10000);
 
 export const SETTINGS = {
@@ -174,6 +177,24 @@ export const SETTINGS = {
   "alerts.increaseDays": define(days, [30, 7], ["organization"], "advanced"),
   "alerts.lockInDays": define(days, [60], ["organization"], "advanced"),
   "alerts.dailyDigest": define(z.boolean(), true, ["organization"], "basic"),
+
+  // Tally export: the accountant's own ledger names (india-compliance skill)
+  "tally.ledgerRent": ledger("Rent Income"),
+  "tally.ledgerMaintenance": ledger("Maintenance Income"),
+  "tally.ledgerOtherIncome": ledger("Other Income"),
+  "tally.ledgerCgst": ledger("Output CGST"),
+  "tally.ledgerSgst": ledger("Output SGST"),
+  "tally.ledgerIgst": ledger("Output IGST"),
+  "tally.ledgerTds": ledger("TDS Receivable"),
+  "tally.ledgerRoundOff": ledger("Round Off"),
+  "tally.ledgerBank": ledger("Bank Account"),
+  // The tenant's party ledger in Tally; blank means its company name.
+  "tally.partyLedger": define(
+    z.string().trim().max(100),
+    "",
+    ["tenant"],
+    "advanced",
+  ),
 } as const;
 
 /**

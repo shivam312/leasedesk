@@ -301,3 +301,13 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 - Money is written as rupees (paise turned into a decimal by string, never by float arithmetic on stored values) with an Indian ₹ format (`₹1,18,000.00`, lakh and crore groups); area as sq ft; percent as a fraction shown as `18.00%`; dates as Excel dates shown DD-MM-YYYY (serial = days since 1970 + 25569, no `Date`).
 - One sheet per section, with the title and period on top, the totals row, and the column hints and notes underneath.
 - Downloading a report isn't a change, so it isn't written to the activity log.
+
+## D39. The Tally file: which vouchers, which ledgers, and a record of each file (2026-10-23)
+
+**Why:** "One click exports the month's invoices, receipts and credit notes as a file Tally can import" (docs/PRODUCT_PLAN.md, Accounting handover). No sample TallyPrime export is available yet (a human task), so the format follows TallyPrime's documented XML import and must be checked against a real file before relying on it.
+**Consequences:**
+- Reports → Tally export takes two dates and covers sent invoices by invoice date (Sales), credit notes by date (Credit Note, against the invoice), payments by date received (Receipt: bank and TDS debited, the party credited against each invoice it settled, the rest On Account) and reversals by their date (Journal, every side swapped). Every voucher must balance to the paisa or the file isn't made. `src/lib/exports/tally.ts` (pure), loaded by `tally-data.ts`.
+- Ledger names are organization settings `tally.ledger*` (rent, maintenance, other income, CGST, SGST, IGST, TDS, round off, bank) and each tenant's party ledger `tally.partyLedger` (blank = the company name), set on Settings → Tally. Changing them only affects the next file.
+- Downloading the file records it in `exports` with its document ids (owners and accounts only; viewers get the Excel of the same entries instead). The screen warns when documents were in an earlier file, and the button reads "Download Tally file anyway". Each voucher carries `REMOTEID="leasedesk-<id>"` so Tally can recognise it too.
+- The same vouchers can be downloaded as an Excel sheet of entries (date, voucher, party, ledger, debit, credit, bill-wise) for accountants who don't use Tally.
+- One file covers the whole organization, all GSTINs together (backlog: one file per GSTIN for a Tally company per GSTIN).

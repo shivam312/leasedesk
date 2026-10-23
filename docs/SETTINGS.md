@@ -54,6 +54,23 @@ TDS is set per charge type on the tenant: `rent`, `cam`, `parking` and `other` (
 | [x] | `invoice.dueDays` | building, tenant | days | `7` | basic | Payment terms vary by lease | `BillingSettings.dueDays`, used by `invoiceForRun` in `invoice-lines.ts` |
 | [x] | `invoice.runDay` | organization | day of month, 1–28 | `1` | basic | Some landlords bill on the 25th for the next month | When the scheduled run makes drafts: `scheduledRunMonth` in `src/lib/invoices/schedule.ts` (1 = that month, on the 1st; a later day = the next month's, ahead of time). Invoices are still dated the 1st of their month (`invoiceForRun`) |
 
+## Tally export
+
+Ledger names in the Tally file (`src/lib/exports/tally.ts`). Every accountant names ledgers differently, so the defaults are only a start; they are set on Settings → Tally.
+
+| Built | Key | Scope | Options | Default | Shown | Why landlords differ | In code |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [x] | `tally.ledgerRent` | organization | ledger name, ≤100 characters | `Rent Income` | advanced | Accountants name ledgers their own way | Ledger for rent lines of invoices and credit notes: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.ledgerMaintenance` | organization | ledger name, ≤100 characters | `Maintenance Income` | advanced | Accountants name ledgers their own way | Ledger for maintenance (CAM) lines: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.ledgerOtherIncome` | organization | ledger name, ≤100 characters | `Other Income` | advanced | Accountants name ledgers their own way | Ledger for parking, utilities, signage and other charges: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.ledgerCgst` | organization | ledger name, ≤100 characters | `Output CGST` | advanced | Accountants name ledgers their own way | Ledger for CGST on invoices and credit notes: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.ledgerSgst` | organization | ledger name, ≤100 characters | `Output SGST` | advanced | Accountants name ledgers their own way | Ledger for SGST: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.ledgerIgst` | organization | ledger name, ≤100 characters | `Output IGST` | advanced | Accountants name ledgers their own way | Ledger for IGST: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.ledgerTds` | organization | ledger name, ≤100 characters | `TDS Receivable` | advanced | Accountants name ledgers their own way | Ledger for TDS kept back by tenants, on receipts: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.ledgerRoundOff` | organization | ledger name, ≤100 characters | `Round Off` | advanced | Accountants name ledgers their own way | Ledger for the invoice round off: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.ledgerBank` | organization | ledger name, ≤100 characters | `Bank Account` | advanced | Accountants name ledgers their own way | Ledger for money received, on receipts: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+| [x] | `tally.partyLedger` | tenant | ledger name, ≤100 characters, blank for the company name | `` | advanced | A tenant's ledger in Tally may not match its name here | The tenant's party ledger: `tallyLedgers` in `src/lib/exports/tally-data.ts` |
+
 ## Reminders and alerts
 
 | Built | Key | Scope | Options | Default | Shown | Why landlords differ | In code |

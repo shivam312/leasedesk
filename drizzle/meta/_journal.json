@@ -176,6 +176,20 @@
       "when": 1792772486916,
       "tag": "0024_digests_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792776233013,
+      "tag": "0025_exports",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792776245049,
+      "tag": "0026_exports_rules",
+      "breakpoints": true
     }
   ]
 }

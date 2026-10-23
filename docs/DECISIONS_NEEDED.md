@@ -36,6 +36,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-024 | Codex review of M5: unresolved items | product | no | open |
 | D-025 | Codex review of M6: unresolved items | product | no | open |
 | D-026 | Which month an invoice or credit note counts in on the GST summary | ca | no | open |
+| D-027 | How payments, TDS and reversals go into Tally | ca | no | open |
 
 ## Human tasks
 
@@ -391,6 +392,19 @@ Things only a person can do. Tick them when done.
   - B) Count an invoice in the month it was sent (numbered), when that is later than its invoice date
 - Recommendation: A, because the invoice date printed on the invoice is the date of supply your GST return reports, and a credit note is reported in the month it is issued.
 - Done meanwhile: built A (`src/lib/reports/gst-summary.ts`), with a note on the report to check with a CA before filing.
+- Answer:
+
+### D-027: How payments, TDS and reversals go into Tally
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: The Tally file (Reports → Tally export) makes a Sales voucher per invoice, a Credit Note voucher per credit note, and a Receipt voucher per payment: the bank is debited what was received, a "TDS Receivable" ledger is debited the TDS the tenant kept back, and the tenant is credited the total against each invoice it paid. A reversed payment (a bounced cheque) becomes a Journal voucher with every side swapped, dated the day it was reversed. Your accountant may book TDS or reversals differently.
+- Options:
+  - A) Keep this
+  - B) Book reversals as a negative Receipt instead of a Journal
+  - C) Something else your accountant prefers (describe it)
+- Recommendation: A, because a Journal is how most accountants undo a receipt in Tally, and it keeps the original receipt untouched, like our payments.
+- Done meanwhile: built A (`src/lib/exports/tally.ts`). The format still needs checking against a real TallyPrime export (the human task to save one in `tests/fixtures/tally/`).
 - Answer:
 
 ## Applied

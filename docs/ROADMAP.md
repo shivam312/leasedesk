@@ -121,7 +121,7 @@ Reviewed by the billing and UX reviewers on 2026-10-23. Fixed: "invoices aren't 
 - [x] Reports: expiry schedule
 - [x] Excel export for every report
 - [x] PDF export for every report
-- [ ] Tally export (XML vouchers) with ledger-name mapping in settings
+- [x] Tally export (XML vouchers) with ledger-name mapping in settings
 - [ ] Excel import for buildings and units, with row-level error messages
 - [ ] Excel import for tenants and leases, with row-level error messages
 - [ ] (human) Get a sample Tally XML export from a pilot accountant's TallyPrime into `tests/fixtures/tally/`

@@ -26,6 +26,18 @@ export default function ReportsPage() {
             </Link>
           </li>
         ))}
+        <li>
+          <Link
+            href="/reports/tally"
+            className="flex h-full flex-col gap-1 rounded-lg border p-4 hover:bg-muted"
+          >
+            <span className="font-medium">Tally export</span>
+            <span className="text-sm text-muted-foreground">
+              Invoices, credit notes and payments as a file your accountant
+              imports into TallyPrime, or as Excel.
+            </span>
+          </Link>
+        </li>
       </ul>
     </>
   );

@@ -64,7 +64,10 @@ describe("settings schema matches docs/SETTINGS.md", () => {
         typeof def.default === "string"
           ? def.default
           : JSON.stringify(def.default);
-      expect(expected).toBe(row.defaultText.replace(/\s/g, ""));
+      // Spaces are dropped on both sides: JSON has none, names ("Rent Income") do.
+      expect(expected.replace(/\s/g, "")).toBe(
+        row.defaultText.replace(/\s/g, ""),
+      );
       expect([...def.scopes].sort()).toEqual([...row.scopes].sort());
       expect(def.shown).toBe(row.shown);
     },

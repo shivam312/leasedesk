@@ -62,3 +62,8 @@ supabase stop       # when you're done
 
 - Reports (`/reports`) open in the app and download as Excel or PDF, with nothing to set up. The Tally export (Reports → Tally export) needs no Tally installation to make the file; ledger names are on Settings → Tally.
 - To load buildings, units, tenants and leases from a spreadsheet, use Leases → Import from Excel and start from its templates. Uploads are limited to 2 MB.
+
+### Error reporting and password reset
+
+- Errors are reported to Sentry only when `SENTRY_DSN` (server) and `NEXT_PUBLIC_SENTRY_DSN` (browser) are set; without them nothing is sent and errors are only logged. Reports carry record ids, never tenant names or amounts (D41 in `docs/DECISIONS.md`).
+- "Forgot your password?" on the login page emails a reset link. Locally the email lands in Mailpit (http://127.0.0.1:54324, part of `supabase start`). A cloud Supabase project needs its Site URL and `<APP_URL>/auth/confirm` in its redirect URLs (D42).

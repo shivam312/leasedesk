@@ -88,7 +88,7 @@ Things only a person can do. Tick them when done.
   - A) Round tax per line; round the total to the rupee with a round-off line
   - B) Round tax once on the total; round-off line
   - C) No rounding of the total
-- Recommendation: A, pending your CA. Also ask: with option B, one line's tax can differ by a paisa from its rate × its taxable value (the rounding difference is put there so the lines add up). Is that acceptable on a tax invoice and in e-invoice (IRN) line checks?
+- Recommendation: A, pending your CA. Also ask: with option B, one line's tax can differ by a paisa from its rate × its taxable value (the rounding difference is put there so the lines add up). Is that acceptable on a tax invoice and in e-invoice (IRN) line checks? The difference grows with the number of lines at one rate: 50 lines of ₹100.05 at 18% put 23 paise extra CGST on one line (₹9.23 against ₹9.00 on the others). If that's not acceptable, the alternative is to spread the difference a paisa per line.
 - Done meanwhile: A built (`lineTax` and `invoiceTotals` in `src/lib/billing/gst.ts`). The round-off line can already be turned off in the engine (`BillingSettings.roundInvoiceTotal`, setting `billing.roundInvoiceTotal`), which covers C. B is built too, as setting `gst.rounding` (`invoiceTax` in `src/lib/billing/gst.ts`), default per line: tax once per rate on the total, with the rounding difference on the largest line so the printed lines add up.
 - Answer:
 

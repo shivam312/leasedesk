@@ -119,3 +119,8 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Consequences:**
 - Settings → Business details edits the organization and billing entities freely (owners only), logged in the activity log. GSTINs are checked for shape, state code and check digit, and must match the chosen state (`src/lib/india/identifiers.ts`).
 - M4 must copy the supplier's legal name, GSTIN, address and bank and UPI details onto each invoice when it is sent, and print from that copy.
+
+## D19. "GSTIN" stays as the word on screen (2026-10-23)
+
+**Why:** A review suggested "Billing name" for the billing entities on Settings → Business details. But a GSTIN isn't a name: it's the registration every Indian landlord and accountant already knows by that word, and it's printed on every invoice. Renaming it would make the screen harder to match with the invoice.
+**Consequences:** Settings → Business details keeps "GSTINs and bank accounts" and "Add a GSTIN". Plain words still apply around it (for example, the building's state hint says "same state or another state", not "CGST + SGST or IGST").

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { reportError } from "@/lib/monitoring";
+import { reportError } from "@/lib/monitoring/client";
 import "./globals.css";
 
 // Shown when the whole app fails to load (the root layout itself broke).

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { reportError } from "@/lib/monitoring";
+import { reportError } from "@/lib/monitoring/client";
 
 // Shown when a page fails to load. Technical detail goes to the log (and
 // Sentry when it is set up) only.

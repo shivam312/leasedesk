@@ -165,3 +165,87 @@ describe("reportError with Sentry on", () => {
     expect(unhandled).not.toHaveBeenCalled();
   });
 });
+
+describe("reportError on the server keeps the function alive until sent", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    vi.doUnmock("@sentry/nextjs");
+    vi.doUnmock("next/server");
+    vi.resetModules();
+  });
+
+  function mockSentry() {
+    const calls: string[] = [];
+    vi.doMock("@sentry/nextjs", () => ({
+      getClient: () => ({}),
+      withScope: (fn: (scope: unknown) => void) =>
+        fn({ setContext: () => {}, setTag: () => {} }),
+      captureException: () => calls.push("capture"),
+      flush: async (timeout: number) => {
+        calls.push(`flush ${timeout}`);
+        return true;
+      },
+    }));
+    return calls;
+  }
+
+  it("hands the send to after() and flushes within 2 seconds", async () => {
+    // A server action returns, then the serverless function may stop: the
+    // report must be captured and flushed before after()'s promise settles.
+    vi.stubEnv("SENTRY_DSN", "https://k@o1.ingest.sentry.io/1");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const calls = mockSentry();
+    const after = vi.fn();
+    vi.doMock("next/server", () => ({ after }));
+    const { reportError: report } = await import("../index");
+    report("Send failed", new Error("boom"), { invoiceId: "inv-1" });
+    expect(after).toHaveBeenCalledTimes(1);
+    const task = after.mock.calls[0]![0] as Promise<void>;
+    expect(task).toBeInstanceOf(Promise);
+    await task;
+    expect(calls).toEqual(["capture", "flush 2000"]);
+  });
+
+  it("still sends outside a request, where after() throws", async () => {
+    vi.stubEnv("SENTRY_DSN", "https://k@o1.ingest.sentry.io/1");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const calls = mockSentry();
+    vi.doMock("next/server", () => ({
+      after: () => {
+        throw new Error("`after` was called outside a request scope");
+      },
+    }));
+    const { reportError: report } = await import("../index");
+    expect(() =>
+      report("Digest email failed", new Error("boom")),
+    ).not.toThrow();
+    await vi.waitFor(() => expect(calls).toEqual(["capture", "flush 2000"]));
+  });
+
+  it("does nothing beyond the log without a DSN", async () => {
+    vi.stubEnv("SENTRY_DSN", "");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const after = vi.fn();
+    vi.doMock("next/server", () => ({ after }));
+    const { reportError: report } = await import("../index");
+    report("Send failed", new Error("boom"));
+    expect(after).not.toHaveBeenCalled();
+  });
+});
+
+describe("reportError in the browser", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("logs the message, the ids and the error without a DSN", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", "");
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { reportError: report } = await import("../client");
+    const error = new Error("boom");
+    report("Page failed to load", error, { digest: "d1", skip: undefined });
+    expect(log).toHaveBeenCalledWith("Page failed to load", "d1", error);
+  });
+});

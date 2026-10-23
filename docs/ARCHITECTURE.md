@@ -97,7 +97,7 @@ scripts/
 
 **Invoices.** A monthly run creates draft invoices. Drafts can be edited or deleted. Once sent, an invoice is locked; corrections are credit notes. Invoice numbers are assigned at the moment of sending, inside a transaction, to keep the series gap-free.
 
-**Multi-tenancy.** Every table has `organization_id`. Row-level security policies restrict rows to members of that organization. Server code also scopes queries through `db/scoped.ts`, so a missing policy is not the only protection.
+**Multi-tenancy.** Every table has `organization_id`. Row-level security policies (`drizzle/0003_rls_policies.sql`, helper functions in the private `app` schema) restrict rows to active members of that organization, and writes by role. Server code reads and writes through `withOrg` in `db/scoped.ts`: it runs the work in a transaction as Supabase's `authenticated` role with the user's id, so the policies apply, and its `where` and `values` helpers add the organization filter explicitly, so a missing policy is not the only protection (D14).
 
 **Roles.** `owner`, `accounts`, `property_manager`, `viewer` (see `docs/PRODUCT_PLAN.md`). Checked in every server action via `lib/auth.ts`, never only in the UI.
 

@@ -96,7 +96,7 @@ Merged into `main` on 2026-10-23 (report: `docs/milestones/M4.md`). The invoice 
 - [x] Tenant ledger with running balance
 - [ ] (human) Get one real bank statement export (CSV or Excel) per major bank the pilots use, personal details removed, into `tests/fixtures/bank/`
 
-On `main`. Migrations to `drizzle/0020` are applied locally, and the database tests no longer skip when a table is missing: they fail. The reminders migrations (`drizzle/0021`–`0022`) are not applied yet (Human task): until `pnpm db:migrate` runs, the invoice page shows an error and the reminder database tests are skipped with a warning (they passed on 2026-10-23 against the migration SQL loaded in a rolled-back transaction). Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`).
+On `main`. Migrations to `drizzle/0020` are applied locally, and the database tests no longer skip when a table is missing: they fail. The reminders migrations (`drizzle/0021`–`0022`) are not applied yet (Human task): until `pnpm db:migrate` runs, the invoice page shows an error and the reminder database tests are skipped with a warning (they passed on 2026-10-23 against the migration SQL loaded in a rolled-back transaction). Lease → make invoices → send → record payment was checked by hand in the browser on 2026-10-23 and is now a Playwright test (`tests/e2e/flow.spec.ts`). Reviewed by the billing and UX reviewers on 2026-10-23: the must-fix items are fixed (bank TDS when only a newer invoice is named, a credit note clearing a part-paid invoice, the TDS tolerance on invoice status, the tenant page's lease list, bank "credits" wording, tap targets, the reversal's next step); the rest are in `docs/BACKLOG.md`, and D-022 and D-023 are open.
 
 ## M5a. Demo data and walkthrough
 
@@ -108,7 +108,7 @@ On `main`. Migrations to `drizzle/0020` are applied locally, and the database te
 
 ## M6. Today screen and alerts (week 8)
 
-- [ ] Today screen: billed, collected, outstanding; needs-attention list with inline actions
+- [ ] Today screen: billed, collected, outstanding; needs-attention list with inline actions (include "N bank lines to match" and "N TDS certificates missing", which are otherwise only reachable from Billing → Payments)
 - [ ] Daily email digest per user
 
 ## M7. Reports, exports and import (week 9)

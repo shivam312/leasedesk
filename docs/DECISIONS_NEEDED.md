@@ -32,6 +32,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-020 | TDS on a payment reversed in a later quarter | ca | no | open |
 | D-021 | TDS certificate name and due dates under the new Income-tax Act | ca | no | open |
 | D-022 | A few paise left after a payment with TDS | ca | no | open |
+| D-023 | Money into one GSTIN's bank account paying another GSTIN's invoices | product | no | open |
 
 ## Human tasks
 
@@ -327,6 +328,18 @@ Things only a person can do. Tick them when done.
   - C) Book the gap as a small write-off entry so the ledger shows ₹0
 - Recommendation: A, because it never asks the tenant for more, doesn't change the TDS the certificate shows, and adds no new kind of entry; C can come with the Tally export (M7) if accountants want the ledger to read ₹0.
 - Done meanwhile: A, in `invoiceSettlement` (`src/lib/billing/allocation.ts`), using `tds.tolerancePaise`.
+- Answer:
+
+### D-023: Money into one GSTIN's bank account paying another GSTIN's invoices
+- Status: open
+- Type: product
+- Blocking: no
+- Context: A landlord with two businesses (two GSTINs) has a bank account for each. When a bank line from business X's account is matched, the app lets it pay the tenant's invoices from business Y too, so Y's invoice shows paid while the money sits in X's account. Some landlords do collect for both into one account on purpose.
+- Options:
+  - A) Allow it, with a clear warning when it happens
+  - B) Only let a bank line pay invoices of the business that owns the account (typed payments can still pay any)
+- Recommendation: A, because it never blocks a landlord who collects into one account, and the warning catches mistakes.
+- Done meanwhile: nothing changed (it is allowed, with no warning yet); the warning is in `docs/BACKLOG.md`.
 - Answer:
 
 ## Applied

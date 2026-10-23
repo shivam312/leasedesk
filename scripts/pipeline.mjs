@@ -486,6 +486,22 @@ function runChecks(label) {
   } catch (e) {
     return { ok: false, check: "install", output: `package.json isn't valid JSON: ${e.message}` };
   }
+  // Apply local database migrations first: unattended Claude sessions may not be allowed to,
+  // and every new table otherwise leaves the local database behind and fails the e2e tests.
+  if (scripts["db:migrate"]) {
+    const mig = spawnSync("pnpm", ["db:migrate"], {
+      cwd: ROOT,
+      encoding: "utf8",
+      shell: IS_WIN,
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: cfg.checkTimeoutMin * 60000,
+      env: { ...process.env, CI: "1" },
+    });
+    if (mig.status !== 0) {
+      return { ok: false, check: "db:migrate", output: tail(`${mig.stdout || ""}\n${mig.stderr || ""}${mig.error ? `\n${mig.error.message}` : ""}`, 150) };
+    }
+    log(`- ✓ local migrations applied ${label}`);
+  }
   const checks = ["typecheck", "lint", "test", "build"];
   if (!cfg.skipE2e && scripts["test:e2e"] && fs.existsSync("tests/e2e")) checks.push("test:e2e");
   for (const check of checks) {

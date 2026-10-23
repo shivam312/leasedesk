@@ -26,10 +26,10 @@
       "Bash(git log *)",
       "Bash(git show *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(pnpm db:migrate *)"
     ],
     "ask": [
-      "Bash(pnpm db:migrate *)",
       "Bash(supabase db push *)",
       "Bash(supabase link *)",
       "Bash(git push *)",
@@ -58,7 +58,9 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/check-packages.mjs"]
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/check-packages.mjs"
+            ]
           }
         ]
       }

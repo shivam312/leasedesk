@@ -10,6 +10,8 @@ import { asOnLabel, type Report, type ReportRow } from "./report";
 export type CollectionPayment = {
   kind: "payment" | "reversal";
   receivedDate: PlainDate;
+  /** Groups the by-tenant rows: two tenants can share a name. */
+  tenantId: string;
   tenantName: string;
   mode: string;
   reference: string | null;
@@ -55,19 +57,34 @@ export function collections(
     tds: p.tdsDeducted,
     settled: sumPaise([p.amountReceived, p.tdsDeducted]),
   }));
-  const byTenant = new Map<string, { received: Paise[]; tds: Paise[] }>();
+  const byTenant = new Map<
+    string,
+    { name: string; received: Paise[]; tds: Paise[] }
+  >();
   for (const p of inPeriod) {
-    const t = byTenant.get(p.tenantName) ?? { received: [], tds: [] };
+    const t = byTenant.get(p.tenantId) ?? {
+      name: p.tenantName,
+      received: [],
+      tds: [],
+    };
     t.received.push(p.amountReceived);
     t.tds.push(p.tdsDeducted);
-    byTenant.set(p.tenantName, t);
+    byTenant.set(p.tenantId, t);
   }
   const tenantRows: ReportRow[] = [...byTenant]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([tenant, t]) => {
+    .sort(
+      ([aId, a], [bId, b]) =>
+        a.name.localeCompare(b.name) || aId.localeCompare(bId),
+    )
+    .map(([, t]) => {
       const received = sumPaise(t.received);
       const tds = sumPaise(t.tds);
-      return { tenant, received, tds, settled: sumPaise([received, tds]) };
+      return {
+        tenant: t.name,
+        received,
+        tds,
+        settled: sumPaise([received, tds]),
+      };
     });
   const received = sumPaise(inPeriod.map((p) => p.amountReceived));
   const tds = sumPaise(inPeriod.map((p) => p.tdsDeducted));
@@ -116,6 +133,8 @@ export function collections(
 }
 
 export type AgeingInvoice = {
+  /** Groups the by-tenant rows: two tenants can share a name. */
+  tenantId: string;
   tenantName: string;
   number: string;
   invoiceDate: PlainDate;
@@ -157,9 +176,13 @@ export function ageing(
     .sort(
       (a, b) =>
         a.tenantName.localeCompare(b.tenantName) ||
+        a.tenantId.localeCompare(b.tenantId) ||
         compareDates(a.dueDate, b.dueDate),
     );
-  const byTenant = new Map<string, Record<AgeingBucket | "total", Paise[]>>();
+  const byTenant = new Map<
+    string,
+    { name: string; buckets: Record<AgeingBucket | "total", Paise[]> }
+  >();
   const empty = () => ({
     notDue: [],
     d30: [],
@@ -173,9 +196,12 @@ export function ageing(
   for (const i of open) {
     const days = daysOverdue(i.dueDate, asOf);
     const bucket = ageingBucket(days);
-    const t = byTenant.get(i.tenantName) ?? empty();
-    byTenant.set(i.tenantName, t);
-    for (const target of [t, all]) {
+    const t = byTenant.get(i.tenantId) ?? {
+      name: i.tenantName,
+      buckets: empty(),
+    };
+    byTenant.set(i.tenantId, t);
+    for (const target of [t.buckets, all]) {
       target[bucket].push(i.outstandingPaise);
       target.total.push(i.outstandingPaise);
     }
@@ -197,9 +223,9 @@ export function ageing(
     over90: sumPaise(b.over90),
     total: sumPaise(b.total),
   });
-  const tenantRows: ReportRow[] = [...byTenant].map(([tenant, b]) => ({
-    tenant,
-    ...sums(b),
+  const tenantRows: ReportRow[] = [...byTenant.values()].map((t) => ({
+    tenant: t.name,
+    ...sums(t.buckets),
   }));
   return {
     slug: "ageing",

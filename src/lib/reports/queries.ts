@@ -172,6 +172,7 @@ export async function collectionsReport(
       id: payments.id,
       kind: payments.kind,
       receivedDate: payments.receivedDate,
+      tenantId: payments.tenantId,
       tenantName: tenants.companyName,
       mode: payments.mode,
       reference: payments.reference,
@@ -240,6 +241,7 @@ export async function ageingReport(
   const byId = new Map(details.map((d) => [d.id, d]));
   return ageing(
     open.map((o) => ({
+      tenantId: o.tenantId,
       tenantName: o.tenantName,
       number: byId.get(o.id)?.number ?? "",
       invoiceDate: byId.get(o.id)?.invoiceDate ?? o.dueDate,

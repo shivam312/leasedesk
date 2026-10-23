@@ -8,6 +8,7 @@ describe("renderReportPdf", () => {
       Array.from({ length: 60 }, (_, i) => ({
         kind: "payment" as const,
         receivedDate: "2026-10-05",
+        tenantId: `t-${i}`,
         tenantName: `Tenant ${i} with a very long registered company name Private Limited`,
         mode: "neft",
         reference: `UTR${i}`,

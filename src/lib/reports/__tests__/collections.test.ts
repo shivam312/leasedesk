@@ -12,6 +12,7 @@ import { reportParams, searchReport } from "../registry";
 const pay = (over: Partial<CollectionPayment>): CollectionPayment => ({
   kind: "payment",
   receivedDate: "2026-10-05",
+  tenantId: "t-acme",
   tenantName: "Acme Software Pvt Ltd",
   mode: "neft",
   reference: "UTR123",
@@ -29,6 +30,7 @@ describe("collections", () => {
         // Outside the dates
         pay({ receivedDate: "2026-09-30" }),
         pay({
+          tenantId: "t-beta",
           tenantName: "Beta Foods LLP",
           amountReceived: 5_000_000,
           tdsDeducted: 0,
@@ -70,6 +72,29 @@ describe("collections", () => {
     expect(report.period).toBe("01-10-2026 to 31-10-2026");
   });
 
+  it("keeps two tenants with the same name in separate rows", () => {
+    const report = collections(
+      [
+        pay({}),
+        pay({
+          tenantId: "t-acme-2",
+          amountReceived: 5_000_000,
+          tdsDeducted: 0,
+        }),
+      ],
+      "2026-10-01",
+      "2026-10-31",
+    );
+    const byTenant = report.sections[1]!;
+    expect(byTenant.rows.map((r) => r.settled)).toEqual([
+      11_620_000, 5_000_000,
+    ]);
+    expect(byTenant.rows.map((r) => r.tenant)).toEqual([
+      "Acme Software Pvt Ltd",
+      "Acme Software Pvt Ltd",
+    ]);
+  });
+
   it("says so when nothing was received", () => {
     const report = collections([], "2026-10-01", "2026-10-31");
     expect(report.sections[0]!.rows).toEqual([]);
@@ -93,6 +118,7 @@ describe("ageing", () => {
   });
 
   const inv = (over: Partial<AgeingInvoice>): AgeingInvoice => ({
+    tenantId: "t-acme",
     tenantName: "Acme Software Pvt Ltd",
     number: "OT/26-27/0001",
     invoiceDate: "2026-10-01",
@@ -115,6 +141,7 @@ describe("ageing", () => {
         }),
         // Not due until 30-10
         inv({
+          tenantId: "t-beta",
           tenantName: "Beta Foods LLP",
           dueDate: "2026-10-30",
           outstandingPaise: 2_000_000,
@@ -157,6 +184,26 @@ describe("ageing", () => {
       ["OT/26-27/0001", 0],
     ]);
   });
+
+  it("keeps two tenants with the same name in separate rows", () => {
+    const report = ageing(
+      [
+        inv({}),
+        inv({
+          tenantId: "t-acme-2",
+          number: "OT/26-27/0003",
+          outstandingPaise: 500_000,
+        }),
+      ],
+      "2026-10-23",
+    );
+    const byTenant = report.sections[0]!;
+    expect(byTenant.rows.map((r) => [r.tenant, r.total])).toEqual([
+      ["Acme Software Pvt Ltd", 11_800_000],
+      ["Acme Software Pvt Ltd", 500_000],
+    ]);
+    expect(byTenant.totals).toMatchObject({ total: 12_300_000 });
+  });
 });
 
 describe("reportParams", () => {
@@ -191,7 +238,7 @@ describe("reportParams", () => {
 describe("searchReport", () => {
   it("keeps matching rows and drops totals", () => {
     const report = collections(
-      [pay({}), pay({ tenantName: "Beta Foods LLP" })],
+      [pay({}), pay({ tenantId: "t-beta", tenantName: "Beta Foods LLP" })],
       "2026-10-01",
       "2026-10-31",
     );

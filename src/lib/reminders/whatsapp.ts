@@ -7,6 +7,7 @@ import { compareDates, toDayNumber, type PlainDate } from "@/lib/billing/dates";
 import type { tenantContacts } from "@/lib/db/schema";
 import { formatDate, formatINR } from "@/lib/format";
 import type { InvoiceDocument } from "@/lib/invoices/document";
+import { normalizePhone } from "@/lib/tenants/forms";
 
 type Contact = Pick<
   typeof tenantContacts.$inferSelect,
@@ -58,7 +59,12 @@ export function whatsappText(
   return lines.join("\n");
 }
 
-/** https://wa.me/<number without +>?text=<message> */
+/**
+ * https://wa.me/<number without +>?text=<message>. The number goes through
+ * normalizePhone, so one saved before numbers were tidied ("98200 12345")
+ * still gets India's code.
+ */
 export function whatsappLink(phone: string, text: string): string {
-  return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+  const number = (normalizePhone(phone) ?? phone).replace(/\D/g, "");
+  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
 }

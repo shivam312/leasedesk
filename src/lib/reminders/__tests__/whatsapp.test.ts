@@ -98,4 +98,13 @@ describe("whatsappLink", () => {
       "https://wa.me/919820012345?text=Due%3A%20%E2%82%B950%2C000%20%26%20more",
     );
   });
+
+  it.each([
+    // Saved before numbers were tidied: an Indian mobile without +91.
+    ["98200 12345", "919820012345"],
+    ["098200-12345", "919820012345"],
+    ["+44 20 7946 0958", "442079460958"],
+  ])("adds India's code to a bare mobile number: %j", (phone, digits) => {
+    expect(whatsappLink(phone, "Hi")).toBe(`https://wa.me/${digits}?text=Hi`);
+  });
 });

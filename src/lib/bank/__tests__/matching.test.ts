@@ -249,7 +249,7 @@ describe("matchLine", () => {
     });
   });
 
-  it("doesn't take the words \"Opening balance\" as naming a tenant", () => {
+  it('doesn\'t take the words "Opening balance" as naming a tenant', () => {
     // Every opening balance is "numbered" Opening balance, so the phrase
     // can't tell tenants apart. Globex's opening balance is ₹1,25,000,
     // exactly the credit, but with no name the amount alone (35) is under

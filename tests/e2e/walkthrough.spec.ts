@@ -387,7 +387,9 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
       name: `Import ${statement.length} payments received`,
     })
     .click();
-  await expect(visible(page, /^Imported \d+ payments received/)).toBeVisible();
+  await expect(
+    visible(page, /^Read \d+ payments into your account/),
+  ).toBeVisible();
   // Today counts the imported lines not yet matched, and links to matching.
   await page.goto("/today");
   await expect(

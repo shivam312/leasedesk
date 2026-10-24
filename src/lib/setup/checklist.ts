@@ -18,8 +18,8 @@ export const MARKABLE_STEPS = ["schedule", "opening", "team"] as const;
 export type MarkableStep = (typeof MARKABLE_STEPS)[number];
 
 export type SetupFacts = {
-  /** A business (billing entity) with its GSTIN. */
-  hasGstin: boolean;
+  /** A business (billing entity), with a GSTIN or not registered for GST. */
+  hasBusiness: boolean;
   unitCount: number;
   /** Leases that aren't drafts. */
   leaseCount: number;
@@ -53,11 +53,12 @@ export function setupChecklist(f: SetupFacts): {
   const steps: SetupStep[] = [
     {
       key: "business",
-      title: "Business details and GSTIN",
-      detail: "The name, GSTIN, address and bank details printed on invoices.",
+      title: "Business details",
+      detail:
+        "The name, address, bank details and GSTIN (if registered) printed on invoices.",
       href: "/settings/business",
       action: "Add business details",
-      done: f.hasGstin,
+      done: f.hasBusiness,
       canMark: false,
     },
     {

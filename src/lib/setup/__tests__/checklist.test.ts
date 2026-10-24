@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { setupChecklist, type SetupFacts } from "../checklist";
 
 const none: SetupFacts = {
-  hasGstin: false,
+  hasBusiness: false,
   unitCount: 0,
   leaseCount: 0,
   firstLeaseId: null,
@@ -37,7 +37,7 @@ describe("setupChecklist", () => {
   it("ticks steps from the data, and the rest when marked done", () => {
     const list = setupChecklist({
       ...none,
-      hasGstin: true,
+      hasBusiness: true,
       unitCount: 12,
       leaseCount: 3,
       firstLeaseId: "L1",
@@ -56,7 +56,7 @@ describe("setupChecklist", () => {
     expect(
       setupChecklist({
         ...none,
-        hasGstin: true,
+        hasBusiness: true,
         unitCount: 1,
         leaseCount: 1,
         firstLeaseId: "L1",
@@ -77,5 +77,14 @@ describe("setupChecklist", () => {
         (s) => s.key === "schedule",
       )?.canMark,
     ).toBe(true);
+  });
+});
+
+describe("setupChecklist business step", () => {
+  it("is done by any business, GSTIN or not, so an unregistered landlord can finish", () => {
+    const step = setupChecklist({ ...none, hasBusiness: true }).steps[0];
+    expect(step.key).toBe("business");
+    expect(step.done).toBe(true);
+    expect(step.title).toBe("Business details");
   });
 });

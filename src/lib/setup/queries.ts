@@ -1,7 +1,7 @@
 // What the setup checklist reads (src/lib/setup/checklist.ts), and marking a
 // step done by hand, which is written to the activity log.
 
-import { and, asc, count, eq, isNotNull, ne } from "drizzle-orm";
+import { and, asc, count, eq, ne } from "drizzle-orm";
 import { logActivity } from "@/lib/db/activity-log";
 import {
   activityLog,
@@ -17,13 +17,13 @@ import type { MarkableStep, SetupFacts } from "./checklist";
 const howMany = async (q: Promise<{ n: number }[]>) => (await q)[0]?.n ?? 0;
 
 export async function setupFacts(s: Scoped): Promise<SetupFacts> {
-  const [gstins, unitCount, leaseRows, openingCount, teamCount, marks] =
+  const [businesses, unitCount, leaseRows, openingCount, teamCount, marks] =
     await Promise.all([
       howMany(
         s.tx
           .select({ n: count() })
           .from(billingEntities)
-          .where(s.where(billingEntities, isNotNull(billingEntities.gstin))),
+          .where(s.where(billingEntities)),
       ),
       howMany(s.tx.select({ n: count() }).from(units).where(s.where(units))),
       s.tx
@@ -58,7 +58,7 @@ export async function setupFacts(s: Scoped): Promise<SetupFacts> {
         ),
     ]);
   return {
-    hasGstin: gstins > 0,
+    hasBusiness: businesses > 0,
     unitCount,
     leaseCount: leaseRows.length,
     firstLeaseId: leaseRows[0]?.id ?? null,

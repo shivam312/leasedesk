@@ -17,7 +17,7 @@ test("an owner sets business details and adds a GSTIN", async ({ page }) => {
   await page.reload();
   await expect(page.getByLabel("PAN (optional)")).toHaveValue("AABCD1234E");
 
-  await expect(page.getByText(/No GSTIN yet/)).toBeVisible();
+  await expect(page.getByText(/No business added yet/)).toBeVisible();
   await page.getByRole("link", { name: "Add a GSTIN" }).click();
   await page
     .getByLabel("Legal name", { exact: true })

@@ -132,8 +132,9 @@ async function Business() {
         {entities.length === 0 ? (
           <Card>
             <p className="text-sm">
-              No GSTIN yet. Add the one your invoices are issued from; each
-              building bills from one.
+              No business added yet. Add the business your invoices are issued
+              from; each building bills from one. A GSTIN is optional if you
+              aren&apos;t registered for GST.
             </p>
           </Card>
         ) : (

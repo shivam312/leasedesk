@@ -24,6 +24,8 @@ describe.skipIf(skipDbTests)("setup checklist facts", () => {
       const facts = await runScoped(asDb(tx), ctx, (s) => setupFacts(s));
       expect(facts.marked).toEqual(["team"]);
       expect(facts.unitCount).toBeGreaterThan(0);
+      // The fixture's business has no GSTIN; it still counts.
+      expect(facts.hasBusiness).toBe(true);
       const list = setupChecklist(facts);
       expect(list.steps.find((s) => s.key === "team")?.done).toBe(true);
       // B's own setup isn't touched by A's.

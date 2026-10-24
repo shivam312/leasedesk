@@ -10,7 +10,6 @@ export function RequestCertificateForm({
   tenantName,
   financialYear,
   quarter,
-  amount,
   askedOn,
   action,
 }: {
@@ -18,7 +17,6 @@ export function RequestCertificateForm({
   tenantName: string;
   financialYear: string;
   quarter: number;
-  amount: number;
   /** "24-10-2026" when last asked. */
   askedOn: string | null;
   action: (state: FormState, form: FormData) => Promise<FormState>;
@@ -29,7 +27,6 @@ export function RequestCertificateForm({
       <input type="hidden" name="tenantId" value={tenantId} />
       <input type="hidden" name="financialYear" value={financialYear} />
       <input type="hidden" name="quarter" value={quarter} />
-      <input type="hidden" name="amount" value={amount} />
       <button
         type="submit"
         disabled={pending}

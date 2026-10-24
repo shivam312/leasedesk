@@ -5,6 +5,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { parseFinancialYear } from "@/lib/payments/statement";
 import { appDb, requireMember } from "@/lib/auth";
 import type { FormState } from "@/lib/auth/forms";
 import { PermissionError, requirePermission } from "@/lib/auth/roles";
@@ -81,9 +82,10 @@ export async function uploadCertificateAction(
 
 const requestSchema = z.object({
   tenantId: z.uuid(),
-  financialYear: z.string().regex(/^\d{4}-\d{2}$/),
+  financialYear: z
+    .string()
+    .refine((v) => parseFinancialYear(v) !== null, "Choose a financial year."),
   quarter: z.coerce.number().int().min(1).max(4),
-  amount: z.coerce.number().int().min(0),
 });
 
 /** "Request from tenant": email the tenant for one quarter's certificate. */
@@ -104,7 +106,6 @@ export async function requestCertificateAction(
           tenantId: d.tenantId,
           financialYear: d.financialYear,
           quarter: d.quarter as 1 | 2 | 3 | 4,
-          amountPaise: d.amount,
         },
         todayInIndia(),
         emailDriver(),
@@ -116,6 +117,11 @@ export async function requestCertificateAction(
           return { tone: "success", message: `Asked ${r.to.join(", ")}.` };
         case "already_today":
           return { message: "Already asked today." };
+        case "nothing_missing":
+          return {
+            message:
+              "No certificate is missing for that quarter any more. Reload the page.",
+          };
         case "no_email":
           return {
             message:

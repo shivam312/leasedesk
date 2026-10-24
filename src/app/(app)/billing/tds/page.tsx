@@ -112,7 +112,6 @@ function Cell({
           tenantName={tenantName}
           financialYear={fy}
           quarter={c.quarter}
-          amount={c.amount}
           askedOn={askedOn ? formatDate(todayInIndia(askedOn)) : null}
           action={requestCertificateAction}
         />

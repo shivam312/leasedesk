@@ -1,6 +1,8 @@
 // "Request from tenant" on a missing TDS certificate: one tap emails the
 // tenant's billing contacts for that quarter's certificate, and records when
-// they were asked (certificate_requests), shown on the TDS tracker.
+// they were asked (certificate_requests), shown on the TDS certificates page.
+// The amount comes from the TDS records at the moment of asking (as the
+// page works it out), never from the form.
 
 import { and, desc, eq, gte } from "drizzle-orm";
 import type { PlainDate } from "@/lib/billing/dates";
@@ -17,7 +19,8 @@ import { EmailError, type Email, type EmailDriver } from "@/lib/email";
 import { formatDate, formatINR } from "@/lib/format";
 import { recipientsFor } from "@/lib/invoices/send";
 import { reportError } from "@/lib/monitoring";
-import { certificateDue, type Quarter } from "./tracker";
+import { trackerRecords } from "./certificates";
+import { certificateDue, tdsTracker, type Quarter } from "./tracker";
 
 /** The email asking for one quarter's certificate. Pure. */
 export function certificateRequestEmail(input: {
@@ -48,9 +51,11 @@ export function certificateRequestEmail(input: {
 }
 
 export type RequestResult =
-  | { kind: "sent"; to: string[] }
+  | { kind: "sent"; to: string[]; amountPaise: number }
   | { kind: "no_email" }
   | { kind: "already_today" }
+  /** No TDS that quarter, or its certificate is already in. */
+  | { kind: "nothing_missing" }
   | { kind: "failed"; message: string };
 
 export async function requestCertificate(
@@ -60,7 +65,6 @@ export async function requestCertificate(
     tenantId: string;
     financialYear: string;
     quarter: Quarter;
-    amountPaise: number;
   },
   today: PlainDate,
   driver: EmailDriver,
@@ -71,6 +75,17 @@ export async function requestCertificate(
       .from(tenants)
       .where(s.where(tenants, eq(tenants.id, input.tenantId)));
     if (!tenant) return null;
+    // The quarter's TDS per our records now, and whether its certificate
+    // is still missing.
+    const cell = tdsTracker({
+      financialYear: input.financialYear,
+      today,
+      records: await trackerRecords(s, input.financialYear),
+    })
+      .rows.find((r) => r.tenantId === input.tenantId)
+      ?.quarters.find((q) => q.quarter === input.quarter);
+    if (!cell || cell.status === "none" || cell.status === "received")
+      return { nothing: true as const };
     const [asked] = await s.tx
       .select({ id: certificateRequests.id })
       .from(certificateRequests)
@@ -99,9 +114,11 @@ export async function requestCertificate(
       tenantName: tenant.name,
       landlordName: org?.name ?? "",
       to: await recipientsFor(s, input.tenantId),
+      amountPaise: cell.amount,
     };
   });
   if (!prepared) return null;
+  if ("nothing" in prepared) return { kind: "nothing_missing" };
   if (prepared.already) return { kind: "already_today" };
   let result: RequestResult;
   if (prepared.to.length === 0) result = { kind: "no_email" };
@@ -114,11 +131,15 @@ export async function requestCertificate(
           landlordName: prepared.landlordName,
           financialYear: input.financialYear,
           quarter: input.quarter,
-          amountPaise: input.amountPaise,
+          amountPaise: prepared.amountPaise,
           due: certificateDue(input.financialYear, input.quarter),
         }),
       );
-      result = { kind: "sent", to: prepared.to };
+      result = {
+        kind: "sent",
+        to: prepared.to,
+        amountPaise: prepared.amountPaise,
+      };
     } catch (error) {
       reportError("Certificate request email failed", error, {
         tenantId: input.tenantId,

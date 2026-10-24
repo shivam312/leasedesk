@@ -102,6 +102,9 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
     page.getByText(/^E2E Tower · ET\/\d{2}-\d{2}\/0001$/),
   ).toBeVisible();
   await expect(page.getByText("Sent on", { exact: false })).toBeVisible();
+  // ₹1,18,000 less ₹10,000 TDS is over UPI's ₹1,00,000, or there's no UPI ID:
+  // either way the page says what the PDF's QR does.
+  await expect(page.getByText(/UPI QR/).first()).toBeVisible();
   await page.getByRole("link", { name: "Record payment" }).click();
   await page.getByLabel("Amount received").fill("1,08,000");
   await page.getByLabel("TDS deducted").fill("10,000");

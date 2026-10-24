@@ -271,3 +271,30 @@ export function invoiceDocument(src: DocumentSource): InvoiceDocument {
     footnote: "This is a computer-generated invoice.",
   };
 }
+
+/**
+ * What the invoice page says about the PDF's UPI QR, following the rules
+ * above: none on a draft or a settled invoice, no amount on a part-paid or
+ * part-credited one, or above UPI's usual ₹1,00,000. Null when the QR
+ * carries the amount to pay.
+ */
+export function upiQrNote(input: {
+  status: DocumentSource["invoice"]["status"];
+  hasUpiId: boolean;
+  grandTotalPaise: number;
+  expectedTdsPaise: number;
+  creditedPaise: number;
+}): string | null {
+  const { status } = input;
+  if (status === "draft") return "The PDF gets its UPI QR when it's sent.";
+  if (status === "paid" || status === "cancelled")
+    return "No UPI QR on the PDF: nothing is left to pay.";
+  if (!input.hasUpiId)
+    return "No UPI QR on the PDF: add a UPI ID for this GSTIN in Settings → Business.";
+  if (status === "part_paid" || input.creditedPaise > 0)
+    return "The UPI QR has no amount: part of this invoice is settled, so the tenant types what's left.";
+  const toPay = Math.max(input.grandTotalPaise - input.expectedTdsPaise, 0);
+  if (toPay > UPI_AMOUNT_LIMIT_PAISE)
+    return `The UPI QR has no amount: ${formatINR(toPay)} is over UPI's usual ${formatINR(UPI_AMOUNT_LIMIT_PAISE)} limit for one payment, so the tenant can split it or pay by bank transfer.`;
+  return null;
+}

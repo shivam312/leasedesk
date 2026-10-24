@@ -87,6 +87,8 @@ Lease starts on: the 1st of next month (e.g. `01-11-2026`). Under Last day of th
 
 **Say:** "Tap any line and it shows how it was worked out: 2,718 sq ft × ₹18. Your accountant can check every rupee against the lease."
 
+(If asked about the payment QR on the PDF: it carries the amount to pay when that's up to ₹1,00,000 after TDS. Above that, UPI's usual limit for one payment, or once an invoice is part paid, the QR has no amount and the tenant types it; a paid invoice has none. The invoice page says which, under Download PDF.)
+
 **Click:** **← Nov 2026 invoices**.
 
 **Say:** "These are dated the 1st, so they wait here as drafts until then. On the 1st, one tap on **Send 46 invoices** asks once, with the total, then gives each invoice its number, in an unbroken series per building and financial year as GST requires, and emails it with its PDF to the tenant's accounts contact. A sent invoice can't be edited; a correction is a credit note."

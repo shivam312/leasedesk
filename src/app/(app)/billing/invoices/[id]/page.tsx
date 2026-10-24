@@ -9,6 +9,7 @@ import {
 } from "@/components/invoices/SendForms";
 import { INVOICE_STATUS } from "@/components/invoices/status";
 import { shownStatus } from "@/lib/invoices/status";
+import { upiQrNote } from "@/lib/invoices/document";
 import { Working } from "@/components/invoices/Working";
 import { WhatsappReminderLink } from "@/components/reminders/WhatsappReminderLink";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -70,6 +71,18 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
   if (!data) notFound();
   const { credits, reminders, autoRemind, whatsapp } = data;
   const { invoice, tenant, building, lines } = data;
+  // The QR follows the PDF: a sent invoice prints its frozen supplier copy.
+  const supplierUpi =
+    invoice.status === "draft"
+      ? data.entity.upiId
+      : ((invoice.supplier as { upiId?: string | null } | null)?.upiId ?? null);
+  const qrNote = upiQrNote({
+    status: invoice.status,
+    hasUpiId: !!supplierUpi,
+    grandTotalPaise: invoice.grandTotal,
+    expectedTdsPaise: invoice.expectedTds,
+    creditedPaise: credits.reduce((t, c) => t + c.total, 0),
+  });
   const status = INVOICE_STATUS[shownStatus(invoice, todayInIndia())];
   const month = invoice.runMonth.slice(0, 7);
   const early = tooEarlyToSend(invoice.invoiceDate, todayInIndia());
@@ -155,6 +168,9 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
         >
           {invoice.status === "draft" ? "Preview PDF" : "Download PDF"}
         </a>
+        {qrNote && (
+          <p className="-mt-3 text-sm text-muted-foreground">{qrNote}</p>
+        )}
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
           <div>
             <dt className="text-muted-foreground">Status</dt>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { halfRate, invoiceDocument, pdfFileName } from "../document";
+import { halfRate, invoiceDocument, pdfFileName, upiQrNote } from "../document";
 import { source } from "./fixtures";
 
 describe("invoiceDocument", () => {
@@ -234,5 +234,43 @@ describe("pdfFileName", () => {
   it("makes a file name from the invoice number", () => {
     expect(pdfFileName("B1/26-27/0001")).toBe("Invoice-B1-26-27-0001.pdf");
     expect(pdfFileName("Not sent yet")).toBe("Invoice-Not-sent-yet.pdf");
+  });
+});
+
+describe("upiQrNote", () => {
+  const base = {
+    status: "sent" as const,
+    hasUpiId: true,
+    grandTotalPaise: 1_18_000_00,
+    expectedTdsPaise: 10_000_00,
+    creditedPaise: 0,
+  };
+  it("says nothing when the QR carries the amount", () => {
+    // ₹1,18,000 less ₹10,000 TDS = ₹1,08,000: over the limit.
+    expect(upiQrNote(base)).toMatch(
+      /₹1,08,000 is over UPI's usual ₹1,00,000 limit/,
+    );
+    // ₹59,000 less ₹5,000 = ₹54,000: under it.
+    expect(
+      upiQrNote({
+        ...base,
+        grandTotalPaise: 59_000_00,
+        expectedTdsPaise: 5_000_00,
+      }),
+    ).toBeNull();
+  });
+
+  it("explains a QR left off or without an amount", () => {
+    expect(upiQrNote({ ...base, status: "paid" })).toBe(
+      "No UPI QR on the PDF: nothing is left to pay.",
+    );
+    expect(upiQrNote({ ...base, status: "part_paid" })).toMatch(
+      /has no amount: part/,
+    );
+    expect(upiQrNote({ ...base, creditedPaise: 100 })).toMatch(
+      /has no amount: part/,
+    );
+    expect(upiQrNote({ ...base, hasUpiId: false })).toMatch(/add a UPI ID/);
+    expect(upiQrNote({ ...base, status: "draft" })).toMatch(/when it's sent/);
   });
 });

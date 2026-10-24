@@ -37,7 +37,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-025 | Codex review of M6: unresolved items | product | no | open |
 | D-026 | Which month an invoice or credit note counts in on the GST summary | ca | no | open |
 | D-027 | How payments, TDS and reversals go into Tally | ca | no | open |
-| D-028 | Bringing in what tenants already owe when a landlord starts | product | M10 | answered |
+| D-028 | Bringing in what tenants already owe when a landlord starts | product | M10 | applied |
 | D-029 | How users reach LeaseDesk support | product | no | answered |
 | D-030 | Codex review of M8: unresolved items | product | no | open |
 | D-031 | Codex review of M5A: unresolved items | product | no | open |
@@ -419,19 +419,6 @@ Things only a person can do. Tick them when done.
 - Also to confirm (M9, 2026-10-24): the file now creates the ledgers it posts to before the vouchers: each tenant under **Sundry Debtors** (bill-by-bill, with GSTIN and state), the TDS ledger under **Current Assets**, and the bank ledger under **Bank Accounts**. Some accountants keep TDS receivable under Loans & Advances (Asset) instead; say so and it becomes a setting. Income, GST and round-off ledgers aren't created, since they need GST settings in Tally. Each tenant's Tally name is saved the first time it's exported, so renaming the tenant later doesn't start a second ledger.
 - Answer:
 
-### D-028: Bringing in what tenants already owe when a landlord starts
-- Status: answered
-- Type: product
-- Blocking: M10 (three opening-balance tasks, moved from M9). Both audit reviewers ranked this the #1 pilot gap on 2026-10-24: without it, a tenant who is behind on day one is wrong on Today, in the ageing report, in reminders and in bank matching, and the "invoices match Excel" gate can't be met.
-- Context: The Excel import brings in buildings, units, tenants and leases, so billing starts correctly from the next month. It doesn't bring in rent a tenant still owes from before (invoices made in the old Excel or Tally), so Today, reminders and the unpaid report don't know about it, and the tenant ledger starts at zero.
-- Options:
-  - A) An opening balance per tenant (amount owed and the date, imported or typed once), shown first on the tenant ledger and in unpaid and ageing, and settled by payments like an invoice, but never numbered or sent as a GST invoice
-  - B) Import each old unpaid invoice with its old number and date, as a record only (not sent again)
-  - C) Leave old dues in the old system until they are paid
-- Recommendation: A, because it is one number per tenant that the accountant already has, it can't clash with GST invoice numbering, and payments and reminders then work from day one.
-- Done meanwhile: nothing; the import covers buildings, units, tenants and leases. The tenant ledger says there is no opening balance yet.
-- Answer: A
-
 ### D-029: How users reach LeaseDesk support
 - Status: answered
 - Type: product
@@ -530,3 +517,17 @@ Things only a person can do. Tick them when done.
 ## Applied
 
 (Applied entries move here, newest first.)
+
+### D-028: Bringing in what tenants already owe when a landlord starts
+- Status: applied
+- Type: product
+- Blocking: M10 (three opening-balance tasks, moved from M9). Both audit reviewers ranked this the #1 pilot gap on 2026-10-24: without it, a tenant who is behind on day one is wrong on Today, in the ageing report, in reminders and in bank matching, and the "invoices match Excel" gate can't be met.
+- Context: The Excel import brings in buildings, units, tenants and leases, so billing starts correctly from the next month. It doesn't bring in rent a tenant still owes from before (invoices made in the old Excel or Tally), so Today, reminders and the unpaid report don't know about it, and the tenant ledger starts at zero.
+- Options:
+  - A) An opening balance per tenant (amount owed and the date, imported or typed once), shown first on the tenant ledger and in unpaid and ageing, and settled by payments like an invoice, but never numbered or sent as a GST invoice
+  - B) Import each old unpaid invoice with its old number and date, as a record only (not sent again)
+  - C) Leave old dues in the old system until they are paid
+- Recommendation: A, because it is one number per tenant that the accountant already has, it can't clash with GST invoice numbering, and payments and reminders then work from day one.
+- Done meanwhile: nothing; the import covers buildings, units, tenants and leases. The tenant ledger says there is no opening balance yet.
+- Answer: A
+- Applied (2026-10-24): rules in BILLING_RULES section 11, table in DATA_MODEL, decision D53; the three M10 opening-balance tasks build it.

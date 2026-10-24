@@ -37,7 +37,10 @@ export default function BillingPage({ searchParams }: PageProps<"/billing">) {
         title="Billing"
         description="Make each month's invoices and check them before sending."
       />
-      <p className="-mt-3 mb-6 text-sm">
+      <nav
+        aria-label="Billing"
+        className="-mt-3 mb-6 flex flex-wrap gap-2 text-sm"
+      >
         <Link
           href="/billing/payments"
           className={buttonVariants({
@@ -47,7 +50,16 @@ export default function BillingPage({ searchParams }: PageProps<"/billing">) {
         >
           Payments
         </Link>
-      </p>
+        <Link
+          href="/billing/tds"
+          className={buttonVariants({
+            variant: "outline",
+            className: "h-11 md:h-9",
+          })}
+        >
+          TDS certificates
+        </Link>
+      </nav>
       <Suspense
         fallback={
           <p className="text-sm text-muted-foreground">Loading invoices…</p>

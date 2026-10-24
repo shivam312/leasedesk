@@ -52,12 +52,15 @@ function Card({
   columns,
   row,
   total,
+  anchor,
 }: {
   columns: Column[];
   row: ReportRow;
   total?: boolean;
+  anchor?: string;
 }) {
-  const [first, ...rest] = columns;
+  const first = columns.find((c) => c.key === anchor) ?? columns[0];
+  const rest = columns.filter((c) => c !== first);
   return (
     <li className={cn("rounded-lg border p-4", total && "bg-muted")}>
       <p className="font-medium break-words">
@@ -135,10 +138,20 @@ export function ReportView({ report }: { report: Report }) {
               </div>
               <ul className="flex flex-col gap-2 md:hidden">
                 {sec.rows.map((r, i) => (
-                  <Card key={i} columns={sec.columns} row={r} />
+                  <Card
+                    key={i}
+                    columns={sec.columns}
+                    row={r}
+                    anchor={sec.anchor}
+                  />
                 ))}
                 {sec.totals && (
-                  <Card columns={sec.columns} row={sec.totals} total />
+                  <Card
+                    columns={sec.columns}
+                    row={sec.totals}
+                    total
+                    anchor={sec.anchor}
+                  />
                 )}
               </ul>
             </>

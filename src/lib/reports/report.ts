@@ -32,6 +32,8 @@ export type ReportSection = {
   totals?: ReportRow;
   /** Said instead of an empty table. */
   empty: string;
+  /** The column that heads each phone card (default: the first). */
+  anchor?: string;
 };
 
 export type Report = {

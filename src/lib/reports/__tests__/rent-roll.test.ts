@@ -129,6 +129,8 @@ describe("rentRoll", () => {
 
   it("is empty without running leases", () => {
     const report = rentRoll([], "2025-10-23");
+    // On a phone each card is headed by the unit.
+    expect(report.sections[0]!.anchor).toBe("units");
     expect(report.sections[0]!.rows).toEqual([]);
     expect(report.sections[0]!.totals).toBeUndefined();
   });

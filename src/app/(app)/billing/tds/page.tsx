@@ -32,10 +32,10 @@ export default function TdsPage({ searchParams }: PageProps<"/billing/tds">) {
   return (
     <>
       <Link
-        href="/billing/payments"
+        href="/billing"
         className="mb-2 inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline md:min-h-0"
       >
-        ← Payments
+        ← Billing
       </Link>
       <PageHeader
         title="TDS certificates"

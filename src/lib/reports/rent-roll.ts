@@ -182,6 +182,8 @@ export function rentRoll(
         title: "Leases",
         empty:
           "No lease is running on this date. Choose another date, or add a lease in Leases.",
+        // On a phone each card is a unit, as on the stacking plan.
+        anchor: "units",
         columns: [
           { key: "tenant", label: "Tenant", kind: "text" },
           { key: "building", label: "Building", kind: "text" },

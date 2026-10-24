@@ -97,6 +97,24 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
   await page.getByText(/^Activity \(\d+\)$/).click();
   await expect(page.getByText("Invoice sent", { exact: true })).toBeVisible();
 
+  // Search finds the tenant, the unit and the invoice number.
+  if (test.info().project.name === "laptop") {
+    await page
+      .getByRole("searchbox", { name: "Quick search" })
+      .fill("0001");
+    await page.keyboard.press("Enter");
+  } else {
+    await page.getByRole("link", { name: "Search", exact: true }).click();
+    await page.getByRole("searchbox", { name: "Search" }).fill("0001");
+    await page.getByRole("button", { name: "Search" }).click();
+  }
+  await expect(page).toHaveURL(/\/search\?q=0001$/);
+  await expect(
+    page.getByRole("link", { name: /ET\/\d{2}-\d{2}\/0001/ }),
+  ).toBeVisible();
+  await page.goto("/search?q=301");
+  await expect(page.getByRole("link", { name: /Unit 301/ })).toBeVisible();
+
   // The tenant's ledger for this financial year, and its statement PDF.
   await page.goto("/tenants");
   await page

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { Search as SearchIcon } from "lucide-react";
 import { brand } from "@/lib/config/brand";
 import { AppNav, NavLinks } from "@/components/shell/AppNav";
 import {
@@ -34,9 +35,32 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <Link href="/today" className="text-lg font-semibold md:hidden">
             {brand.name}
           </Link>
-          <Suspense fallback={<SettingsLinkView active={false} />}>
-            <SettingsLink />
-          </Suspense>
+          <div className="flex items-center gap-2">
+            <form
+              action="/search"
+              method="get"
+              role="search"
+              className="hidden md:block"
+            >
+              <input
+                type="search"
+                name="q"
+                aria-label="Quick search"
+                placeholder="Search tenant, unit, invoice"
+                className="h-9 w-64 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              />
+            </form>
+            <Link
+              href="/search"
+              aria-label="Search"
+              className="inline-flex size-11 items-center justify-center rounded-md hover:bg-accent md:hidden"
+            >
+              <SearchIcon className="size-5" aria-hidden />
+            </Link>
+            <Suspense fallback={<SettingsLinkView active={false} />}>
+              <SettingsLink />
+            </Suspense>
+          </div>
         </header>
 
         <main

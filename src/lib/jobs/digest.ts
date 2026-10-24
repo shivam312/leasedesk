@@ -7,6 +7,7 @@ import type { Transactional } from "@/lib/db/scoped";
 import { sendDigests } from "@/lib/alerts/digest-run";
 import { emailDriver } from "@/lib/email";
 import { todayInIndia } from "@/lib/today";
+import { recordedRun } from "./health";
 import { inngest } from "./inngest";
 
 const appDb = db as unknown as Transactional;
@@ -27,7 +28,9 @@ export const dailyDigest = inngest.createFunction(
     for (const { id } of orgs)
       results.push(
         await step.run(`digest ${id}`, () =>
-          sendDigests(appDb, id, today, emailDriver()),
+          recordedRun(appDb, id, "digest", today, () =>
+            sendDigests(appDb, id, today, emailDriver()),
+          ),
         ),
       );
     return results;

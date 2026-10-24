@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { WhatsappReminderLink } from "@/components/reminders/WhatsappReminderLink";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { DailyRunNotice } from "@/components/today/DailyRunNotice";
 import { DateActions } from "@/components/today/DateActions";
 import {
   NoticeArea,
@@ -103,6 +104,7 @@ async function Today() {
 
   return (
     <div className="flex flex-col gap-8">
+      <DailyRunNotice />
       <section aria-label="This month" className="grid gap-3 md:grid-cols-3">
         <Card>
           <p className="text-sm text-muted-foreground">

@@ -8,6 +8,7 @@ import type { Transactional } from "@/lib/db/scoped";
 import { emailDriver } from "@/lib/email";
 import { sendDueReminders } from "@/lib/reminders/run";
 import { todayInIndia } from "@/lib/today";
+import { recordedRun } from "./health";
 import { inngest } from "./inngest";
 
 const appDb = db as unknown as Transactional;
@@ -28,7 +29,9 @@ export const dailyReminders = inngest.createFunction(
     for (const { id } of orgs)
       results.push(
         await step.run(`remind ${id}`, () =>
-          sendDueReminders(appDb, id, today, emailDriver()),
+          recordedRun(appDb, id, "reminders", today, () =>
+            sendDueReminders(appDb, id, today, emailDriver()),
+          ),
         ),
       );
     return results;

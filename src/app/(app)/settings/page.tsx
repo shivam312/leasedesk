@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { DailyRunNotice } from "@/components/today/DailyRunNotice";
 import { ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -37,6 +39,11 @@ export default function SettingsPage() {
         title="Settings"
         description="Your business details, billing rules, Tally ledgers, team and account."
       />
+      <Suspense>
+        <div className="mb-6 empty:hidden">
+          <DailyRunNotice />
+        </div>
+      </Suspense>
       <ul className="flex max-w-2xl flex-col divide-y rounded-lg border">
         {SECTIONS.map((s) => (
           <li key={s.href}>

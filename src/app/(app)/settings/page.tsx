@@ -31,6 +31,11 @@ const SECTIONS = [
     description: "See who can use your account, and invite people.",
   },
   {
+    href: "/settings/export",
+    title: "Export all data",
+    description: "Download everything in your account as Excel files and PDFs.",
+  },
+  {
     href: "/settings/help",
     title: "Help",
     description: "WhatsApp or email us when you're stuck.",

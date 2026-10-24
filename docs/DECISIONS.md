@@ -443,3 +443,9 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Decision:** Today shows owners a six-step "Set up LeaseDesk" checklist (`src/lib/setup/`) until every step is done. Business and GSTIN, buildings and units, and tenants and leases tick themselves from the data. "Check one rent schedule", "Opening balances" and "Invite your team" tick from the data where they can (an opening balance, a second person); otherwise an owner marks them done ("It's right", "Nobody owes anything", "Just me for now"), which is an `activity_log` row (`entity_type` "setup", `action` "setup_done", `after.step`).
 **Why:** No new table or column for a one-time list; the activity log already records who did what, and a marked step can't be lost by editing settings.
 **Consequences:** The checklist is worked out on every visit, so if data a step depends on is removed (the last unit, say), that step unticks and the checklist comes back; hand-marked steps stay done.
+
+## D57. "Export all data" keeps values exactly as stored (2026-10-24)
+
+**Decision:** Settings → Export all data (owners only, logged as `export` in the activity log) is one zip: an Excel file per table, with snake_case columns and values as stored (paise, hundredths of a sq ft, basis points, ids), a "Read me.txt" explaining the units, and a `files/` folder with every stored invoice PDF and uploaded document (`src/lib/exports/all-data.ts`, `fflate`).
+**Why:** It is for keeping or moving the landlord's data, so it must be exact and complete; turning paise into rupees would mean decimals in the file, and the reports (Reports, Tally) already give friendly views.
+**Consequences:** The zip is built in memory in one request; a landlord with gigabytes of documents would need a background export (backlog). Credit note PDFs aren't stored, so they aren't in it; their rows are.

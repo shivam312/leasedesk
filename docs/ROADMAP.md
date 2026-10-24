@@ -223,7 +223,7 @@ Setup:
 
 Trust:
 
-- [ ] Settings → Export all data: one zip of Excel files (buildings, units, tenants, leases, invoices, lines, credit notes, payments, deposits, TDS) plus all stored PDFs and documents; owner-only, logged
+- [x] Settings → Export all data: one zip of Excel files (buildings, units, tenants, leases, invoices, lines, credit notes, payments, deposits, TDS) plus all stored PDFs and documents; owner-only, logged
 - [x] Support contact (WhatsApp and email from D-029) on every error page and in Settings → Help; never promise what isn't set up (done by the answers stage, 2026-10-24: `src/lib/support.ts`, D54)
 - [ ] Load test: a `pnpm db:seed:load` organisation with 120 tenants, 3 billing entities and 36 months of invoices and payments; Today, the invoice list, the tenant ledger, each report and a billing run each load in under 2 seconds on it; fix what doesn't, add the indexes, and record the timings in docs/milestones/M10.md
 

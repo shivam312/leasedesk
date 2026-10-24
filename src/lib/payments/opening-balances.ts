@@ -11,7 +11,12 @@ import {
   insertLogged,
   updateLogged,
 } from "@/lib/db/activity-log";
-import { openingBalances, paymentAllocations, tenants } from "@/lib/db/schema";
+import {
+  openingBalances,
+  paymentAllocations,
+  reminders,
+  tenants,
+} from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
 import { formatDate } from "@/lib/format";
 import { lockTenantMoney, openingBalanceOf, PaymentError } from "./payments";
@@ -83,6 +88,15 @@ export async function removeOpeningBalance(s: Scoped, tenantId: string) {
   const existing = await openingBalanceOf(s, tenantId);
   if (!existing) return;
   if (await isTouched(s, existing.id)) throw new PaymentError(LOCKED);
+  const [reminded] = await s.tx
+    .select({ id: reminders.id })
+    .from(reminders)
+    .where(s.where(reminders, eq(reminders.openingBalanceId, existing.id)))
+    .limit(1);
+  if (reminded)
+    throw new PaymentError(
+      "The tenant has been reminded about this opening balance, so it can't be removed. Change the amount instead if it was wrong.",
+    );
   await deleteLogged(s, openingBalances, existing.id);
 }
 

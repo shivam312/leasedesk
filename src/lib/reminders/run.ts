@@ -51,7 +51,8 @@ async function stepsSent(s: Scoped, invoiceIds: string[]) {
       ),
     );
   for (const r of rows)
-    map.set(r.invoiceId, [...(map.get(r.invoiceId) ?? []), r.step!]);
+    // Automatic steps are only ever for invoices (reminders_opening_by_hand).
+    map.set(r.invoiceId!, [...(map.get(r.invoiceId!) ?? []), r.step!]);
   return map;
 }
 
@@ -80,7 +81,11 @@ export async function claimDueReminders(
   for (const { tenantId } of open) {
     const settings = await loadSettings(s, { tenantId });
     if (!settings["reminders.autoSend"]) continue;
-    const unpaid = await unpaidInvoices(s, tenantId, billingSettings(settings));
+    // The automatic schedule chases invoices only; an opening balance is
+    // reminded by a person (Remind all, WhatsApp; D55).
+    const unpaid = (
+      await unpaidInvoices(s, tenantId, billingSettings(settings))
+    ).filter((u) => !u.openingBalance);
     if (unpaid.length === 0) continue;
     const sentAt = new Map(
       (

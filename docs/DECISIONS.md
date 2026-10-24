@@ -431,3 +431,9 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Decision:** Founder answered D-029: WhatsApp +91 98111 29108 and email support@leasedesk.com (option C). Both live only in `src/lib/support.ts`; `SupportContact` shows them as a wa.me link with a pre-filled message and a mailto link, on the page error, the whole-app error and Settings → Help (`/settings/help`).
 **Why:** Owners report problems on WhatsApp; accountants on a laptop prefer email. A landlord who hits an error must be able to reach someone from the screen.
 **Consequences:** Changing the number or address is a one-file change. `SupportContact` uses plain links, so it works on the global error page when the router has failed. The password-reset message for an app without email still says to ask the person who set up the account, since support can't reset a password.
+
+## D55. An opening balance is reminded by a person, never by the automatic schedule (2026-10-24)
+
+**Decision:** "Remind all" on Today and the one-tap WhatsApp link include a tenant's opening balance (D-028) when it is their oldest overdue item; the automatic reminder schedule (`reminders.beforeDueDays`, `reminders.afterDueDays`) chases sent invoices only. A database check (`reminders_opening_by_hand`) holds it.
+**Why:** An opening balance is due on its as-on date, usually before the landlord started, so an automatic "N days after the due date" email would go to every such tenant on the first day, from a system they have never heard of, about dues the landlord may still be discussing. A person choosing to remind is the safe default; it can become a setting if pilots ask.
+**Consequences:** Reminders point at an invoice or an opening balance (`drizzle/0034`). Once a tenant has been reminded about an opening balance, it can be changed but not removed.

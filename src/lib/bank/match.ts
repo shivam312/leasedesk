@@ -12,6 +12,7 @@ import {
   bankAccounts,
   bankStatementLines,
   invoices,
+  openingBalances,
   tenants,
 } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
@@ -20,6 +21,7 @@ import {
   PaymentError,
   paymentSettings,
   recordPayment,
+  OPENING_BALANCE_LABEL,
   unpaidInvoices,
 } from "@/lib/payments/payments";
 import { billingSettings } from "@/lib/settings/billing";
@@ -28,15 +30,30 @@ import { guessMode, matchLine, type MatchTenant } from "./matching";
 
 const OPEN_LINE = ["unmatched", "suggested"] as const;
 
-/** Every tenant with a sent invoice, and what they still owe. */
+/**
+ * Every tenant with a sent invoice or an opening balance (D-028), and what
+ * they still owe.
+ */
 async function matchTenants(s: Scoped): Promise<MatchTenant[]> {
-  const owing = await s.tx
-    .selectDistinct({ id: tenants.id, name: tenants.companyName })
-    .from(tenants)
-    .innerJoin(invoices, eq(invoices.tenantId, tenants.id))
-    .where(
-      s.where(tenants, notInArray(invoices.status, ["draft", "cancelled"])),
-    );
+  const [withInvoices, withOpening] = await Promise.all([
+    s.tx
+      .selectDistinct({ id: tenants.id, name: tenants.companyName })
+      .from(tenants)
+      .innerJoin(invoices, eq(invoices.tenantId, tenants.id))
+      .where(
+        s.where(tenants, notInArray(invoices.status, ["draft", "cancelled"])),
+      ),
+    s.tx
+      .select({ id: tenants.id, name: tenants.companyName })
+      .from(tenants)
+      .innerJoin(openingBalances, eq(openingBalances.tenantId, tenants.id))
+      .where(s.where(tenants)),
+  ]);
+  const owing = [
+    ...new Map(
+      [...withInvoices, ...withOpening].map((t) => [t.id, t]),
+    ).values(),
+  ];
   const result: MatchTenant[] = [];
   for (const t of owing) {
     const settings = await paymentSettings(s, t.id);
@@ -175,7 +192,8 @@ export async function linesToMatch(s: Scoped) {
   return lines.map((l) => ({
     ...l,
     invoiceNumbers: (l.line.suggestedInvoiceIds ?? []).map(
-      (id) => byId.get(id) ?? "",
+      // Anything that isn't an invoice is the tenant's opening balance.
+      (id) => byId.get(id) ?? OPENING_BALANCE_LABEL,
     ),
   }));
 }

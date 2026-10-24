@@ -19,6 +19,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { id, timestamps } from "./columns";
 import { invoices } from "./invoices";
+import { openingBalances } from "./payments";
 
 export const reminderChannel = pgEnum("reminder_channel", [
   "email",
@@ -40,7 +41,10 @@ export const reminders = pgTable(
   {
     id: id(),
     organizationId: uuid().notNull(),
-    invoiceId: uuid().notNull(),
+    // The invoice, or the tenant's opening balance (D-028): exactly one.
+    // An opening balance is reminded only by a person (step null).
+    invoiceId: uuid(),
+    openingBalanceId: uuid(),
     channel: reminderChannel().notNull(),
     // The automatic schedule step, "before:3" or "after:7"; null when a
     // person sent it.
@@ -67,6 +71,19 @@ export const reminders = pgTable(
       columns: [t.organizationId, t.invoiceId],
       foreignColumns: [invoices.organizationId, invoices.id],
     }).onDelete("restrict"),
+    foreignKey({
+      columns: [t.organizationId, t.openingBalanceId],
+      foreignColumns: [openingBalances.organizationId, openingBalances.id],
+    }).onDelete("restrict"),
+    index().on(t.openingBalanceId),
+    check(
+      "reminders_one_target",
+      sql`(${t.invoiceId} is null) <> (${t.openingBalanceId} is null)`,
+    ),
+    check(
+      "reminders_opening_by_hand",
+      sql`${t.openingBalanceId} is null or ${t.step} is null`,
+    ),
     check("reminders_amount", sql`${t.amountAsked} > 0`),
     check(
       "reminders_step",

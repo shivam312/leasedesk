@@ -85,7 +85,7 @@ async function Today() {
     const noEmail = new Map<string, string[]>();
     if (canBill)
       for (const item of items) {
-        if (item.kind === "overdue" && !item.oldestIsOpeningBalance)
+        if (item.kind === "overdue")
           whatsapp.set(
             item.key,
             await whatsappReminder(s, item.oldestInvoiceId, today),

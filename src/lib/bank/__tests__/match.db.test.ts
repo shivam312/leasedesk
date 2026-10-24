@@ -15,6 +15,7 @@ import {
   recordPayment,
   reversePayment,
 } from "@/lib/payments/payments";
+import { setOpeningBalance } from "@/lib/payments/opening-balances";
 import { addBankAccount, importStatement } from "../imports";
 import { confirmLine, ignoreLines, linesToMatch } from "../match";
 
@@ -56,6 +57,75 @@ async function imported(tx: TestTx, deposit = "1,26,360.00") {
 
 describe.skipIf(skipDbTests)("bank matching", () => {
   afterAll(closeDb);
+
+  it("settles a tenant's opening balance from a bank credit, like an invoice (D-028)", async () => {
+    await inRollback(async (tx) => {
+      const { a, ctx } = await madeDraft(tx);
+      // ₹50,000 owed from before LeaseDesk, as on 30-09-2026, and nothing
+      // else: a ₹50,000 credit naming the tenant settles it, with no TDS
+      // (none is expected on an opening balance).
+      const opening = await runScoped(asDb(tx), ctx, async (s) => {
+        const ob = await setOpeningBalance(
+          s,
+          {
+            tenantId: a.tenant.id,
+            asOnDate: "2026-09-30",
+            amountPaise: 5_000_000,
+            note: null,
+          },
+          "2026-11-20",
+        );
+        const account = await addBankAccount(s, {
+          billingEntityId: a.entity.id,
+          bankName: "HDFC Bank",
+          accountLast4: "1234",
+        });
+        await importStatement(s, {
+          bankAccountId: account.id,
+          fileName: "nov.csv",
+          rows: [
+            ["Date", "Narration", "Deposit"],
+            [
+              "10/11/2026",
+              `NEFT CR-${a.tenant.companyName.toUpperCase()}`,
+              "50,000.00",
+            ],
+          ],
+          mapping: {
+            date: "Date",
+            description: "Narration",
+            reference: null,
+            credit: "Deposit",
+            debit: null,
+            amount: null,
+            drCr: null,
+          },
+        });
+        return ob;
+      });
+      const [line] = await runScoped(asDb(tx), ctx, (s) => linesToMatch(s));
+      expect(line!.line).toMatchObject({
+        matchStatus: "suggested",
+        suggestedTenantId: a.tenant.id,
+        suggestedInvoiceIds: [opening.id],
+      });
+      expect(line!.invoiceNumbers).toEqual(["Opening balance"]);
+      const payment = await runScoped(asDb(tx), ctx, (s) =>
+        confirmLine(s, line!.line.id, a.tenant.id, "2026-11-20"),
+      );
+      expect(payment).toMatchObject({
+        amountReceived: 5_000_000,
+        tdsDeducted: 0,
+      });
+      const allocations = await tx
+        .select()
+        .from(schema.paymentAllocations)
+        .where(eq(schema.paymentAllocations.paymentId, payment.id));
+      expect(
+        allocations.map((x) => [x.openingBalanceId, x.amountSettled]),
+      ).toEqual([[opening.id, 5_000_000]]);
+    });
+  });
 
   it("suggests the tenant and invoice on import, and confirming records the payment", async () => {
     await inRollback(async (tx) => {

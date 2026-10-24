@@ -73,3 +73,37 @@ export function reminderStepWords(step: string | null): string {
   if (n === 0) return "On the due date";
   return `${n} ${n === 1 ? "day" : "days"} ${kind === "before" ? "before" : "after"} the due date`;
 }
+
+/**
+ * The reminder for a tenant's opening balance (D-028): dues from before
+ * LeaseDesk, so there is no invoice number or copy to quote.
+ */
+export function openingBalanceReminderEmail(input: {
+  to: string[];
+  tenantName: string;
+  landlordName: string;
+  asOnDate: PlainDate;
+  today: PlainDate;
+  amountPaise: number;
+}): Email {
+  const amount = formatINR(input.amountPaise);
+  const since = formatDate(input.asOnDate);
+  const lines = [
+    `Dear ${input.tenantName},`,
+    "",
+    `Our records show ${amount} still unpaid on your account from invoices issued up to ${since}.`,
+    "",
+    `Amount to pay: ${amount}`,
+    "",
+    "Please pay to the bank account on your invoices and quote “Opening balance” with your payment.",
+    "If you have already paid, please reply with the payment details so we can match it.",
+    "",
+    "Regards,",
+    input.landlordName,
+  ];
+  return {
+    to: input.to,
+    subject: `Overdue: ${amount} unpaid from invoices up to ${since}`,
+    text: lines.join("\n"),
+  };
+}

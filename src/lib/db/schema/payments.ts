@@ -130,6 +130,7 @@ export const openingBalances = pgTable(
       t.tenantId,
     ),
     unique().on(t.organizationId, t.tenantId, t.id),
+    unique().on(t.organizationId, t.id),
     foreignKey({
       columns: [t.organizationId, t.tenantId],
       foreignColumns: [tenants.organizationId, tenants.id],

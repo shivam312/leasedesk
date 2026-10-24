@@ -5,7 +5,7 @@
 // today is skipped, so a second tap sends nothing twice (a failed email can
 // be tried again); tenants with no email address are listed instead.
 
-import { and, eq, gte, inArray, isNull } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, or } from "drizzle-orm";
 import { overdueByTenant } from "@/lib/alerts/attention";
 import { openInvoiceRows } from "@/lib/alerts/queries";
 import type { PlainDate } from "@/lib/billing/dates";
@@ -20,7 +20,8 @@ import { EmailError, type Email, type EmailDriver } from "@/lib/email";
 import { getInvoiceDocument } from "@/lib/invoices/queries";
 import { recipientsFor } from "@/lib/invoices/send";
 import { reportError } from "@/lib/monitoring";
-import { reminderEmail } from "./email";
+import { openingBalanceReminderEmail, reminderEmail } from "./email";
+import { landlordName } from "./manual";
 
 export type RemindAllResult = {
   sent: string[];
@@ -48,24 +49,30 @@ export async function remindAllOverdue(
   };
   // Part 1: claim one reminder per overdue tenant, in one transaction.
   const claims = await runScoped(db, ctx, async (s) => {
-    // The opening balance isn't emailed here yet: that reminder has no
-    // invoice to attach (M10, "Opening balances settle like invoices").
-    const late = overdueByTenant(
-      (await openInvoiceRows(s)).filter((r) => !r.openingBalance),
-      today,
-    );
+    // A tenant whose oldest item is their opening balance (D-028) gets the
+    // opening balance reminder, which has no invoice to quote.
+    const late = overdueByTenant(await openInvoiceRows(s), today);
     if (late.length === 0) return [];
     const earlier = new Set(
       (
         await s.tx
-          .select({ invoiceId: reminders.invoiceId })
+          .select({
+            invoiceId: reminders.invoiceId,
+            openingBalanceId: reminders.openingBalanceId,
+          })
           .from(reminders)
           .where(
             s.where(
               reminders,
-              inArray(
-                reminders.invoiceId,
-                late.map((t) => t.oldestInvoiceId),
+              or(
+                inArray(
+                  reminders.invoiceId,
+                  late.map((t) => t.oldestInvoiceId),
+                ),
+                inArray(
+                  reminders.openingBalanceId,
+                  late.map((t) => t.oldestInvoiceId),
+                ),
               ),
               eq(reminders.channel, "email"),
               isNull(reminders.step),
@@ -74,8 +81,9 @@ export async function remindAllOverdue(
               gte(reminders.createdAt, startOfIndiaDay(today)),
             ),
           )
-      ).map((r) => r.invoiceId),
+      ).map((r) => r.invoiceId ?? r.openingBalanceId),
     );
+    const landlord = await landlordName(s);
     const out: {
       id: string;
       tenant: string;
@@ -88,6 +96,35 @@ export async function remindAllOverdue(
         continue;
       }
       const to = await recipientsFor(s, t.tenantId);
+      if (t.oldestIsOpeningBalance) {
+        if (to.length === 0) {
+          result.noEmail.push(t.tenantName);
+          continue;
+        }
+        const row = await insertLogged(s, reminders, {
+          openingBalanceId: t.oldestInvoiceId,
+          channel: "email",
+          step: null,
+          amountAsked: t.oldestAmountPaise,
+          sentBy: s.userId,
+          sentTo: to,
+          status: "sending",
+        });
+        out.push({
+          id: row.id,
+          tenant: t.tenantName,
+          invoiceId: t.oldestInvoiceId,
+          email: openingBalanceReminderEmail({
+            to,
+            tenantName: t.tenantName,
+            landlordName: landlord,
+            asOnDate: t.oldestDueDate,
+            today,
+            amountPaise: t.oldestAmountPaise,
+          }),
+        });
+        continue;
+      }
       const doc =
         to.length > 0 ? await getInvoiceDocument(s, t.oldestInvoiceId) : null;
       if (!doc) {

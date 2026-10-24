@@ -68,3 +68,21 @@ export function whatsappLink(phone: string, text: string): string {
   const number = (normalizePhone(phone) ?? phone).replace(/\D/g, "");
   return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
 }
+
+/** The WhatsApp message for a tenant's opening balance (D-028). */
+export function openingBalanceWhatsappText(input: {
+  tenantName: string;
+  landlordName: string;
+  asOnDate: PlainDate;
+  amountPaise: number;
+}): string {
+  return [
+    `Dear ${input.tenantName},`,
+    "",
+    `A reminder that ${formatINR(input.amountPaise)} is still unpaid from invoices issued up to ${formatDate(input.asOnDate)}.`,
+    "",
+    "Please pay to the bank account on your invoices and quote “Opening balance”. If you have already paid, please reply with the payment date and reference.",
+    "",
+    input.landlordName,
+  ].join("\n");
+}

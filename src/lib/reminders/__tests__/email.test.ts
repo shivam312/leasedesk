@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { invoiceDocument } from "@/lib/invoices/document";
 import { source } from "@/lib/invoices/__tests__/fixtures";
-import { reminderEmail, reminderStepWords } from "../email";
+import {
+  openingBalanceReminderEmail,
+  reminderEmail,
+  reminderStepWords,
+} from "../email";
+import { openingBalanceWhatsappText } from "../whatsapp";
 
 // ₹1,18,000 invoice B1/26-27/0001, due 08-11-2026, ₹10,000 TDS expected.
 const doc = invoiceDocument(source());
@@ -83,5 +88,35 @@ describe("reminderStepWords", () => {
     expect(reminderStepWords("after:1")).toBe("1 day after the due date");
     expect(reminderStepWords("after:15")).toBe("15 days after the due date");
     expect(reminderStepWords(null)).toBe("Sent by hand");
+  });
+});
+
+describe("opening balance reminders (D-028)", () => {
+  it("asks for what is left, with the as-on date and no invoice number", () => {
+    // ₹2,50,000 owed as on 31-03-2026, ₹50,000 paid since: ₹2,00,000 left.
+    const email = openingBalanceReminderEmail({
+      to: ["accounts@acme.example"],
+      tenantName: "Acme Software Pvt Ltd",
+      landlordName: "Sharma Estates",
+      asOnDate: "2026-03-31",
+      today: "2026-10-24",
+      amountPaise: 20_000_000,
+    });
+    expect(email.subject).toBe(
+      "Overdue: ₹2,00,000 unpaid from invoices up to 31-03-2026",
+    );
+    expect(email.text).toContain("Amount to pay: ₹2,00,000");
+    expect(email.text).toContain("quote “Opening balance”");
+    expect(email.text).not.toMatch(/invoice [A-Z0-9]+\//);
+    expect(
+      openingBalanceWhatsappText({
+        tenantName: "Acme Software Pvt Ltd",
+        landlordName: "Sharma Estates",
+        asOnDate: "2026-03-31",
+        amountPaise: 20_000_000,
+      }),
+    ).toContain(
+      "A reminder that ₹2,00,000 is still unpaid from invoices issued up to 31-03-2026.",
+    );
   });
 });

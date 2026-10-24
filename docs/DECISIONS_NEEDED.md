@@ -42,7 +42,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-030 | Codex review of M8: unresolved items | product | no | open |
 | D-031 | Codex review of M5A: unresolved items | product | no | open |
 | D-032 | Run the test suites on GitHub Actions (CI)? | spend | no | open |
-| D-033 | Which unkept v1 promises wait until after the pilot? | product | no | open |
+| D-033 | Which unkept v1 promises wait until after the pilot? | product | no | closed (stale) |
 | D-034 | Using a security deposit for a tenant's unpaid rent | product | no | open |
 | D-035 | GST on a security deposit the landlord keeps | ca | no | open |
 
@@ -464,19 +464,6 @@ Things only a person can do. Tick them when done.
 - Done meanwhile: built A: `.github/workflows/ci.yml` (typecheck, lint, formatting, unit and database tests on a local Supabase stack, then the browser tests on a production build; no secrets needed). It runs as soon as the repository is pushed to GitHub.
 - Answer:
 
-### D-033: Which unkept v1 promises wait until after the pilot?
-- Status: open
-- Type: product
-- Blocking: no
-- Context: The audit found v1 features promised in `docs/PRODUCT_PLAN.md` that aren't built: uploading the signed lease and other documents, the activity log on each record, global search, custom critical dates, "Request from tenant" for TDS certificates, the deposit as a ledger with a settlement statement on exit, Google login, and pasting units from Excel. None of them changes an invoice amount. They sit at the end of M9 ("The rest") and will be built in that order after the demo and pilot blockers, unless you drop some.
-- Options:
-  - A) Build them all in the M9 order (about two weeks of pipeline work after the blockers)
-  - B) Build documents, activity and custom dates only; move the deposit ledger, Google login, paste-from-Excel and global search to v2
-  - C) Move all of them to v2 and start the pilot on the blockers alone
-- Recommendation: B, because the pilot accountant will ask for the signed agreement and the change history in the first week, while the deposit ledger matters only at a tenant's exit, Google login is a convenience over email and password, and the Excel import already covers bulk units.
-- Done meanwhile: nothing is dropped; the pipeline reaches these tasks only after every blocker is done, so there is time to answer.
-- Answer:
-
 ### D-034: Using a security deposit for a tenant's unpaid rent
 - Status: open
 - Type: product
@@ -502,6 +489,21 @@ Things only a person can do. Tick them when done.
 - Answer:
 
 ## Applied
+
+### D-033: Which unkept v1 promises wait until after the pilot?
+- Status: closed (stale)
+- Type: product
+- Blocking: no
+- Context: The audit found v1 features promised in `docs/PRODUCT_PLAN.md` that aren't built: uploading the signed lease and other documents, the activity log on each record, global search, custom critical dates, "Request from tenant" for TDS certificates, the deposit as a ledger with a settlement statement on exit, Google login, and pasting units from Excel. None of them changes an invoice amount. They sit at the end of M9 ("The rest") and will be built in that order after the demo and pilot blockers, unless you drop some.
+- Options:
+  - A) Build them all in the M9 order (about two weeks of pipeline work after the blockers)
+  - B) Build documents, activity and custom dates only; move the deposit ledger, Google login, paste-from-Excel and global search to v2
+  - C) Move all of them to v2 and start the pilot on the blockers alone
+- Recommendation: B, because the pilot accountant will ask for the signed agreement and the change history in the first week, while the deposit ledger matters only at a tenant's exit, Google login is a convenience over email and password, and the Excel import already covers bulk units.
+- Done meanwhile: nothing is dropped; the pipeline reaches these tasks only after every blocker is done, so there is time to answer.
+- Answer:
+- Closed (2026-10-24, M10 housekeeping): stale. All eight features were built in M9 (documents, activity, global search, custom critical dates, "Request from tenant", the deposit ledger and settlement statement, Google login, paste units from Excel), so there is nothing left to defer. Using the deposit for unpaid rent and GST on a kept deposit stay open as D-034 and D-035.
+
 
 (Applied entries move here, newest first.)
 

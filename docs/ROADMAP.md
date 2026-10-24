@@ -236,7 +236,7 @@ Small fixes (from docs/BACKLOG.md; delete the rows that move here):
 
 Housekeeping:
 
-- [ ] Close D-033 as stale (all eight features are built) and update the decisions summary table
+- [x] Close D-033 as stale (all eight features are built) and update the decisions summary table
 
 ## Later (v2, in order)
 

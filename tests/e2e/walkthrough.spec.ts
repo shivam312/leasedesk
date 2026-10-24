@@ -129,7 +129,8 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await expect(visible(page, /Certificates missing for/)).toBeVisible();
   // One tap asks the tenant for it, and says when.
   await page
-    .getByRole("button", { name: "Request from tenant" })
+    // Named for screen readers: "Request the Q2 certificate from Rangoli…".
+    .getByRole("button", { name: /^Request the Q\d certificate from / })
     .filter({ visible: true })
     .first()
     .click();

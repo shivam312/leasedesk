@@ -46,6 +46,7 @@ export const LEASE_COLUMNS = [
   { key: "rentFreeMonths", heading: "Rent-free months" },
   { key: "rentFreeDays", heading: "Rent-free days" },
   { key: "deposit", heading: "Deposit (₹)" },
+  { key: "depositHeld", heading: "Deposit held (₹)" },
   { key: "area", heading: "Area" },
   { key: "rent", heading: "Rent at lease start (₹)", required: true },
   { key: "rentToday", heading: "Rent today (₹)" },
@@ -103,6 +104,24 @@ function readOpening(
         "Balance as on: type the date the opening balance was owed on, as DD-MM-YYYY.",
     };
   return { amountPaise, asOnDate };
+}
+
+/**
+ * "Deposit held (₹)": the deposit the landlord already holds for a lease
+ * that started before LeaseDesk, recorded as received. Blank is none.
+ */
+export function readDepositHeld(
+  text: string,
+): number | null | { error: string } {
+  const amount = text.trim().replace(/[₹,\s]/g, "");
+  if (!amount) return null;
+  const paise = rupeesToPaise(amount);
+  if (paise === null || paise <= 0)
+    return {
+      error:
+        "Deposit held (₹): type the deposit you hold now in rupees, like 6,00,000, or leave it blank.",
+    };
+  return paise;
 }
 
 /** One Tenants row as the tenant form's data and its main contact, or what's wrong. */
@@ -470,7 +489,9 @@ export const TENANCY_TEMPLATE = {
           "Optional. How many months' notice either side must give, whole months",
         rentFreeMonths: "Optional; rent isn't billed for these months",
         rentFreeDays: "Optional; months or days, not both",
-        deposit: "Optional, rupees",
+        deposit: "Optional, rupees: what the lease agrees",
+        depositHeld:
+          "Optional, rupees: the deposit you already hold for this lease. It is recorded as received on the lease start date (or today, if the lease starts later)",
         area: "Billed (default) or Carpet: which area the per sq ft amounts use",
         rent: "The rent in the lease's first month, before any increase: per sq ft per month, or the whole rent per month (billed quarterly, three months at a time)",
         rentToday:
@@ -498,6 +519,7 @@ export const TENANCY_TEMPLATE = {
         rentFreeMonths: "2",
         rentFreeDays: "",
         deposit: "6,00,000",
+        depositHeld: "6,00,000",
         area: "Billed",
         rent: "85.50",
         rentBasis: "per sq ft",

@@ -97,7 +97,7 @@ export async function importTenantsAndLeases(
     try {
       const n = await runScoped(appDb, member, (s) =>
         importTenancy(s, read.sheets, todayInIndia(), {
-          canSetOpening: can(member.role, "manage_billing"),
+          canRecordMoney: can(member.role, "manage_billing"),
         }),
       );
       revalidatePath("/leases", "layout");

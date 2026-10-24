@@ -71,3 +71,42 @@ export async function recordDepositEntry(
     createdBy: s.userId,
   });
 }
+
+/**
+ * For a lease that started before the deposit ledger: the deposit the lease
+ * agrees, received on the lease start (or today, for a lease that hasn't
+ * started). Only while the lease has no deposit entries.
+ */
+export async function recordDepositHeld(
+  s: Scoped,
+  leaseId: string,
+  today: PlainDate,
+) {
+  const [lease] = await s.tx
+    .select({
+      startDate: leases.startDate,
+      depositAmount: leases.depositAmount,
+    })
+    .from(leases)
+    .where(s.where(leases, eq(leases.id, leaseId)));
+  if (!lease) throw new DepositError("That lease couldn't be found.");
+  if (lease.depositAmount <= 0)
+    throw new DepositError("The lease agrees no deposit.");
+  const { entries } = await depositLedger(s, leaseId);
+  if (entries.length > 0)
+    throw new DepositError(
+      "This lease already has deposit entries. Record any change with “Record a deposit entry”.",
+    );
+  return recordDepositEntry(
+    s,
+    {
+      leaseId,
+      kind: "received",
+      date: lease.startDate < today ? lease.startDate : today,
+      amountPaise: lease.depositAmount,
+      reference: null,
+      note: "Held before LeaseDesk",
+    },
+    today,
+  );
+}

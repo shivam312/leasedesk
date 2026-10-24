@@ -66,6 +66,46 @@ async function withUnit102(tx: TestTx) {
 describe.skipIf(skipDbTests)("importTenancy", () => {
   afterAll(closeDb);
 
+  it("records a deposit already held as received on the lease start", () =>
+    inRollback(async (tx) => {
+      const { ctx } = await withUnit102(tx);
+      await runScoped(asDb(tx), ctx, (s) =>
+        importTenancy(
+          s,
+          [
+            tenantsSheet(beta),
+            leasesSheet({
+              ...betaLease,
+              deposit: "3,60,000",
+              depositHeld: "3,60,000",
+            }),
+          ],
+          "2026-10-23",
+        ),
+      );
+      const entries = await tx
+        .select({
+          kind: schema.depositEntries.kind,
+          date: schema.depositEntries.date,
+          amount: schema.depositEntries.amount,
+        })
+        .from(schema.depositEntries);
+      // ₹3,60,000 = 3,60,00,000 paise, on the lease start 01-04-2026.
+      expect(entries).toEqual([
+        { kind: "received", date: "2026-04-01", amount: 36_000_000 },
+      ]);
+      await expect(
+        runScoped(asDb(tx), ctx, (s) =>
+          importTenancy(
+            s,
+            [leasesSheet({ ...betaLease, units: "101", depositHeld: "5,000" })],
+            "2026-10-23",
+            { canRecordMoney: false },
+          ),
+        ),
+      ).rejects.toBeInstanceOf(ImportRefused);
+    }));
+
   it("saves an imported opening balance with its as-on date (D-028)", () =>
     inRollback(async (tx) => {
       const { ctx } = await withUnit102(tx);
@@ -108,7 +148,7 @@ describe.skipIf(skipDbTests)("importTenancy", () => {
       await expect(
         runScoped(asDb(tx), ctx, (s) =>
           importTenancy(s, [tenantsSheet(row)], "2026-10-23", {
-            canSetOpening: false,
+            canRecordMoney: false,
           }),
         ),
       ).rejects.toBeInstanceOf(ImportRefused);

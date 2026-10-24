@@ -12,6 +12,7 @@ import { checkLease } from "@/lib/leases/build";
 import { parseLeaseForm } from "@/lib/leases/draft";
 import { createLease } from "@/lib/leases/queries";
 import { formatDate } from "@/lib/format";
+import { recordDepositEntry } from "@/lib/payments/deposits";
 import { setOpeningBalance } from "@/lib/payments/opening-balances";
 import {
   findSheet,
@@ -24,6 +25,7 @@ import {
   LEASE_COLUMNS,
   leaseErrorMessage,
   leaseRowInput,
+  readDepositHeld,
   readTenantRow,
   rentTodayProblem,
   TENANT_COLUMNS,
@@ -42,8 +44,11 @@ export async function importTenancy(
   s: Scoped,
   sheets: readonly Sheet[],
   today: PlainDate,
-  /** Opening balances are money: only owners and accounts bring them in. */
-  { canSetOpening = true }: { canSetOpening?: boolean } = {},
+  /**
+   * Opening balances and deposits held are money: only owners and accounts
+   * bring them in.
+   */
+  { canRecordMoney = true }: { canRecordMoney?: boolean } = {},
 ): Promise<{ tenants: number; leases: number }> {
   const tenantSheet = findSheet(sheets, "Tenants");
   const leaseSheet = findSheet(sheets, "Leases");
@@ -91,7 +96,7 @@ export async function importTenancy(
           err(parsed.error);
           continue;
         }
-        if (parsed.opening && !canSetOpening) {
+        if (parsed.opening && !canRecordMoney) {
           err(
             "Opening balance (₹): only an owner or accounts can bring in what tenants owe. Leave the two opening balance columns blank, or ask them to import this file.",
           );
@@ -175,6 +180,17 @@ export async function importTenancy(
           err(leaseErrorMessage(form.errors, mapped.sources));
           continue;
         }
+        const held = readDepositHeld(values.depositHeld);
+        if (held !== null && typeof held === "object") {
+          err(held.error);
+          continue;
+        }
+        if (held !== null && !canRecordMoney) {
+          err(
+            "Deposit held (₹): only an owner or accounts can record deposits. Leave the column blank, or ask them to import this file.",
+          );
+          continue;
+        }
         const draft = form.draft;
         const leaseId = randomUUID();
         const checked = await checkLease(s, draft, null, {
@@ -198,7 +214,7 @@ export async function importTenancy(
           err(rentToday);
           continue;
         }
-        await createLease(
+        const created = await createLease(
           s,
           checked.built,
           {
@@ -216,6 +232,24 @@ export async function importTenancy(
           },
           checked.dates,
         );
+        // Held before LeaseDesk: received on the lease start, or today for
+        // a lease that hasn't started (a deposit is paid before the keys).
+        if (held !== null)
+          await recordDepositEntry(
+            s,
+            {
+              leaseId: created.id,
+              kind: "received",
+              date:
+                compareDates(draft.dates.startDate, today) < 0
+                  ? draft.dates.startDate
+                  : today,
+              amountPaise: held,
+              reference: null,
+              note: "Held before LeaseDesk (imported)",
+            },
+            today,
+          );
         leaseCount++;
       }
     }

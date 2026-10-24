@@ -17,7 +17,11 @@ import { runScoped } from "@/lib/db/scoped";
 import { documentsFor } from "@/lib/files/documents";
 import { DEPOSIT_KIND_WORDS, DEPOSIT_KINDS } from "@/lib/payments/deposit-form";
 import { depositLedger } from "@/lib/payments/deposits";
-import { recordDepositEntryAction } from "@/server/actions/payments";
+import {
+  recordDepositEntryAction,
+  recordDepositHeldAction,
+} from "@/server/actions/payments";
+import { ConfirmActionForm } from "@/components/forms/ConfirmActionForm";
 import { formatArea, formatDate, formatINR } from "@/lib/format";
 import { bpText } from "@/lib/leases/prefill";
 import { getLease } from "@/lib/leases/queries";
@@ -291,6 +295,26 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           {deposit.entries.length === 0 &&
             "Record the deposit when it's received, so it's here at the tenant's exit."}
         </p>
+        {canBill && deposit.entries.length === 0 && lease.depositAmount > 0 && (
+          <Card className="mb-3 flex flex-col gap-2">
+            <p className="text-sm">
+              Already holding this deposit from before LeaseDesk? Record it as
+              received on{" "}
+              {formatDate(
+                lease.startDate < todayInIndia()
+                  ? lease.startDate
+                  : todayInIndia(),
+              )}
+              . For another amount or date, use “Record a deposit entry”.
+            </p>
+            <ConfirmActionForm
+              action={recordDepositHeldAction.bind(null, lease.id)}
+              label={`Record ${formatINR(lease.depositAmount)} already held`}
+              question={`Record ${formatINR(lease.depositAmount)} received from ${saved.tenantName}? A deposit entry can't be edited or deleted afterwards.`}
+              confirmLabel="Record"
+            />
+          </Card>
+        )}
         {deposit.entries.length > 0 && (
           <ul className="mb-3 flex flex-col divide-y rounded-lg border text-sm">
             {deposit.entries.map((e) => (

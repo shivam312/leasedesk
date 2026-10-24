@@ -8,13 +8,42 @@ import {
   type TestTx,
 } from "@/lib/db/__tests__/harness";
 import { madeDraft } from "@/lib/invoices/__tests__/db-fixtures";
-import { DepositError, depositLedger, recordDepositEntry } from "../deposits";
+import {
+  DepositError,
+  depositLedger,
+  recordDepositEntry,
+  recordDepositHeld,
+} from "../deposits";
+import * as schema from "@/lib/db/schema";
 
 const asDb = (tx: TestTx) => tx as unknown as Transactional;
 const today = "2026-11-30";
 
 describe.skipIf(skipDbTests)("the deposit ledger", () => {
   afterAll(closeDb);
+
+  it("records the agreed deposit as already held, once, on the lease start", () =>
+    inRollback(async (tx) => {
+      const { a, ctx } = await madeDraft(tx);
+      await tx
+        .update(schema.leases)
+        .set({ depositAmount: 36_000_000 })
+        .where(sql`${schema.leases.id} = ${a.lease.id}`);
+      const entry = await runScoped(asDb(tx), ctx, (s) =>
+        recordDepositHeld(s, a.lease.id, today),
+      );
+      // ₹3,60,000 the lease agrees, received on its start date.
+      expect(entry).toMatchObject({
+        kind: "received",
+        amount: 36_000_000,
+        date: a.lease.startDate,
+      });
+      await expect(
+        runScoped(asDb(tx), ctx, (s) =>
+          recordDepositHeld(s, a.lease.id, today),
+        ),
+      ).rejects.toBeInstanceOf(DepositError);
+    }));
 
   it("holds what was received, and lets out only what's held, in date order", () =>
     inRollback(async (tx) => {

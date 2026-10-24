@@ -17,7 +17,11 @@ import {
   setOpeningBalance,
 } from "@/lib/payments/opening-balances";
 import { DEPOSIT_KINDS, depositEntrySchema } from "@/lib/payments/deposit-form";
-import { DepositError, recordDepositEntry } from "@/lib/payments/deposits";
+import {
+  DepositError,
+  recordDepositEntry,
+  recordDepositHeld,
+} from "@/lib/payments/deposits";
 import { parsePaymentForm } from "@/lib/payments/forms";
 import {
   applyCredit,
@@ -252,5 +256,35 @@ export async function removeOpeningBalanceAction(
     revalidatePath(`/tenants/${tenantId}`);
     revalidatePath("/today");
     return { tone: "success", message: "Opening balance removed." };
+  });
+}
+
+/**
+ * "Record ₹X already held": for a lease that started before the deposit
+ * ledger, the deposit the lease agrees, received on the lease start (or
+ * today, for a lease that hasn't started).
+ */
+export async function recordDepositHeldAction(
+  leaseId: string,
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  return guardedForm("manage_billing", z.object({}), form, async (member) => {
+    if (!z.uuid().safeParse(leaseId).success)
+      return { message: "That lease couldn't be found." };
+    const today = todayInIndia();
+    try {
+      const recorded = await runScoped(appDb, member, (s) =>
+        recordDepositHeld(s, leaseId, today),
+      );
+      revalidatePath(`/leases/${leaseId}`);
+      return {
+        tone: "success",
+        message: `Recorded ${formatINR(recorded.amount)} received on ${formatDate(recorded.date)}.`,
+      };
+    } catch (error) {
+      if (error instanceof DepositError) return { message: error.message };
+      throw error;
+    }
   });
 }

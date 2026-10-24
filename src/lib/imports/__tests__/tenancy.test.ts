@@ -12,6 +12,7 @@ import {
   LEASE_COLUMNS,
   leaseErrorMessage,
   leaseRowInput,
+  readDepositHeld,
   readTenantRow,
   TENANCY_TEMPLATE,
   TENANT_COLUMNS,
@@ -38,6 +39,20 @@ const lookup: LeaseLookup = {
       ? { id: B, unitId: (c) => ({ "301": U301, "302": U302 })[c] ?? null }
       : null,
 };
+
+describe("readDepositHeld", () => {
+  it("reads rupees as paise, blank as none, and refuses anything else", () => {
+    // ₹6,00,000 = 6,00,00,000 paise; ₹1,250.50 = 1,25,050 paise.
+    expect(readDepositHeld("6,00,000")).toBe(60_000_000);
+    expect(readDepositHeld("₹1,250.50")).toBe(125_050);
+    expect(readDepositHeld(" ")).toBeNull();
+    for (const bad of ["0", "six lakh", "-5"])
+      expect(readDepositHeld(bad)).toEqual({
+        error:
+          "Deposit held (₹): type the deposit you hold now in rupees, like 6,00,000, or leave it blank.",
+      });
+  });
+});
 
 describe("readTenantRow", () => {
   it("reads the template's example: state and PAN from the GSTIN, TDS at 10%", () => {

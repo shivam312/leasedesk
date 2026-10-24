@@ -27,6 +27,7 @@ import {
   units,
 } from "@/lib/db/schema";
 import { openInvoiceRows } from "@/lib/alerts/queries";
+import { OPENING_BALANCE_LABEL } from "@/lib/payments/payments";
 import type { Scoped } from "@/lib/db/scoped";
 import { savedLeaseInput } from "@/lib/leases/rows";
 import { billingSettings } from "@/lib/settings/billing";
@@ -243,7 +244,10 @@ export async function ageingReport(
     open.map((o) => ({
       tenantId: o.tenantId,
       tenantName: o.tenantName,
-      number: byId.get(o.id)?.number ?? "",
+      // The opening balance (D-028) ages from its as-on date.
+      number: o.openingBalance
+        ? OPENING_BALANCE_LABEL
+        : (byId.get(o.id)?.number ?? ""),
       invoiceDate: byId.get(o.id)?.invoiceDate ?? o.dueDate,
       dueDate: o.dueDate,
       outstandingPaise: o.outstandingPaise,

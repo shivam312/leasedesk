@@ -45,6 +45,7 @@ import {
   creditNotes,
   invoiceLines,
   invoices,
+  openingBalances,
   paymentAllocations,
   paymentMode,
   payments,
@@ -65,12 +66,16 @@ export class PaymentError extends Error {}
 
 /** An unpaid invoice, with what the payment form shows. */
 export type UnpaidInvoice = OpenInvoice & {
-  leaseId: string;
+  /** Null for the opening balance, which belongs to no lease. */
+  leaseId: string | null;
   invoiceDate: PlainDate;
   periodStart: PlainDate;
   grandTotalPaise: number;
   status: (typeof invoices.$inferSelect)["status"];
 };
+
+/** How an opening balance is named where an invoice number would be. */
+export const OPENING_BALANCE_LABEL = "Opening balance";
 
 /** The tenant's settings that payments use (TDS rounding, tolerance, quarter). */
 export async function paymentSettings(
@@ -81,36 +86,45 @@ export async function paymentSettings(
 }
 
 /**
- * Per invoice: payments applied (with their TDS), credit notes, taxable
- * value credited and TDS recorded by active payments.
+ * Per invoice (or opening balance, by its id): payments applied (with their
+ * TDS), credit notes, taxable value credited and TDS recorded by active
+ * payments.
  */
-async function settledBy(s: Scoped, invoiceIds: string[]) {
-  if (invoiceIds.length === 0) return new Map<string, Settled>();
+async function settledBy(s: Scoped, ids: string[]) {
+  if (ids.length === 0) return new Map<string, Settled>();
   const [allocated, credited, tds] = await Promise.all([
     s.tx
       .select({
         invoiceId: paymentAllocations.invoiceId,
+        openingBalanceId: paymentAllocations.openingBalanceId,
         total: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
       })
       .from(paymentAllocations)
       .where(
         s.where(
           paymentAllocations,
-          inArray(paymentAllocations.invoiceId, invoiceIds),
+          or(
+            inArray(paymentAllocations.invoiceId, ids),
+            inArray(paymentAllocations.openingBalanceId, ids),
+          ),
         ),
       )
-      .groupBy(paymentAllocations.invoiceId),
+      .groupBy(
+        paymentAllocations.invoiceId,
+        paymentAllocations.openingBalanceId,
+      ),
     s.tx
       .select({
         invoiceId: creditNotes.invoiceId,
         total: sum(creditNotes.total).mapWith(paiseSum),
       })
       .from(creditNotes)
-      .where(s.where(creditNotes, inArray(creditNotes.invoiceId, invoiceIds)))
+      .where(s.where(creditNotes, inArray(creditNotes.invoiceId, ids)))
       .groupBy(creditNotes.invoiceId),
     s.tx
       .select({
         invoiceId: tdsRecords.invoiceId,
+        openingBalanceId: tdsRecords.openingBalanceId,
         total: sum(tdsRecords.amount).mapWith(paiseSum),
       })
       .from(tdsRecords)
@@ -118,11 +132,14 @@ async function settledBy(s: Scoped, invoiceIds: string[]) {
       .where(
         s.where(
           tdsRecords,
-          inArray(tdsRecords.invoiceId, invoiceIds),
+          or(
+            inArray(tdsRecords.invoiceId, ids),
+            inArray(tdsRecords.openingBalanceId, ids),
+          ),
           eq(payments.status, "active"),
         ),
       )
-      .groupBy(tdsRecords.invoiceId),
+      .groupBy(tdsRecords.invoiceId, tdsRecords.openingBalanceId),
   ]);
   const map = new Map<string, Settled>();
   const get = (id: string) => {
@@ -133,10 +150,34 @@ async function settledBy(s: Scoped, invoiceIds: string[]) {
     }
     return v;
   };
-  for (const a of allocated) get(a.invoiceId).allocated = a.total;
+  for (const a of allocated) get(targetId(a)).allocated = a.total;
   for (const c of credited) get(c.invoiceId).credited = c.total;
-  for (const t of tds) get(t.invoiceId).tds = t.total;
+  for (const t of tds) get(targetId(t)).tds = t.total;
   return map;
+}
+
+/** The invoice or opening balance an allocation or TDS record is against. */
+function targetId(r: {
+  invoiceId: string | null;
+  openingBalanceId: string | null;
+}): string {
+  return (r.invoiceId ?? r.openingBalanceId)!;
+}
+
+/** The columns an allocation or TDS record against `item` is saved in. */
+function target(item: Pick<OpenInvoice, "id" | "openingBalance">) {
+  return item.openingBalance
+    ? { invoiceId: null, openingBalanceId: item.id }
+    : { invoiceId: item.id, openingBalanceId: null };
+}
+
+/** A tenant's opening balance (D-028), or null. */
+export async function openingBalanceOf(s: Scoped, tenantId: string) {
+  const [row] = await s.tx
+    .select()
+    .from(openingBalances)
+    .where(s.where(openingBalances, eq(openingBalances.tenantId, tenantId)));
+  return row ?? null;
 }
 
 type Settled = {
@@ -222,10 +263,17 @@ export async function unpaidInvoices(
     )
     .orderBy(asc(invoices.id));
   const rows = lock ? await query.for("update") : await query;
-  const settled = await settledBy(
-    s,
-    rows.map((r) => r.id),
-  );
+  const openingQuery = s.tx
+    .select()
+    .from(openingBalances)
+    .where(s.where(openingBalances, eq(openingBalances.tenantId, tenantId)));
+  const [opening] = lock
+    ? await openingQuery.for("update")
+    : await openingQuery;
+  const settled = await settledBy(s, [
+    ...rows.map((r) => r.id),
+    ...(opening ? [opening.id] : []),
+  ]);
   const credited = await creditedLines(
     s,
     rows.filter((r) => (settled.get(r.id)?.credited ?? 0) > 0).map((r) => r.id),
@@ -267,6 +315,31 @@ export async function unpaidInvoices(
       }),
     };
   });
+  if (opening) {
+    // Settled like an invoice and due on its as-on date; nothing is
+    // expected for TDS, as the old invoices' TDS is unknown (section 11).
+    const v = settled.get(opening.id);
+    const { outstandingPaise } = invoiceSettlement({
+      grandTotalPaise: opening.amount,
+      allocatedPaise: v?.allocated ?? 0,
+      creditedPaise: 0,
+      tdsRecordedPaise: v?.tds ?? 0,
+      tolerancePaise: settings.tdsTolerancePaise,
+    });
+    open.push({
+      id: opening.id,
+      openingBalance: true,
+      leaseId: null,
+      number: OPENING_BALANCE_LABEL,
+      dueDate: opening.asOnDate,
+      invoiceDate: opening.asOnDate,
+      periodStart: opening.asOnDate,
+      grandTotalPaise: opening.amount,
+      status: "overdue",
+      outstandingPaise,
+      expectedTdsPaise: 0,
+    });
+  }
   return oldestFirst(open);
 }
 
@@ -377,14 +450,14 @@ export async function recordPayment(
     bankStatementLineId: input.bankStatementLineId ?? null,
     createdBy: s.userId,
   });
+  const byId = new Map(open.map((i) => [i.id, i]));
   for (const a of allocations)
     await insertLogged(s, paymentAllocations, {
       tenantId: input.tenantId,
       paymentId: payment.id,
-      invoiceId: a.invoiceId,
+      ...target(byId.get(a.invoiceId)!),
       amountSettled: a.amountPaise,
     });
-  const byId = new Map(open.map((i) => [i.id, i]));
   for (const t of splitTds({
     tdsPaise: input.tdsPaise,
     allocations,
@@ -399,7 +472,7 @@ export async function recordPayment(
     await insertLogged(s, tdsRecords, {
       tenantId: input.tenantId,
       paymentId: payment.id,
-      invoiceId: t.invoiceId,
+      ...target(invoice),
       amount: t.tdsPaise,
       financialYear,
       quarter,
@@ -447,16 +520,20 @@ export async function reversePayment(
       `A reversal can't be dated before the payment (${formatDate(original.receivedDate)}).`,
     );
   // Lock the invoices it touched, as recordPayment does.
-  const applied = await s.tx
+  const appliedRows = await s.tx
     .select({
       invoiceId: paymentAllocations.invoiceId,
+      openingBalanceId: paymentAllocations.openingBalanceId,
       total: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
     })
     .from(paymentAllocations)
     .where(
       s.where(paymentAllocations, eq(paymentAllocations.paymentId, paymentId)),
     )
-    .groupBy(paymentAllocations.invoiceId);
+    .groupBy(paymentAllocations.invoiceId, paymentAllocations.openingBalanceId);
+  const applied = appliedRows.filter(
+    (a): a is typeof a & { invoiceId: string } => a.invoiceId !== null,
+  );
   if (applied.length > 0)
     await s.tx
       .select({ id: invoices.id })
@@ -485,12 +562,13 @@ export async function reversePayment(
     reversesPaymentId: original.id,
     createdBy: s.userId,
   });
-  for (const a of applied)
+  for (const a of appliedRows)
     if (a.total !== 0)
       await insertLogged(s, paymentAllocations, {
         tenantId: original.tenantId,
         paymentId: reversal.id,
         invoiceId: a.invoiceId,
+        openingBalanceId: a.openingBalanceId,
         amountSettled: -a.total,
       });
   await updateLogged(s, payments, original.id, {
@@ -575,7 +653,7 @@ export async function applyCredit(s: Scoped, tenantId: string) {
       await insertLogged(s, paymentAllocations, {
         tenantId,
         paymentId: credit.id,
-        invoiceId: invoice.id,
+        ...target(invoice),
         amountSettled: amount,
       });
       left.set(invoice.id, owed - amount);
@@ -641,24 +719,56 @@ export async function getPayment(s: Scoped, id: string) {
     .innerJoin(tenants, eq(tenants.id, payments.tenantId))
     .where(s.where(payments, eq(payments.id, id)));
   if (!row) return null;
-  const allocations = await s.tx
-    .select({
-      invoiceId: paymentAllocations.invoiceId,
-      amount: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
-      number: invoices.number,
-      invoiceDate: invoices.invoiceDate,
-      grandTotal: invoices.grandTotal,
-    })
-    .from(paymentAllocations)
-    .innerJoin(invoices, eq(invoices.id, paymentAllocations.invoiceId))
-    .where(s.where(paymentAllocations, eq(paymentAllocations.paymentId, id)))
-    .groupBy(
-      paymentAllocations.invoiceId,
-      invoices.number,
-      invoices.invoiceDate,
-      invoices.grandTotal,
-    )
-    .orderBy(asc(invoices.invoiceDate), asc(invoices.number));
+  const [invoiceAllocations, openingAllocations] = await Promise.all([
+    s.tx
+      .select({
+        invoiceId: paymentAllocations.invoiceId,
+        amount: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
+        number: invoices.number,
+        invoiceDate: invoices.invoiceDate,
+        grandTotal: invoices.grandTotal,
+      })
+      .from(paymentAllocations)
+      .innerJoin(invoices, eq(invoices.id, paymentAllocations.invoiceId))
+      .where(s.where(paymentAllocations, eq(paymentAllocations.paymentId, id)))
+      .groupBy(
+        paymentAllocations.invoiceId,
+        invoices.number,
+        invoices.invoiceDate,
+        invoices.grandTotal,
+      )
+      .orderBy(asc(invoices.invoiceDate), asc(invoices.number)),
+    s.tx
+      .select({
+        openingBalanceId: paymentAllocations.openingBalanceId,
+        amount: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
+        invoiceDate: openingBalances.asOnDate,
+        grandTotal: openingBalances.amount,
+      })
+      .from(paymentAllocations)
+      .innerJoin(
+        openingBalances,
+        eq(openingBalances.id, paymentAllocations.openingBalanceId),
+      )
+      .where(s.where(paymentAllocations, eq(paymentAllocations.paymentId, id)))
+      .groupBy(
+        paymentAllocations.openingBalanceId,
+        openingBalances.asOnDate,
+        openingBalances.amount,
+      ),
+  ]);
+  // The opening balance first: it is the oldest thing a payment settles.
+  const allocations = [
+    ...openingAllocations.map((a) => ({
+      invoiceId: null,
+      openingBalanceId: a.openingBalanceId!,
+      amount: a.amount,
+      number: OPENING_BALANCE_LABEL,
+      invoiceDate: a.invoiceDate,
+      grandTotal: a.grandTotal,
+    })),
+    ...invoiceAllocations.map((a) => ({ ...a, openingBalanceId: null })),
+  ];
   const tds = await s.tx
     .select()
     .from(tdsRecords)

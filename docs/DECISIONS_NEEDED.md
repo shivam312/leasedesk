@@ -417,6 +417,7 @@ Things only a person can do. Tick them when done.
 - Recommendation: A, because a Journal is how most accountants undo a receipt in Tally, and it keeps the original receipt untouched, like our payments.
 - Done meanwhile: built A (`src/lib/exports/tally.ts`). The format still needs checking against a real TallyPrime export (the human task to save one in `tests/fixtures/tally/`).
 - Also to confirm (M9, 2026-10-24): the file now creates the ledgers it posts to before the vouchers: each tenant under **Sundry Debtors** (bill-by-bill, with GSTIN and state), the TDS ledger under **Current Assets**, and the bank ledger under **Bank Accounts**. Some accountants keep TDS receivable under Loans & Advances (Asset) instead; say so and it becomes a setting. Income, GST and round-off ledgers aren't created, since they need GST settings in Tally. Each tenant's Tally name is saved the first time it's exported, so renaming the tenant later doesn't start a second ledger.
+- Also to confirm (M10, 2026-10-24): the part of a payment that settles a tenant's opening balance (D-028, dues from the old books) goes into the Receipt voucher as **On Account**, since the old invoices aren't bills LeaseDesk knows; the accountant matches it against the old bills in Tally.
 - Answer:
 
 ### D-030: Codex review of M8: unresolved items

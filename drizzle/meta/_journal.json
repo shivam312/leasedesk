@@ -232,6 +232,13 @@
       "when": 1792806798335,
       "tag": "0032_deposit_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792824818176,
+      "tag": "0033_opening_balances",
+      "breakpoints": true
     }
   ]
 }

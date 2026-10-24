@@ -39,7 +39,9 @@ export async function GET(
     return {
       saved,
       deposit,
-      open: open.filter((o) => o.leaseId === id),
+      // The tenant's opening balance (D-028) belongs to no lease; like their
+      // credit, it is the tenant's, so it is settled on this statement too.
+      open: open.filter((o) => o.leaseId === id || o.openingBalance),
       creditPaise: sumPaise(credits.map((c) => c.creditPaise)),
     };
   });

@@ -126,14 +126,22 @@ async function Payment({
         ) : (
           <ul className="flex flex-col text-sm">
             {allocations.map((a) => {
-              const t = tds.find((r) => r.invoiceId === a.invoiceId);
+              const t = tds.find((r) =>
+                a.invoiceId
+                  ? r.invoiceId === a.invoiceId
+                  : r.openingBalanceId === a.openingBalanceId,
+              );
               return (
                 <li
-                  key={a.invoiceId}
+                  key={a.invoiceId ?? a.openingBalanceId}
                   className="flex flex-wrap justify-between gap-x-4 border-b py-2"
                 >
                   <Link
-                    href={`/billing/invoices/${a.invoiceId}`}
+                    href={
+                      a.invoiceId
+                        ? `/billing/invoices/${a.invoiceId}`
+                        : `/tenants/${p.tenantId}/ledger`
+                    }
                     className="inline-flex min-h-11 items-center underline md:min-h-0"
                   >
                     {a.number}{" "}

@@ -23,6 +23,7 @@ import {
   buildings,
   criticalDates,
   invoices,
+  openingBalances,
   leases,
   payments,
   tenants,
@@ -46,11 +47,27 @@ const UNPAID = ["sent", "part_paid", "overdue"] as const;
 
 /** Every sent invoice with something left on it, across all tenants. */
 export async function openInvoiceRows(s: Scoped): Promise<OpenInvoiceRow[]> {
-  const owing = await s.tx
-    .selectDistinct({ tenantId: invoices.tenantId, name: tenants.companyName })
-    .from(invoices)
-    .innerJoin(tenants, eq(tenants.id, invoices.tenantId))
-    .where(s.where(invoices, inArray(invoices.status, [...UNPAID])));
+  const [withInvoices, withOpening] = await Promise.all([
+    s.tx
+      .selectDistinct({
+        tenantId: invoices.tenantId,
+        name: tenants.companyName,
+      })
+      .from(invoices)
+      .innerJoin(tenants, eq(tenants.id, invoices.tenantId))
+      .where(s.where(invoices, inArray(invoices.status, [...UNPAID]))),
+    // An opening balance (D-028) is owed like an invoice until it is paid.
+    s.tx
+      .select({ tenantId: openingBalances.tenantId, name: tenants.companyName })
+      .from(openingBalances)
+      .innerJoin(tenants, eq(tenants.id, openingBalances.tenantId))
+      .where(s.where(openingBalances)),
+  ]);
+  const owing = [
+    ...new Map(
+      [...withInvoices, ...withOpening].map((t) => [t.tenantId, t]),
+    ).values(),
+  ];
   const rows: OpenInvoiceRow[] = [];
   for (const t of owing) {
     const settings = billingSettings(
@@ -65,6 +82,7 @@ export async function openInvoiceRows(s: Scoped): Promise<OpenInvoiceRow[]> {
         dueDate: u.dueDate,
         outstandingPaise: u.outstandingPaise,
         expectedTdsPaise: u.expectedTdsPaise,
+        openingBalance: u.openingBalance ?? false,
       });
     }
   }

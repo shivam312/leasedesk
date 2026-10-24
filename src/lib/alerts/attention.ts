@@ -20,6 +20,8 @@ export type OpenInvoiceRow = {
   dueDate: PlainDate;
   outstandingPaise: Paise;
   expectedTdsPaise: Paise;
+  /** The tenant's opening balance (D-028), due on its as-on date. */
+  openingBalance?: boolean;
 };
 
 export type CriticalDateType =
@@ -68,7 +70,9 @@ export type OverdueItem = {
   /** What the tenant is asked to pay: unpaid less TDS they may still keep back. */
   amountPaise: Paise;
   invoiceCount: number;
+  /** The oldest invoice, or the tenant's opening balance. */
   oldestInvoiceId: string;
+  oldestIsOpeningBalance: boolean;
   oldestDueDate: PlainDate;
   /** The oldest invoice's own ask, for a reminder about that one invoice. */
   oldestAmountPaise: Paise;
@@ -167,6 +171,7 @@ export function overdueByTenant(
         amountPaise: ask,
         invoiceCount: 1,
         oldestInvoiceId: inv.id,
+        oldestIsOpeningBalance: inv.openingBalance ?? false,
         oldestDueDate: inv.dueDate,
         oldestAmountPaise: ask,
         daysOverdue: daysFrom(inv.dueDate, today),
@@ -177,6 +182,7 @@ export function overdueByTenant(
     item.invoiceCount += 1;
     if (compareDates(inv.dueDate, item.oldestDueDate) < 0) {
       item.oldestInvoiceId = inv.id;
+      item.oldestIsOpeningBalance = inv.openingBalance ?? false;
       item.oldestDueDate = inv.dueDate;
       item.oldestAmountPaise = ask;
       item.sortDate = inv.dueDate;

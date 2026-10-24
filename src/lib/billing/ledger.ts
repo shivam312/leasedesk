@@ -8,6 +8,13 @@ import type { PlainDate } from "./dates";
 import { compareDates } from "./dates";
 
 export type LedgerSource =
+  /** What the tenant owed before LeaseDesk (D-028), on its as-on date. */
+  | {
+      type: "opening_balance";
+      id: string;
+      date: PlainDate;
+      amountPaise: Paise;
+    }
   | {
       type: "invoice";
       id: string;
@@ -44,7 +51,13 @@ export type LedgerSource =
     };
 
 export type LedgerKind =
-  "invoice" | "credit_note" | "payment" | "tds" | "reversal" | "tds_reversal";
+  | "opening_balance"
+  | "invoice"
+  | "credit_note"
+  | "payment"
+  | "tds"
+  | "reversal"
+  | "tds_reversal";
 
 export type LedgerEntry = {
   date: PlainDate;
@@ -66,11 +79,12 @@ export type Ledger = {
 };
 
 /**
- * Within one day: what was billed, then credit notes, then payments and
+ * Within one day: the opening balance, what was billed, then credit notes, then payments and
  * reversals in the order they were made (so paying, reversing and paying
  * again on one day reads as it happened). TDS shares its payment's place.
  */
 const DAY_ORDER: Record<LedgerKind, number> = {
+  opening_balance: -1,
   invoice: 0,
   credit_note: 1,
   payment: 2,
@@ -84,14 +98,28 @@ type Unbalanced = Omit<LedgerEntry, "balancePaise">;
 function entriesOf(s: LedgerSource): Unbalanced[] {
   const base = { date: s.date, sourceId: s.id };
   const amounts =
-    s.type === "invoice" || s.type === "credit_note"
-      ? [s.totalPaise]
-      : [s.amountReceivedPaise, s.tdsPaise];
+    s.type === "opening_balance"
+      ? [s.amountPaise]
+      : s.type === "invoice" || s.type === "credit_note"
+        ? [s.totalPaise]
+        : [s.amountReceivedPaise, s.tdsPaise];
   if (!amounts.every((a) => Number.isSafeInteger(a)))
     throw new RangeError(
       `${"number" in s ? s.number : s.id} has an amount that isn't whole paise`,
     );
   switch (s.type) {
+    case "opening_balance":
+      if (s.amountPaise <= 0)
+        throw new RangeError("An opening balance must be more than ₹0");
+      return [
+        {
+          ...base,
+          kind: "opening_balance",
+          label: "Opening balance (owed before LeaseDesk)",
+          debitPaise: s.amountPaise,
+          creditPaise: 0,
+        },
+      ];
     case "invoice":
       if (s.totalPaise < 0)
         throw new RangeError(`Invoice ${s.number} has a negative total`);

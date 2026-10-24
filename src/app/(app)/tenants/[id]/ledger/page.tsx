@@ -80,6 +80,9 @@ function Status({
 }
 
 function What({ e }: { e: LedgerEntry }) {
+  // The opening balance has no page of its own; it is set on the tenant page.
+  if (e.kind === "opening_balance")
+    return <span className="font-medium">{e.label}</span>;
   return e.kind === "credit_note" ? (
     <a
       href={hrefOf(e)}
@@ -102,6 +105,7 @@ function What({ e }: { e: LedgerEntry }) {
 /** On phones, where the columns aren't shown: "Billed ₹x", "Paid ₹x", "Credited ₹x", "Added back ₹x". */
 function cardAmount(e: LedgerEntry) {
   if (e.kind === "invoice") return `Billed ${formatINR(e.debitPaise)}`;
+  if (e.kind === "opening_balance") return `Owed ${formatINR(e.debitPaise)}`;
   if (e.debitPaise > 0) return `Added back ${formatINR(e.debitPaise)}`;
   return `${e.kind === "payment" ? "Paid" : "Credited"} ${formatINR(e.creditPaise)}`;
 }

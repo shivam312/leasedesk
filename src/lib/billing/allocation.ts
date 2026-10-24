@@ -20,11 +20,19 @@ export type OpenInvoice = {
   outstandingPaise: Paise;
   /** TDS still expected on it (remainingExpectedTds). */
   expectedTdsPaise: Paise;
+  /**
+   * The tenant's opening balance (D-028), settled like an invoice and due on
+   * its as-on date. `id` is then the opening balance's id.
+   */
+  openingBalance?: boolean;
 };
 
 export type Allocation = { invoiceId: string; amountPaise: Paise };
 
-/** Unpaid invoices, oldest first: by due date, then invoice number. */
+/**
+ * Unpaid invoices, oldest first: by due date, then the opening balance
+ * before invoices due that day, then invoice number.
+ */
 export function oldestFirst<T extends OpenInvoice>(
   invoices: readonly T[],
 ): T[] {
@@ -33,6 +41,7 @@ export function oldestFirst<T extends OpenInvoice>(
     .sort(
       (a, b) =>
         compareDates(a.dueDate, b.dueDate) ||
+        Number(!a.openingBalance) - Number(!b.openingBalance) ||
         (a.number < b.number ? -1 : a.number > b.number ? 1 : 0),
     );
 }

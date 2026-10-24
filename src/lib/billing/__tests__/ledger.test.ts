@@ -160,6 +160,61 @@ describe("tenantLedger", () => {
     ]);
   });
 
+  it("puts the opening balance first on its as-on date, before an invoice that day (D-028)", () => {
+    // Owed ₹2,50,000 as on 01-10-2026 from the old books, then October's
+    // ₹1,18,000 invoice the same day and ₹2,50,000 paid on 05-10-2026:
+    // 2,50,000 → 3,68,000 → 1,18,000.
+    const ledger = tenantLedger([
+      {
+        type: "invoice",
+        id: "oct",
+        date: "2026-10-01",
+        number: "B1/26-27/0002",
+        totalPaise: 11_800_000,
+      },
+      {
+        type: "payment",
+        id: "p1",
+        date: "2026-10-05",
+        amountReceivedPaise: 25_000_000,
+        tdsPaise: 0,
+        mode: "NEFT",
+        reference: null,
+      },
+      {
+        type: "opening_balance",
+        id: "ob",
+        date: "2026-10-01",
+        amountPaise: 25_000_000,
+      },
+    ]);
+    expect(
+      ledger.entries.map((e) => [e.kind, e.label, e.balancePaise]),
+    ).toEqual([
+      [
+        "opening_balance",
+        "Opening balance (owed before LeaseDesk)",
+        25_000_000,
+      ],
+      ["invoice", "Invoice B1/26-27/0002", 36_800_000],
+      ["payment", "Payment received (NEFT)", 11_800_000],
+    ]);
+    expect(ledger.closingPaise).toBe(11_800_000);
+  });
+
+  it("refuses an opening balance of ₹0 or less", () => {
+    expect(() =>
+      tenantLedger([
+        {
+          type: "opening_balance",
+          id: "ob",
+          date: "2026-10-01",
+          amountPaise: 0,
+        },
+      ]),
+    ).toThrow(RangeError);
+  });
+
   it("is empty with a zero balance when there is nothing yet", () => {
     expect(tenantLedger([])).toEqual({
       entries: [],

@@ -43,6 +43,34 @@ describe("oldestFirst", () => {
     ]);
   });
 
+  it("takes an opening balance first among items due the same day (D-028)", () => {
+    // Opening balance ₹2,50,000 as on 08-10-2026; its due date is that date,
+    // so it sorts with October's invoice and goes before it, after September.
+    const opening = inv("ob", "2026-10-08", "Opening balance", {
+      outstandingPaise: 25_000_000,
+      expectedTdsPaise: 0,
+      openingBalance: true,
+    });
+    expect(oldestFirst([nov, oct, opening, sep]).map((i) => i.id)).toEqual([
+      "sep",
+      "ob",
+      "oct",
+      "nov",
+    ]);
+    // ₹3,00,000 received with no TDS, against the opening balance and
+    // October: ₹2,50,000 clears the opening balance, ₹50,000 goes on October.
+    expect(
+      allocatePayment({
+        receivedPaise: 30_000_000,
+        tdsPaise: 0,
+        invoices: [oct, opening],
+      }).allocations,
+    ).toEqual([
+      { invoiceId: "ob", amountPaise: 25_000_000 },
+      { invoiceId: "oct", amountPaise: 5_000_000 },
+    ]);
+  });
+
   it("leaves out invoices with nothing to pay", () => {
     const paid = inv("paid", "2026-08-08", "B1/26-27/0000", {
       outstandingPaise: 0,

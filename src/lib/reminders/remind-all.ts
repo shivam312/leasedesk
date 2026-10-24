@@ -48,7 +48,12 @@ export async function remindAllOverdue(
   };
   // Part 1: claim one reminder per overdue tenant, in one transaction.
   const claims = await runScoped(db, ctx, async (s) => {
-    const late = overdueByTenant(await openInvoiceRows(s), today);
+    // The opening balance isn't emailed here yet: that reminder has no
+    // invoice to attach (M10, "Opening balances settle like invoices").
+    const late = overdueByTenant(
+      (await openInvoiceRows(s)).filter((r) => !r.openingBalance),
+      today,
+    );
     if (late.length === 0) return [];
     const earlier = new Set(
       (

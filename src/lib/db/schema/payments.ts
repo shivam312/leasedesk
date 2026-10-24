@@ -106,7 +106,41 @@ export const payments = pgTable(
 ).enableRLS();
 
 /**
- * How much of a payment (received + TDS) settles each invoice. Negative only
+ * What a tenant already owed when the landlord started on LeaseDesk, from
+ * invoices made in their old Excel or Tally (D-028: A; BILLING_RULES
+ * section 11). One per tenant. Settled by payments like an invoice, but
+ * never numbered, sent or taxed. Changed or deleted only while no payment
+ * is applied to it (a trigger, drizzle/0033).
+ */
+export const openingBalances = pgTable(
+  "opening_balances",
+  {
+    id: id(),
+    organizationId: uuid().notNull(),
+    tenantId: uuid().notNull(),
+    asOnDate: date().notNull(),
+    amount: bigint({ mode: "number" }).notNull(),
+    note: text(),
+    createdBy: uuid(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("opening_balances_one_per_tenant").on(
+      t.organizationId,
+      t.tenantId,
+    ),
+    unique().on(t.organizationId, t.tenantId, t.id),
+    foreignKey({
+      columns: [t.organizationId, t.tenantId],
+      foreignColumns: [tenants.organizationId, tenants.id],
+    }).onDelete("restrict"),
+    check("opening_balances_amount_positive", sql`${t.amount} > 0`),
+  ],
+).enableRLS();
+
+/**
+ * How much of a payment (received + TDS) settles each invoice (or the
+ * tenant's opening balance: exactly one of the two is set). Negative only
  * on a reversal entry, mirroring the payment it undoes. Append-only.
  */
 export const paymentAllocations = pgTable(
@@ -116,7 +150,8 @@ export const paymentAllocations = pgTable(
     organizationId: uuid().notNull(),
     tenantId: uuid().notNull(),
     paymentId: uuid().notNull(),
-    invoiceId: uuid().notNull(),
+    invoiceId: uuid(),
+    openingBalanceId: uuid(),
     // Includes the TDS share.
     amountSettled: bigint({ mode: "number" }).notNull(),
     ...timestamps,
@@ -134,7 +169,20 @@ export const paymentAllocations = pgTable(
       columns: [t.organizationId, t.tenantId, t.invoiceId],
       foreignColumns: [invoices.organizationId, invoices.tenantId, invoices.id],
     }).onDelete("restrict"),
+    foreignKey({
+      columns: [t.organizationId, t.tenantId, t.openingBalanceId],
+      foreignColumns: [
+        openingBalances.organizationId,
+        openingBalances.tenantId,
+        openingBalances.id,
+      ],
+    }).onDelete("restrict"),
+    index().on(t.openingBalanceId),
     check("payment_allocations_not_zero", sql`${t.amountSettled} <> 0`),
+    check(
+      "payment_allocations_one_target",
+      sql`(${t.invoiceId} is null) <> (${t.openingBalanceId} is null)`,
+    ),
   ],
 ).enableRLS();
 
@@ -150,7 +198,9 @@ export const tdsRecords = pgTable(
     organizationId: uuid().notNull(),
     tenantId: uuid().notNull(),
     paymentId: uuid().notNull(),
-    invoiceId: uuid().notNull(),
+    // The invoice, or the tenant's opening balance: exactly one is set.
+    invoiceId: uuid(),
+    openingBalanceId: uuid(),
     amount: bigint({ mode: "number" }).notNull(),
     // "2026-27"
     financialYear: text().notNull(),
@@ -176,7 +226,19 @@ export const tdsRecords = pgTable(
       columns: [t.organizationId, t.certificateDocumentId],
       foreignColumns: [documents.organizationId, documents.id],
     }).onDelete("restrict"),
+    foreignKey({
+      columns: [t.organizationId, t.tenantId, t.openingBalanceId],
+      foreignColumns: [
+        openingBalances.organizationId,
+        openingBalances.tenantId,
+        openingBalances.id,
+      ],
+    }).onDelete("restrict"),
     check("tds_records_amount_positive", sql`${t.amount} > 0`),
+    check(
+      "tds_records_one_target",
+      sql`(${t.invoiceId} is null) <> (${t.openingBalanceId} is null)`,
+    ),
     check(
       "tds_records_certificate",
       sql`${t.certificateDocumentId} is null or ${t.certificateReceived}`,

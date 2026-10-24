@@ -1,14 +1,20 @@
 // Loading a tenant's ledger (src/lib/billing/ledger.ts does the sums): every
-// sent invoice (drafts aren't owed yet), credit note, payment and reversal.
+// sent invoice (drafts aren't owed yet), credit note, payment and reversal,
+// after the tenant's opening balance (D-028) if they have one.
 
 import { and, asc, eq, ne } from "drizzle-orm";
 import { tenantLedger, type LedgerSource } from "@/lib/billing/ledger";
-import { creditNotes, invoices, payments } from "@/lib/db/schema";
+import {
+  creditNotes,
+  invoices,
+  openingBalances,
+  payments,
+} from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
 import { PAYMENT_MODES } from "./forms";
 
 export async function ledgerFor(s: Scoped, tenantId: string) {
-  const [sent, notes, paid] = await Promise.all([
+  const [sent, notes, paid, opening] = await Promise.all([
     s.tx
       .select()
       .from(invoices)
@@ -42,8 +48,18 @@ export async function ledgerFor(s: Scoped, tenantId: string) {
         asc(payments.createdAt),
         asc(payments.id),
       ),
+    s.tx
+      .select()
+      .from(openingBalances)
+      .where(s.where(openingBalances, eq(openingBalances.tenantId, tenantId))),
   ]);
   const sources: LedgerSource[] = [
+    ...opening.map((o): LedgerSource => ({
+      type: "opening_balance",
+      id: o.id,
+      date: o.asOnDate,
+      amountPaise: o.amount,
+    })),
     ...sent.map((i): LedgerSource => ({
       type: "invoice",
       id: i.id,

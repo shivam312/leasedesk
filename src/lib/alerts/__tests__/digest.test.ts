@@ -65,6 +65,7 @@ const overdue: AttentionItem = {
   amountPaise: 108_000_00,
   invoiceCount: 2,
   oldestInvoiceId: "i1",
+  oldestIsOpeningBalance: false,
   oldestDueDate: "2026-09-08",
   oldestAmountPaise: 50_000_00,
   daysOverdue: 45,

@@ -85,7 +85,7 @@ async function Today() {
     const noEmail = new Map<string, string[]>();
     if (canBill)
       for (const item of items) {
-        if (item.kind === "overdue")
+        if (item.kind === "overdue" && !item.oldestIsOpeningBalance)
           whatsapp.set(
             item.key,
             await whatsappReminder(s, item.oldestInvoiceId, today),
@@ -288,12 +288,17 @@ function Item({
   switch (item.kind) {
     case "overdue": {
       const many = item.invoiceCount > 1;
+      const ledger = many || item.oldestIsOpeningBalance;
       return (
         <>
           <Heading
             title={`${item.tenantName} hasn't paid ${formatINR(item.amountPaise)}`}
             badge={<Badge tone="bad">Overdue</Badge>}
-            detail={`To pay after the TDS they may keep back. ${many ? `${item.invoiceCount} invoices unpaid. Oldest was due` : "Invoice was due"} ${formatDate(item.oldestDueDate)} (${dayCount(item.daysOverdue)} ago).`}
+            detail={`To pay after the TDS they may keep back. ${
+              item.oldestIsOpeningBalance
+                ? `Includes their opening balance, owed since ${formatDate(item.oldestDueDate)} (${dayCount(item.daysOverdue)} ago).`
+                : `${many ? `${item.invoiceCount} invoices unpaid. Oldest was due` : "Invoice was due"} ${formatDate(item.oldestDueDate)} (${dayCount(item.daysOverdue)} ago).`
+            }`}
           />
           <div className="flex flex-wrap items-start gap-2">
             {whatsapp?.kind === "ready" && (
@@ -305,13 +310,13 @@ function Item({
             )}
             <Link
               href={
-                many
+                ledger
                   ? `/tenants/${item.tenantId}/ledger`
                   : `/billing/invoices/${item.oldestInvoiceId}`
               }
               className={linkButton}
             >
-              {many ? "See what they owe" : "Open invoice"}
+              {ledger ? "See what they owe" : "Open invoice"}
             </Link>
             {whatsapp?.kind === "no_number" && (
               <Link

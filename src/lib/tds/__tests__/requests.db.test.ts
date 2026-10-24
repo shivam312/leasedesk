@@ -49,7 +49,8 @@ describe("certificateRequestEmail", () => {
   });
 });
 
-// November 2026: ₹1,26,360 received + ₹11,700 TDS on 10 Nov → Q3 FY 2026-27.
+// ₹1,26,360 received + ₹11,700 TDS on 10 Jun 2026 → Q1 FY 2026-27, whose
+// certificate was due 15 Aug 2026, so it's overdue today.
 async function paidWithTds(tx: TestTx) {
   const { a, ctx, invoice } = await madeDraft(tx);
   await tx
@@ -62,7 +63,7 @@ async function paidWithTds(tx: TestTx) {
       s,
       {
         tenantId: a.tenant.id,
-        receivedDate: "2026-11-10",
+        receivedDate: "2026-06-10",
         amountReceivedPaise: 12_636_000,
         tdsPaise: 1_170_000,
         mode: "neft",
@@ -70,7 +71,7 @@ async function paidWithTds(tx: TestTx) {
         note: null,
         allocations: "auto",
       },
-      "2026-11-10",
+      "2026-06-10",
     );
   });
   await tx.execute(sql`reset role`);
@@ -94,20 +95,56 @@ describe.skipIf(skipDbTests)("Request from tenant", () => {
           driver,
         );
       // The amount is worked out here, not taken from the page: ₹11,700.
-      expect(await ask(3)).toEqual({
+      expect(await ask(1)).toEqual({
         kind: "sent",
         to: ["ap@a.test"],
         amountPaise: 1_170_000,
       });
       expect(sent[0]!.text).toContain("₹11,700 of TDS deducted");
-      expect(await ask(3)).toEqual({ kind: "already_today" });
+      expect(await ask(1)).toEqual({ kind: "already_today" });
       expect(sent).toHaveLength(1);
       // A quarter with no TDS has nothing to ask for.
-      expect(await ask(1)).toEqual({ kind: "nothing_missing" });
+      expect(await ask(2)).toEqual({ kind: "nothing_missing" });
       const asked = await runScoped(asDb(tx), ctx, (s) =>
         lastRequests(s, "2026-27"),
       );
-      expect(asked.has(`${a.tenant.id}|3`)).toBe(true);
-      expect(asked.has(`${a.tenant.id}|1`)).toBe(false);
+      expect(asked.has(`${a.tenant.id}|1`)).toBe(true);
+      expect(asked.has(`${a.tenant.id}|2`)).toBe(false);
+    }));
+
+  it("doesn't ask before the certificate is due, and asks only for the part not covered", () =>
+    inRollback(async (tx) => {
+      const { a, ctx } = await paidWithTds(tx);
+      const { sent, driver } = outbox();
+      const ask = (today: string) =>
+        requestCertificate(
+          asDb(tx),
+          ctx,
+          { tenantId: a.tenant.id, financialYear: "2026-27", quarter: 1 },
+          today,
+          driver,
+        );
+      // On 1 Aug 2026 the Q1 certificate isn't due yet (15 Aug).
+      expect(await ask("2026-08-01")).toEqual({ kind: "nothing_missing" });
+      // A certificate covering ₹5,000 of the ₹11,700 is in: ask for ₹6,700.
+      await tx.execute(sql`reset role`);
+      const [record] = await tx
+        .select({ id: schema.tdsRecords.id })
+        .from(schema.tdsRecords)
+        .where(eq(schema.tdsRecords.tenantId, a.tenant.id));
+      await tx.execute(sql`set local session_replication_role = replica`);
+      await tx.execute(
+        sql`update tds_records set amount = 500000, certificate_received = true where id = ${record!.id}`,
+      );
+      await tx.execute(
+        sql`insert into tds_records (organization_id, tenant_id, payment_id, invoice_id, financial_year, quarter, amount, certificate_received)
+            select organization_id, tenant_id, payment_id, invoice_id, financial_year, quarter, 670000, false from tds_records where id = ${record!.id}`,
+      );
+      await tx.execute(sql`set local session_replication_role = origin`);
+      expect(await ask(todayInIndia())).toMatchObject({
+        kind: "sent",
+        amountPaise: 670_000,
+      });
+      expect(sent[0]!.text).toContain("₹6,700 of TDS deducted");
     }));
 });

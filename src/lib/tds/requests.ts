@@ -40,7 +40,7 @@ export function certificateRequestEmail(input: {
     text: [
       `Dear ${input.tenantName},`,
       "",
-      `Our records show ${formatINR(input.amountPaise)} of TDS deducted from your rent payments to ${input.landlordName} in ${period}. The ${form} for it was due by ${formatDate(input.due)}, and we haven't received it yet.`,
+      `Our records show ${formatINR(input.amountPaise)} of TDS deducted from your rent payments to ${input.landlordName} in ${period}. The ${form} covering it was due by ${formatDate(input.due)}, and we haven't received it yet.`,
       "",
       `Please download it from TRACES and reply to this email with the PDF.`,
       "",
@@ -54,7 +54,7 @@ export type RequestResult =
   | { kind: "sent"; to: string[]; amountPaise: number }
   | { kind: "no_email" }
   | { kind: "already_today" }
-  /** No TDS that quarter, or its certificate is already in. */
+  /** No TDS that quarter, its certificate is in, or it isn't due yet. */
   | { kind: "nothing_missing" }
   | { kind: "failed"; message: string };
 
@@ -76,7 +76,8 @@ export async function requestCertificate(
       .where(s.where(tenants, eq(tenants.id, input.tenantId)));
     if (!tenant) return null;
     // The quarter's TDS per our records now, and whether its certificate
-    // is still missing.
+    // is overdue (as the page offers the button); for one partly covered,
+    // the part still not covered.
     const cell = tdsTracker({
       financialYear: input.financialYear,
       today,
@@ -84,8 +85,7 @@ export async function requestCertificate(
     })
       .rows.find((r) => r.tenantId === input.tenantId)
       ?.quarters.find((q) => q.quarter === input.quarter);
-    if (!cell || cell.status === "none" || cell.status === "received")
-      return { nothing: true as const };
+    if (!cell || !cell.overdue) return { nothing: true as const };
     const [asked] = await s.tx
       .select({ id: certificateRequests.id })
       .from(certificateRequests)
@@ -114,7 +114,7 @@ export async function requestCertificate(
       tenantName: tenant.name,
       landlordName: org?.name ?? "",
       to: await recipientsFor(s, input.tenantId),
-      amountPaise: cell.amount,
+      amountPaise: cell.amount - cell.received,
     };
   });
   if (!prepared) return null;

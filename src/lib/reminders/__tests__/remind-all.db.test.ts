@@ -82,6 +82,34 @@ describe.skipIf(skipDbTests)("Remind all", () => {
       expect(sent).toHaveLength(1);
     }));
 
+  it("lets a failed email be tried again the same day", () =>
+    inRollback(async (tx) => {
+      const { a, ctx } = await overdue(tx, "ap@a.test");
+      const broken: EmailDriver = {
+        send: async () => {
+          throw new Error("down");
+        },
+      };
+      const first = await remindAllOverdue(asDb(tx), ctx, "2026-11-20", broken);
+      await tx.execute(sql`reset role`);
+      expect(first.failed).toEqual([a.tenant.companyName]);
+      const [row] = await tx
+        .select()
+        .from(schema.reminders)
+        .where(sql`${schema.reminders.createdAt} >= now()`);
+      expect(row!.status).toBe("failed");
+      await tx.execute(sql`set local session_replication_role = replica`);
+      await tx.execute(
+        sql`update reminders set created_at = '2026-11-20T10:00:00+05:30' where id = ${row!.id}`,
+      );
+      await tx.execute(sql`set local session_replication_role = origin`);
+      // "Try again later" must mean it: the failed one doesn't count as sent.
+      const { sent, driver } = outbox();
+      const again = await remindAllOverdue(asDb(tx), ctx, "2026-11-20", driver);
+      expect(again.sent).toEqual([a.tenant.companyName]);
+      expect(sent).toHaveLength(1);
+    }));
+
   it("asks for the oldest invoice's own amount, not the tenant's total", () =>
     inRollback(async (tx) => {
       const { a, ctx, invoice } = await overdue(tx, "ap@a.test");

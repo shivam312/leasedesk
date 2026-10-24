@@ -2,8 +2,8 @@
 // overdue invoice, for their oldest one (as the Today card), asking for what
 // is left on that invoice less the TDS they may keep back (section 14), not
 // the tenant's total across invoices. A tenant already reminded by a person
-// today is skipped, so a second tap sends nothing twice; tenants with no
-// email address are listed instead.
+// today is skipped, so a second tap sends nothing twice (a failed email can
+// be tried again); tenants with no email address are listed instead.
 
 import { and, eq, gte, inArray, isNull } from "drizzle-orm";
 import { overdueByTenant } from "@/lib/alerts/attention";
@@ -64,6 +64,8 @@ export async function remindAllOverdue(
               ),
               eq(reminders.channel, "email"),
               isNull(reminders.step),
+              // A failed one doesn't count: "try again later" must work.
+              inArray(reminders.status, ["sent", "sending"]),
               gte(reminders.createdAt, startOfIndiaDay(today)),
             ),
           )

@@ -320,7 +320,7 @@ function Item({
           <Heading
             title={`${item.tenantName} hasn't paid ${formatINR(item.amountPaise)}`}
             badge={<Badge tone="bad">Overdue</Badge>}
-            detail={`To pay after the TDS they may keep back. ${
+            detail={`This is after the TDS they may keep back. ${
               item.oldestIsOpeningBalance
                 ? `Includes their opening balance, owed since ${formatDate(item.oldestDueDate)} (${dayCount(item.daysOverdue)} ago).`
                 : `${many ? `${item.invoiceCount} invoices unpaid. Oldest was due` : "Invoice was due"} ${formatDate(item.oldestDueDate)} (${dayCount(item.daysOverdue)} ago).`

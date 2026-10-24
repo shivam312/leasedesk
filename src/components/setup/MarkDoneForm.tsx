@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/field";
 import type { FormState } from "@/lib/auth/forms";
 
-/** "It's right", "Nobody owes anything": tick a setup step by hand. */
+/** "Yes, the schedule is right", "Nobody owes anything": tick a setup step by hand. */
 export function MarkDoneForm({
   step,
   label,
@@ -26,7 +26,7 @@ export function MarkDoneForm({
         disabled={pending || state.tone === "success"}
         className="h-11 md:h-9"
       >
-        {pending ? "Saving…" : label}
+        {pending ? "Saving…" : state.tone === "success" ? "Saved" : label}
       </Button>
     </form>
   );

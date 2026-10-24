@@ -47,7 +47,7 @@ export async function addUnit(page: Page) {
   await page.getByRole("link", { name: "Add unit" }).click();
   await page.getByLabel("Unit number", { exact: true }).fill("301");
   await page
-    .getByLabel("Floor", { exact: true })
+    .getByLabel("Floor (optional)", { exact: true })
     .selectOption({ label: "3rd" });
   await page.getByLabel("Carpet area (sq ft)").fill("1,000");
   await page.getByRole("button", { name: "Add unit" }).click();

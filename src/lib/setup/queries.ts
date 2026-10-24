@@ -70,7 +70,7 @@ export async function setupFacts(s: Scoped): Promise<SetupFacts> {
   };
 }
 
-/** "It's right", "Nobody owes anything", "Just me for now". */
+/** "Yes, the schedule is right", "Nobody owes anything", "Just me for now". */
 export async function markSetupStep(s: Scoped, step: MarkableStep) {
   await logActivity(s, {
     entityType: "setup",

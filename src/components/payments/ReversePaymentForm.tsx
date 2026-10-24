@@ -63,7 +63,7 @@ export function ReversePaymentForm({
       <input type="hidden" name="paymentId" value={paymentId} />
       <p className="text-sm">
         {amountLabel
-          ? `This adds a reversal dated today that takes ${amountLabel} back off the invoices it paid; they become unpaid again.`
+          ? `This adds a reversal dated today that takes ${amountLabel} back off what it paid; those amounts become unpaid again.`
           : "This adds a reversal dated today, so the payment no longer counts as credit."}{" "}
         The payment stays on record, marked reversed. Then record the correct
         one.

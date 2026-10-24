@@ -137,6 +137,8 @@ async function Tracker({
       ? Number(rawQuarter)
       : null;
   const onlyMissing = missing === "1";
+  // The year and "only missing" chips keep the search and quarter.
+  const keep = `${q ? `&q=${encodeURIComponent(q)}` : ""}${quarter ? `&quarter=${quarter}` : ""}`;
   await connection();
   const today = todayInIndia();
   const years = financialYearChoices(today);
@@ -169,7 +171,7 @@ async function Tracker({
         {years.map((y) => (
           <Link
             key={y}
-            href={`/billing/tds?fy=${y}${onlyMissing ? "&missing=1" : ""}`}
+            href={`/billing/tds?fy=${y}${onlyMissing ? "&missing=1" : ""}${keep}`}
             aria-current={y === fy ? "page" : undefined}
             className={cn(
               "inline-flex min-h-11 items-center rounded-full border px-4 text-sm md:min-h-9",
@@ -181,7 +183,7 @@ async function Tracker({
         ))}
         {all.length > 0 && (
           <Link
-            href={`/billing/tds?fy=${fy}${onlyMissing ? "" : "&missing=1"}`}
+            href={`/billing/tds?fy=${fy}${onlyMissing ? "" : "&missing=1"}${keep}`}
             aria-current={onlyMissing ? "true" : undefined}
             className={cn(
               "inline-flex min-h-11 items-center rounded-full border px-4 text-sm md:min-h-9",

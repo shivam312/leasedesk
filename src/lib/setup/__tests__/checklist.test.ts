@@ -82,7 +82,8 @@ describe("setupChecklist", () => {
 
 describe("setupChecklist business step", () => {
   it("is done by any business, GSTIN or not, so an unregistered landlord can finish", () => {
-    const step = setupChecklist({ ...none, hasBusiness: true }).steps[0];
+    const [step] = setupChecklist({ ...none, hasBusiness: true }).steps;
+    if (!step) throw new Error("no steps");
     expect(step.key).toBe("business");
     expect(step.done).toBe(true);
     expect(step.title).toBe("Business details");

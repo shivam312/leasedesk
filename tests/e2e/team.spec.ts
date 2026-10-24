@@ -46,7 +46,9 @@ test("an owner invites someone, who joins with the link", async ({
   await expect(
     page.getByText(`Remove ${invitee} from your team?`, { exact: false }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Remove", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Yes, remove them", exact: true })
+    .click();
   await expect(page.getByText(invitee, { exact: true })).toHaveCount(0);
 
   // An invite not accepted yet can be cancelled, and its link stops working.
@@ -60,7 +62,7 @@ test("an owner invites someone, who joins with the link", async ({
     .getByRole("button", { name: `Cancel invite to ${second}` })
     .click();
   await page
-    .getByRole("button", { name: "Cancel invite", exact: true })
+    .getByRole("button", { name: "Yes, cancel the invite", exact: true })
     .click();
   await expect(page.getByText(second, { exact: true })).toHaveCount(0);
   const other = await browser.newContext();

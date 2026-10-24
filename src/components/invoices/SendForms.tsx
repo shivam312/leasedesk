@@ -142,7 +142,7 @@ export function SendAllForm({
   );
 }
 
-/** "Send 3 selected": number and email only the chosen drafts. */
+/** "Send 3 selected invoices": number and email only the chosen drafts. */
 export function SendSelectedForm({
   month,
   monthLabel,
@@ -162,7 +162,7 @@ export function SendSelectedForm({
   return (
     <ConfirmForm
       fields={{ month, invoiceIds: ids.join(",") }}
-      label={`Send ${ids.length} selected`}
+      label={`Send ${ids.length} selected ${ids.length === 1 ? "invoice" : "invoices"}`}
       question={`Send ${ids.length} selected ${monthLabel} ${word} for ${total} in all?`}
       consequence={consequence}
       confirmLabel={`Send ${ids.length} ${word}`}

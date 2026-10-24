@@ -316,7 +316,7 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
                     action={removeOpeningBalanceAction.bind(null, t.id)}
                     label="Remove opening balance"
                     question={`Remove the opening balance of ${formatINR(opening.amount)}? ${t.companyName} will no longer owe it on Today, in reminders or on the ledger.`}
-                    confirmLabel="Remove"
+                    confirmLabel="Yes, remove it"
                   />
                 )}
               </div>

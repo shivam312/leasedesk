@@ -123,7 +123,7 @@ test("new landlord → import → billing run → send → payment → reports",
     .getByRole("checkbox", { name: "Select Gamma Studio" })
     .filter({ visible: true })
     .check();
-  await page.getByRole("button", { name: "Send 1 selected" }).click();
+  await page.getByRole("button", { name: "Send 1 selected invoice" }).click();
   await expect(
     page.getByText(`Send 1 selected ${month} invoice for`),
   ).toBeVisible();

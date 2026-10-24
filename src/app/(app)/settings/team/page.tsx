@@ -73,7 +73,7 @@ async function Team() {
             <li key={p.id}>
               <Card className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
-                  <p className="truncate font-medium">
+                  <p className="font-medium break-all">
                     {p.email}
                     {p.userId === member.userId && (
                       <span className="text-muted-foreground"> (you)</span>
@@ -105,7 +105,9 @@ async function Team() {
                           : `Remove ${p.email} from your team? They can't log in to your account any more. What they did stays in the activity log.`
                       }
                       confirmLabel={
-                        p.status === "invited" ? "Cancel invite" : "Remove"
+                        p.status === "invited"
+                          ? "Yes, cancel the invite"
+                          : "Yes, remove them"
                       }
                     />
                   )}

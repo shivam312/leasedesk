@@ -38,7 +38,7 @@ test("an owner adds a building, a floor and units", async ({ page }) => {
   await page.getByRole("link", { name: "Add unit" }).click();
   await page.getByLabel("Unit number", { exact: true }).fill("301");
   await page
-    .getByLabel("Floor", { exact: true })
+    .getByLabel("Floor (optional)", { exact: true })
     .selectOption({ label: "3rd" });
   await page.getByLabel("Carpet area (sq ft)").fill("1,250.50");
   await page.getByRole("button", { name: "Add unit" }).click();

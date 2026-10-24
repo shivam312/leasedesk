@@ -26,7 +26,7 @@ test("the stacking plan shows floors top first, with each unit's status", async 
     await page.getByRole("link", { name: "Add unit" }).click();
     await page.getByLabel("Unit number", { exact: true }).fill(code);
     await page
-      .getByLabel("Floor", { exact: true })
+      .getByLabel("Floor (optional)", { exact: true })
       .selectOption({ label: floor });
     await page.getByLabel("Carpet area (sq ft)").fill(area);
     await page.getByLabel("Status").selectOption({ label: status });

@@ -88,7 +88,7 @@ export function setupChecklist(f: SetupFacts): {
       action: "Open a lease",
       done: marked.has("schedule"),
       canMark: f.firstLeaseId !== null,
-      markLabel: "It's right",
+      markLabel: "Yes, the schedule is right",
     },
     {
       key: "opening",

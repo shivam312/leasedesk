@@ -96,7 +96,7 @@ export function unitFields(
       name: "floorId",
       label: "Floor",
       type: "select",
-      required: true,
+      required: false,
       options: [
         { value: "", label: "No floor (small buildings can skip floors)" },
         ...floorList.map((f) => ({ value: f.id, label: f.label })),

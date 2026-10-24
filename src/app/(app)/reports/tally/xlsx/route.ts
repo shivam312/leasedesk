@@ -4,7 +4,7 @@
 import { appDb, requireMember } from "@/lib/auth";
 import { runScoped } from "@/lib/db/scoped";
 import { tallyEntriesReport } from "@/lib/exports/tally";
-import { tallyExportData } from "@/lib/exports/tally-data";
+import { tallyBusiness, tallyExportData } from "@/lib/exports/tally-data";
 import { reportWorkbook } from "@/lib/exports/xlsx";
 import { formatDate } from "@/lib/format";
 import { reportParams } from "@/lib/reports/registry";
@@ -14,8 +14,13 @@ export async function GET(req: Request) {
   const search = Object.fromEntries(new URL(req.url).searchParams);
   const { from, to } = reportParams(search, todayInIndia());
   const member = await requireMember();
-  const { vouchers } = await runScoped(appDb, member, (s) =>
-    tallyExportData(s, from, to),
+  const { vouchers } = await runScoped(appDb, member, async (s) =>
+    tallyExportData(
+      s,
+      from,
+      to,
+      (await tallyBusiness(s, search.business)).entityId,
+    ),
   );
   const report = tallyEntriesReport(
     vouchers,

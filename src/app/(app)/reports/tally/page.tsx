@@ -5,10 +5,15 @@ import { Suspense } from "react";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
+import { Select } from "@/components/ui/input";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
-import { earlierTallyExports, tallyExportData } from "@/lib/exports/tally-data";
+import {
+  earlierTallyExports,
+  tallyBusiness,
+  tallyExportData,
+} from "@/lib/exports/tally-data";
 import { formatDate, formatINR } from "@/lib/format";
 import { reportParams } from "@/lib/reports/registry";
 import { todayInIndia } from "@/lib/today";
@@ -51,20 +56,27 @@ async function Body({
   await connection();
   const { from, to } = reportParams(search, todayInIndia());
   const member = await requireMember();
-  const { vouchers, earlier } = await runScoped(appDb, member, async (s) => {
-    const data = await tallyExportData(s, from, to);
-    return {
-      vouchers: data.vouchers,
-      earlier: await earlierTallyExports(s, data.documentIds),
-    };
-  });
+  const { vouchers, earlier, entities, entityId, leftOut } = await runScoped(
+    appDb,
+    member,
+    async (s) => {
+      const business = await tallyBusiness(s, search.business);
+      const data = await tallyExportData(s, from, to, business.entityId);
+      return {
+        ...business,
+        vouchers: data.vouchers,
+        leftOut: data.paymentsLeftOut,
+        earlier: await earlierTallyExports(s, data.documentIds),
+      };
+    },
+  );
   const count = (type: string) =>
     vouchers.filter((v) => v.type === type).length;
   const sales = vouchers
     .filter((v) => v.type === "Sales")
     .reduce((t, v) => t + (v.entries[0]?.amount ?? 0), 0);
   const canExport = can(member.role, "manage_billing");
-  const query = `from=${from}&to=${to}`;
+  const query = `from=${from}&to=${to}${entities.length > 1 ? `&business=${entityId ?? "all"}` : ""}`;
   const repeated = earlier.reduce((max, e) => Math.max(max, e.overlap), 0);
   return (
     <div className="flex max-w-3xl flex-col gap-6">
@@ -81,6 +93,24 @@ async function Body({
           To
           <DateInput name="to" defaultValue={to} className="h-11 w-44 md:h-9" />
         </label>
+        {entities.length > 1 && (
+          <label className="flex flex-col gap-1 text-sm">
+            Business (one file per Tally company)
+            <Select
+              name="business"
+              defaultValue={entityId ?? "all"}
+              className="h-11 md:h-9"
+            >
+              {entities.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.legalName}
+                  {e.gstin ? ` (${e.gstin})` : ""}
+                </option>
+              ))}
+              <option value="all">All businesses in one file</option>
+            </Select>
+          </label>
+        )}
         <Button type="submit" variant="outline" className="h-11 md:h-9">
           Show
         </Button>
@@ -123,6 +153,14 @@ async function Body({
           <p className="text-xs text-muted-foreground">
             In Tally these are Sales, Credit Note, Receipt and Journal vouchers.
           </p>
+          {leftOut > 0 && (
+            <p role="status" className="text-sm">
+              {plural(leftOut, "payment")} {leftOut === 1 ? "isn't" : "aren't"}{" "}
+              in this file: {leftOut === 1 ? "it pays" : "they pay"} more than
+              one business&apos;s invoices, or nothing yet. They&apos;re in the
+              file for all businesses.
+            </p>
+          )}
           {earlier.length > 0 && (
             <p
               role="status"

@@ -6,6 +6,7 @@ import { and, desc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import type { PlainDate } from "@/lib/billing/dates";
 import { insertLogged } from "@/lib/db/activity-log";
 import {
+  billingEntities,
   creditNoteLines,
   creditNotes,
   exports,
@@ -59,6 +60,29 @@ export function tallyLedgers(settings: Settings): TallyLedgers {
     roundOff: settings["tally.ledgerRoundOff"],
     bank: settings["tally.ledgerBank"],
   };
+}
+
+/**
+ * The businesses (GSTINs) to choose from, and the one a Tally file is for:
+ * `?business=<id>`, or "all"; by default the first business when there are
+ * several, since each GSTIN is usually its own Tally company.
+ */
+export async function tallyBusiness(s: Scoped, param: unknown) {
+  const entities = await s.tx
+    .select({
+      id: billingEntities.id,
+      legalName: billingEntities.legalName,
+      gstin: billingEntities.gstin,
+    })
+    .from(billingEntities)
+    .where(s.where(billingEntities))
+    .orderBy(billingEntities.createdAt);
+  const chosen =
+    param === "all"
+      ? null
+      : (entities.find((e) => e.id === param)?.id ??
+        (entities.length > 1 ? entities[0]!.id : null));
+  return { entities, entityId: chosen };
 }
 
 export type PartyLedger = {
@@ -131,8 +155,12 @@ export async function tallyExportData(
   s: Scoped,
   from: PlainDate,
   to: PlainDate,
+  /** One business (GSTIN): a Tally company keeps one GSTIN's books. */
+  entityId: string | null = null,
 ): Promise<{
   vouchers: TallyVoucher[];
+  /** Payments left out of one business's file: on account, or paying more than one business's invoices. */
+  paymentsLeftOut: number;
   documentIds: string[];
   masters: TallyLedgerMaster[];
   /** Tenants in the file whose Tally name isn't saved yet. */
@@ -147,7 +175,8 @@ export async function tallyExportData(
     inFile.add(tenantId);
     return p.name;
   };
-  const [invoiceRows, noteRows, paymentRows] = await Promise.all([
+  // eslint-disable-next-line prefer-const -- narrowed to one business below
+  let [invoiceRows, noteRows, paymentRows] = await Promise.all([
     s.tx
       .select()
       .from(invoices)
@@ -157,6 +186,7 @@ export async function tallyExportData(
           ne(invoices.status, "draft"),
           gte(invoices.invoiceDate, from),
           lte(invoices.invoiceDate, to),
+          entityId ? eq(invoices.billingEntityId, entityId) : undefined,
         ),
       ),
     s.tx
@@ -168,6 +198,7 @@ export async function tallyExportData(
           creditNotes,
           gte(creditNotes.date, from),
           lte(creditNotes.date, to),
+          entityId ? eq(invoices.billingEntityId, entityId) : undefined,
         ),
       ),
     s.tx
@@ -180,9 +211,38 @@ export async function tallyExportData(
         ),
       ),
   ]);
-  const applications = await laterCreditApplications(s, from, to);
+  const applications = await laterCreditApplications(s, from, to, entityId);
   const invoiceIds = invoiceRows.map((i) => i.id);
   const noteIds = noteRows.map((n) => n.note.id);
+  // For one business: the payments whose every allocation is to its invoices.
+  const owner =
+    entityId && paymentRows.length > 0
+      ? paymentBusinesses(
+          await s.tx
+            .select({
+              paymentId: paymentAllocations.paymentId,
+              entityId: invoices.billingEntityId,
+            })
+            .from(paymentAllocations)
+            .innerJoin(invoices, eq(invoices.id, paymentAllocations.invoiceId))
+            .where(
+              s.where(
+                paymentAllocations,
+                inArray(
+                  paymentAllocations.paymentId,
+                  paymentRows.map((p) => p.id),
+                ),
+              ),
+            ),
+        )
+      : null;
+  const allPayments = paymentRows;
+  paymentRows = owner
+    ? allPayments.filter((p) => owner.get(p.id) === entityId)
+    : allPayments;
+  const paymentsLeftOut = owner
+    ? allPayments.filter((p) => !owner.get(p.id)).length
+    : 0;
   const paymentIds = paymentRows.map((p) => p.id);
   const [lines, noteLines, allocations] = await Promise.all([
     invoiceIds.length === 0
@@ -301,6 +361,7 @@ export async function tallyExportData(
   );
   return {
     vouchers,
+    paymentsLeftOut,
     documentIds: [
       ...invoiceIds,
       ...noteIds,
@@ -316,6 +377,25 @@ export async function tallyExportData(
 }
 
 /**
+ * Each payment's business: the one GSTIN all its allocations are to, or null
+ * when it paid more than one business's invoices (D-023). A payment with no
+ * allocations isn't in the map. Pure.
+ */
+export function paymentBusinesses(
+  rows: readonly { paymentId: string; entityId: string }[],
+): Map<string, string | null> {
+  const out = new Map<string, string | null>();
+  for (const r of rows) {
+    const seen = out.get(r.paymentId);
+    out.set(
+      r.paymentId,
+      seen === undefined ? r.entityId : seen === r.entityId ? seen : null,
+    );
+  }
+  return out;
+}
+
+/**
  * Credit applied to invoices after its payment was recorded ("Apply
  * credit"), on an India date in `from`–`to`: one per payment and moment,
  * identified by its first allocation's id.
@@ -324,6 +404,7 @@ async function laterCreditApplications(
   s: Scoped,
   from: PlainDate,
   to: PlainDate,
+  entityId: string | null,
 ) {
   const india = sql`(${paymentAllocations.createdAt} at time zone 'Asia/Kolkata')::date`;
   const rows = await s.tx
@@ -344,6 +425,7 @@ async function laterCreditApplications(
         eq(payments.kind, "payment"),
         ne(paymentAllocations.createdAt, payments.createdAt),
         sql`${india} >= ${from}::date and ${india} <= ${to}::date`,
+        entityId ? eq(invoices.billingEntityId, entityId) : undefined,
       ),
     )
     .orderBy(paymentAllocations.createdAt, paymentAllocations.id);

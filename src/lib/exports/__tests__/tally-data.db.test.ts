@@ -166,4 +166,44 @@ describe.skipIf(skipDbTests)("Tally export data", () => {
       expect(again.unsavedParties).toEqual([]);
       expect(again.vouchers[0]!.party).toBe(name);
     }));
+
+  it("narrows the file to one business (GSTIN)", () =>
+    inRollback(async (tx) => {
+      const { a, ctx, invoice } = await madeDraft(tx);
+      const { mine, other } = await runScoped(asDb(tx), ctx, async (s) => {
+        await issueInvoice(s, invoice.id, new Date("2026-11-01T04:30:00Z"));
+        await recordPayment(
+          s,
+          {
+            tenantId: a.tenant.id,
+            receivedDate: "2026-11-15",
+            amountReceivedPaise: 12_636_000,
+            tdsPaise: 1_170_000,
+            mode: "neft",
+            reference: "UTR9",
+            note: null,
+            allocations: "auto",
+          },
+          "2026-11-15",
+        );
+        return {
+          mine: await tallyExportData(
+            s,
+            "2026-11-01",
+            "2026-11-30",
+            a.entity.id,
+          ),
+          other: await tallyExportData(
+            s,
+            "2026-11-01",
+            "2026-11-30",
+            "00000000-0000-4000-8000-000000000000",
+          ),
+        };
+      });
+      expect(mine.vouchers.map((v) => v.type)).toEqual(["Sales", "Receipt"]);
+      expect(mine.paymentsLeftOut).toBe(0);
+      // Another business's file has neither the invoice nor its payment.
+      expect(other.vouchers).toEqual([]);
+    }));
 });

@@ -8,6 +8,7 @@ import { tallyXml } from "@/lib/exports/tally";
 import {
   recordTallyExport,
   saveFirstPartyNames,
+  tallyBusiness,
   tallyExportData,
 } from "@/lib/exports/tally-data";
 import { reportParams } from "@/lib/reports/registry";
@@ -26,8 +27,9 @@ export async function GET(req: Request) {
   let xml: string;
   try {
     xml = await runScoped(appDb, member, async (s) => {
+      const { entityId } = await tallyBusiness(s, search.business);
       const { vouchers, documentIds, masters, unsavedParties } =
-        await tallyExportData(s, from, to);
+        await tallyExportData(s, from, to, entityId);
       await recordTallyExport(s, from, to, documentIds, vouchers.length);
       // Each tenant's Tally name stays what this first file called it.
       await saveFirstPartyNames(s, unsavedParties);

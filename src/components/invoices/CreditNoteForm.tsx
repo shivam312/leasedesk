@@ -21,7 +21,7 @@ import {
 
 /**
  * Issue a credit note: why, and how much before GST to take off each line
- * (all that is left, to start with). The total with GST is worked out as you
+ * (₹0 to start with: a sent credit note can't be undone). The total with GST is worked out as you
  * type by the same engine the server uses, then confirmed before issuing.
  */
 export function CreditNoteForm({
@@ -49,10 +49,7 @@ export function CreditNoteForm({
   const left = (l: CreditableLine) => l.taxablePaise - l.credited.taxable;
   const [amounts, setAmounts] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      lines.map((l) => [
-        l.id,
-        state.values?.[`${LINE_FIELD}${l.id}`] ?? paiseToField(left(l)),
-      ]),
+      lines.map((l) => [l.id, state.values?.[`${LINE_FIELD}${l.id}`] ?? "0"]),
     ),
   );
   const [confirming, setConfirming] = useState(false);
@@ -65,23 +62,28 @@ export function CreditNoteForm({
   // The same calculation the server makes; null while an amount is invalid.
   let preview: ReturnType<typeof creditNoteAmounts> | null = null;
   let previewError: string | null = null;
-  try {
-    const request = lines.map((l) => {
-      const paise = amountToPaise(amounts[l.id] ?? "");
-      if (paise === null)
-        throw new Error("Enter amounts in rupees, like 5000 or 5000.50.");
-      return { lineId: l.id, taxablePaise: paise };
-    });
-    preview = creditNoteAmounts({
-      supply,
-      roundOff,
-      creditedRoundOff,
-      lines,
-      request,
-    });
-  } catch (error) {
-    previewError = error instanceof Error ? error.message : String(error);
-  }
+  // Every line still at ₹0 (as the form opens): nothing to work out yet.
+  const nothingYet = lines.every(
+    (l) => amountToPaise(amounts[l.id] ?? "") === 0,
+  );
+  if (!nothingYet)
+    try {
+      const request = lines.map((l) => {
+        const paise = amountToPaise(amounts[l.id] ?? "");
+        if (paise === null)
+          throw new Error("Enter amounts in rupees, like 5000 or 5000.50.");
+        return { lineId: l.id, taxablePaise: paise };
+      });
+      preview = creditNoteAmounts({
+        supply,
+        roundOff,
+        creditedRoundOff,
+        lines,
+        request,
+      });
+    } catch (error) {
+      previewError = error instanceof Error ? error.message : String(error);
+    }
   const done = state.tone === "success";
 
   if (done)
@@ -113,7 +115,7 @@ export function CreditNoteForm({
     >
       <input type="hidden" name="invoiceId" value={invoiceId} />
       <Field
-        label="Why"
+        label="Reason for the credit note"
         htmlFor={`${base}-reason`}
         error={state.fieldErrors?.reason}
       >
@@ -154,8 +156,8 @@ export function CreditNoteForm({
           Amount to take off each line, before GST
         </legend>
         <p className="text-sm text-muted-foreground">
-          Each line starts with all that is left on it. Change an amount for a
-          part credit, or make it 0 to leave the line as it is.
+          Each line starts at ₹0. Type the amount to take off, or tap &quot;All
+          of it&quot; to credit everything left on the line.
         </p>
         {lines.map((l) => {
           const id = `${base}-${l.id}`;
@@ -186,6 +188,20 @@ export function CreditNoteForm({
                   }}
                   {...errorProps(id, error, true)}
                 />
+                {left(l) > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 shrink-0 md:h-9"
+                    aria-label={`All of ${l.description}: ${formatINR(left(l))}`}
+                    onClick={() => {
+                      setAmounts({ ...amounts, [l.id]: paiseToField(left(l)) });
+                      setConfirming(false);
+                    }}
+                  >
+                    All of it
+                  </Button>
+                )}
               </div>
             </Field>
           );
@@ -229,6 +245,11 @@ export function CreditNoteForm({
               </span>
             </p>
           </>
+        ) : nothingYet ? (
+          <p className="flex justify-between gap-4 font-medium">
+            <span>Credit note total</span>
+            <span className="tabular-nums">{formatINR(0)}</span>
+          </p>
         ) : (
           <p className="text-destructive">{previewError}</p>
         )}
@@ -257,7 +278,7 @@ export function CreditNoteForm({
           </p>
           <div className="flex flex-wrap gap-2">
             <Button ref={confirmButton} type="submit" className="h-11 md:h-9">
-              Issue credit note
+              Issue credit note for {formatINR(preview.totals.total)}
             </Button>
             <Button
               type="button"
@@ -274,10 +295,10 @@ export function CreditNoteForm({
           <div>
             <Button
               type="submit"
-              disabled={pending || !preview}
+              disabled={pending || !preview || preview.totals.total === 0}
               className="h-11 md:h-9"
             >
-              {pending ? "Issuing…" : "Issue credit note"}
+              {pending ? "Issuing…" : "Check the credit note"}
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">

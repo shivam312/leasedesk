@@ -214,3 +214,46 @@ export const certificateRequests = pgTable(
     }).onDelete("restrict"),
   ],
 ).enableRLS();
+
+// The security deposit as a ledger (docs/PRODUCT_PLAN.md, "Ledger, not a
+// single number"; M9): money received, refunded, adjusted against the
+// tenant's dues (with the payment that settled them) or forfeited. The
+// lease's deposit_amount stays the amount the lease agreed. Append-only: a
+// trigger refuses changes and deletes (drizzle/0032); nobody edits money.
+export const depositEntryKind = pgEnum("deposit_entry_kind", [
+  "received",
+  "refunded",
+  "adjusted",
+  "forfeited",
+]);
+
+export const depositEntries = pgTable(
+  "deposit_entries",
+  {
+    id: id(),
+    organizationId: uuid().notNull(),
+    leaseId: uuid().notNull(),
+    tenantId: uuid().notNull(),
+    kind: depositEntryKind().notNull(),
+    date: date().notNull(),
+    amount: bigint({ mode: "number" }).notNull(),
+    reference: text(),
+    note: text(),
+    // For an adjustment: the payment that applied it to the tenant's invoices.
+    paymentId: uuid(),
+    createdBy: uuid(),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.organizationId, t.leaseId),
+    check("deposit_entries_amount_positive", sql`${t.amount} > 0`),
+    foreignKey({
+      columns: [t.organizationId, t.tenantId],
+      foreignColumns: [tenants.organizationId, tenants.id],
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [t.organizationId, t.paymentId],
+      foreignColumns: [payments.organizationId, payments.id],
+    }).onDelete("restrict"),
+  ],
+).enableRLS();

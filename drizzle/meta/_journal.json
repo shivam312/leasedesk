@@ -225,6 +225,13 @@
       "when": 1792805983782,
       "tag": "0031_certificate_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792806798335,
+      "tag": "0032_deposit_entries",
+      "breakpoints": true
     }
   ]
 }

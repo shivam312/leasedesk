@@ -15,6 +15,9 @@ import { can } from "@/lib/auth/roles";
 import { monthOf } from "@/lib/billing/dates";
 import { runScoped } from "@/lib/db/scoped";
 import { documentsFor } from "@/lib/files/documents";
+import { DEPOSIT_KIND_WORDS, DEPOSIT_KINDS } from "@/lib/payments/deposit-form";
+import { depositLedger } from "@/lib/payments/deposits";
+import { recordDepositEntryAction } from "@/server/actions/payments";
 import { formatArea, formatDate, formatINR } from "@/lib/format";
 import { bpText } from "@/lib/leases/prefill";
 import { getLease } from "@/lib/leases/queries";
@@ -76,10 +79,12 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
       saved,
       rows: reviewRows(saved.input, billingSettings(settings)),
       docs: await documentsFor(s, "lease", id),
+      deposit: await depositLedger(s, id),
     };
   });
   if (!data) notFound();
-  const { saved, rows, docs } = data;
+  const { saved, rows, docs, deposit } = data;
+  const canBill = can(member.role, "manage_billing");
   const { lease } = saved;
   const editable = can(member.role, "manage_leases");
   const status = LEASE_STATUS[lease.status];
@@ -145,6 +150,8 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           <dt className="text-muted-foreground">Security deposit</dt>
           <dd className="font-medium">
             {lease.depositAmount > 0 ? formatINR(lease.depositAmount) : "None"}
+            {deposit.entries.length > 0 &&
+              ` agreed · ${formatINR(deposit.heldPaise)} held`}
           </dd>
         </div>
       </dl>
@@ -269,6 +276,104 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
             : "No documents yet."
         }
       />
+
+      <section aria-labelledby="deposit-heading" className="max-w-2xl">
+        <h2 id="deposit-heading" className="mb-2 text-lg font-semibold">
+          Security deposit
+        </h2>
+        <p className="mb-2 text-sm">
+          {lease.depositAmount > 0
+            ? `The lease agrees ${formatINR(lease.depositAmount)}. `
+            : ""}
+          Held now: {formatINR(deposit.heldPaise)}.{" "}
+          {deposit.entries.length === 0 &&
+            "Record the deposit when it's received, so it's here at the tenant's exit."}
+        </p>
+        {deposit.entries.length > 0 && (
+          <ul className="mb-3 flex flex-col divide-y rounded-lg border text-sm">
+            {deposit.entries.map((e) => (
+              <li key={e.id} className="flex flex-col gap-0.5 px-4 py-2">
+                <span className="flex justify-between gap-3">
+                  <span>{DEPOSIT_KIND_WORDS[e.kind]}</span>
+                  <span className="shrink-0 tabular-nums">
+                    {e.kind === "received" ? "" : "− "}
+                    {formatINR(e.amount)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  {formatDate(e.date)}
+                  {e.reference ? ` · ${e.reference}` : ""}
+                  {e.note ? ` · ${e.note}` : ""}
+                  {e.paymentId && (
+                    <>
+                      {" · "}
+                      <Link
+                        href={`/billing/payments/${e.paymentId}`}
+                        className="underline"
+                      >
+                        the payment it made
+                      </Link>
+                    </>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {deposit.entries.some(
+          (e) => e.kind === "adjusted" || e.kind === "forfeited",
+        ) && (
+          <p className="mb-3 text-sm text-muted-foreground">
+            Ask your accountant whether GST applies on the amount used for
+            unpaid rent or kept.
+          </p>
+        )}
+        {canBill && (
+          <details>
+            <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium md:min-h-0">
+              Record a deposit entry
+            </summary>
+            <div className="pt-3">
+              <SimpleForm
+                action={recordDepositEntryAction.bind(null, lease.id)}
+                fields={[
+                  {
+                    name: "kind",
+                    label: "What happened",
+                    type: "select",
+                    required: true,
+                    defaultValue: "received",
+                    options: Object.entries(DEPOSIT_KINDS).map(
+                      ([value, label]) => ({ value, label }),
+                    ),
+                    hint: "Unpaid rent stays on the tenant's invoices; settle it with a payment, and refund the rest of the deposit.",
+                  },
+                  {
+                    name: "date",
+                    label: "Date received or paid out",
+                    type: "date",
+                    required: true,
+                  },
+                  {
+                    name: "amount",
+                    label: "Amount (₹)",
+                    required: true,
+                    inputMode: "decimal",
+                  },
+                  {
+                    name: "reference",
+                    label: "Reference (UTR, cheque number)",
+                  },
+                  { name: "note", label: "Note" },
+                ]}
+                submitLabel="Record entry"
+                pendingLabel="Recording…"
+                secondary
+              />
+            </div>
+          </details>
+        )}
+      </section>
 
       <RecordActivity ids={[lease.id]} />
 

@@ -43,6 +43,8 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-031 | Codex review of M5A: unresolved items | product | no | open |
 | D-032 | Run the test suites on GitHub Actions (CI)? | spend | no | open |
 | D-033 | Which unkept v1 promises wait until after the pilot? | product | no | open |
+| D-034 | Using a security deposit for a tenant's unpaid rent | product | no | open |
+| D-035 | GST on a security deposit the landlord keeps | ca | no | open |
 
 ## Human tasks
 
@@ -475,10 +477,6 @@ Things only a person can do. Tick them when done.
 - Done meanwhile: the fix (commit 121f82d) with tests; M5A is ticked in `docs/ROADMAP.md`. You can close this entry with "A".
 - Answer:
 
-## Applied
-
-(Applied entries move here, newest first.)
-
 ### D-032: Run the test suites on GitHub Actions (CI)?
 - Status: open
 - Type: spend
@@ -504,3 +502,31 @@ Things only a person can do. Tick them when done.
 - Recommendation: B, because the pilot accountant will ask for the signed agreement and the change history in the first week, while the deposit ledger matters only at a tenant's exit, Google login is a convenience over email and password, and the Excel import already covers bulk units.
 - Done meanwhile: nothing is dropped; the pipeline reaches these tasks only after every blocker is done, so there is time to answer.
 - Answer:
+
+### D-034: Using a security deposit for a tenant's unpaid rent
+- Status: open
+- Type: product
+- Blocking: no
+- Context: At exit, landlords often keep part of the deposit for unpaid rent and refund the rest. Recording that as an ordinary payment is wrong in three ways the billing review found: it takes the tenant's TDS out of the deposit too (on a ₹1,38,060 invoice with ₹11,700 expected TDS, the tenant is short-changed ₹11,700), an amount above the dues silently becomes advance rent, and the Tally file shows money reaching the bank when none did.
+- Options:
+  - A) Build it properly: the adjustment asks only for the amount after expected TDS on that lease's invoices, refuses more than is unpaid, is shown as a separate kind of settlement (not bank money), goes to Tally as a Journal against a "Security deposit" ledger, and can't be reversed without undoing the deposit entry
+  - B) Leave it out of v1: the landlord records a refund of the rest and the dues stay on the invoices (or are written off by a credit note); the settlement statement shows the sum
+- Recommendation: A, after the pilot accountant confirms the Tally entry they want (it touches GST, D-035), because it's how exits are settled in practice; B until then.
+- Done meanwhile: built B. The deposit ledger records received, refunded and kept; "used for unpaid rent" is refused with a message saying what to do instead.
+- Answer:
+
+### D-035: GST on a security deposit the landlord keeps
+- Status: open
+- Type: ca
+- Blocking: no
+- Context: When a landlord keeps (forfeits) some or all of a deposit, for damage or a broken lock-in, GST may be due on the amount kept, and some accountants also treat a deposit used against unpaid rent as a supply. LeaseDesk records the forfeiture in the deposit ledger but raises no invoice.
+- Options:
+  - A) Raise no invoice; tell the landlord to ask their accountant (now)
+  - B) Raise a GST invoice for the amount kept, at the building's GST rate
+- Recommendation: A until a CA confirms, because a wrong GST invoice is harder to undo than a missing one.
+- Done meanwhile: built A; `docs/BILLING_RULES.md` deposit lines marked **[CA]**.
+- Answer:
+
+## Applied
+
+(Applied entries move here, newest first.)

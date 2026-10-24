@@ -11,6 +11,8 @@ import type { FormState } from "@/lib/auth/forms";
 import { PermissionError, requirePermission } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { formatINR } from "@/lib/format";
+import { DEPOSIT_KINDS, depositEntrySchema } from "@/lib/payments/deposit-form";
+import { DepositError, recordDepositEntry } from "@/lib/payments/deposits";
 import { parsePaymentForm } from "@/lib/payments/forms";
 import {
   applyCredit,
@@ -130,6 +132,53 @@ export async function applyCreditAction(
         : {
             message: "There are no unpaid invoices to apply the credit to yet.",
           };
+    },
+  );
+}
+
+/** Record a security deposit entry on a lease (owner or accounts). */
+export async function recordDepositEntryAction(
+  leaseId: string,
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  return guardedForm(
+    "manage_billing",
+    depositEntrySchema,
+    form,
+    async (member, d) => {
+      if (!z.uuid().safeParse(leaseId).success)
+        return { message: "That lease couldn't be found." };
+      try {
+        await runScoped(appDb, member, (s) =>
+          recordDepositEntry(
+            s,
+            {
+              leaseId,
+              kind: d.kind,
+              date: d.date,
+              amountPaise: d.amount,
+              reference: d.reference,
+              note: d.note,
+            },
+            todayInIndia(),
+          ),
+        );
+      } catch (error) {
+        if (error instanceof DepositError)
+          return {
+            message: error.message,
+            values: Object.fromEntries(
+              [...form.entries()].map(([k, v]) => [k, String(v)]),
+            ),
+          };
+        throw error;
+      }
+      revalidatePath(`/leases/${leaseId}`);
+      return {
+        tone: "success",
+        message: `Recorded: ${DEPOSIT_KINDS[d.kind].toLowerCase()}, ${formatINR(d.amount)}.`,
+      };
     },
   );
 }

@@ -44,6 +44,19 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
     })
     .click();
   await (await opened).close();
+  // The security deposit, received, as a ledger on the lease.
+  await page.getByText("Record a deposit entry", { exact: true }).click();
+  await page.getByLabel("Date received or paid out").fill(today);
+  await page.getByLabel("Amount (₹)").fill("3,00,000");
+  await page
+    .getByLabel("Reference (UTR, cheque number) (optional)")
+    .fill("UTR42");
+  await page.getByRole("button", { name: "Record entry" }).click();
+  await expect(
+    page.getByText("Recorded: received from the tenant, ₹3,00,000."),
+  ).toBeVisible();
+  await expect(page.getByText(/Held now: ₹3,00,000\./)).toBeVisible();
+
   // A date of the landlord's own, shown on Today within its reminder.
   const review = addDays(today, 10);
   await page.getByText("Add a date", { exact: true }).click();
@@ -99,9 +112,7 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
 
   // Search finds the tenant, the unit and the invoice number.
   if (test.info().project.name === "laptop") {
-    await page
-      .getByRole("searchbox", { name: "Quick search" })
-      .fill("0001");
+    await page.getByRole("searchbox", { name: "Quick search" }).fill("0001");
     await page.keyboard.press("Enter");
   } else {
     await page.getByRole("link", { name: "Search", exact: true }).click();

@@ -58,7 +58,7 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 **tds_records**: tenant_id, payment_id, invoice_id, amount (> 0), financial_year (`2026-27`), quarter (1–4), certificate_received, certificate_document_id (the uploaded certificate in `documents`; set only with certificate_received). One per invoice a payment's TDS is against. Records of a reversed payment stay but no longer count (queries join `payments.status = 'active'`).
 
-**security_deposit_entries**: lease_id, date, type (`received`, `adjusted`, `refunded`, `top_up`), amount, note.
+**deposit_entries** (built M9, `drizzle/0032`): lease_id, tenant_id, kind (`received`, `refunded`, `forfeited`; `adjusted` exists for D-034 but isn't recorded yet), date, amount (> 0), reference, note, payment_id (for a future adjustment), created_by. Append-only (a trigger refuses changes and deletes); owners and accounts insert. Held = received − everything else. The lease's `deposit_amount` stays the amount the lease agreed.
 
 ## Bank matching and exports
 

@@ -413,3 +413,9 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Decision:** Sending renders the PDF once, stores it at `<organization id>/invoices/<invoice id>.pdf` in the private `documents` bucket and fills `invoices.pdf_path` (once, logged; `src/lib/invoices/stored-pdf.ts`). The email attaches that same file, and later downloads serve it. Invoices sent before this, and any whose upload failed, keep rendering from their frozen copies (D18). Drafts always render.
 **Why:** The tenant's copy and the landlord's later download must be the same document, even after the PDF layout changes (audit; must happen before the first layout change).
 **Consequences:** The stored file is the invoice as sent: it still shows the payment QR after the invoice is paid, as the tenant's copy does. A storage failure doesn't stop the send; it's reported to Sentry. Credit notes still render from their frozen copies.
+
+## D52. Lease documents are uploaded on the lease page, after saving (2026-10-24)
+
+**Decision:** The signed agreement (and addenda, ID proof, insurance) is uploaded from a Documents section on the lease page (`components/documents/`, `lib/files/documents.ts`), not as a sixth step of the lease form. The form's "Check and save" step says where to upload it.
+**Why:** The form is four client-side steps that save the lease in one action; a file needs the saved lease's id for its folder and row, and a failed upload shouldn't stop a lease being saved. One section also serves tenants (the next M9 task).
+**Consequences:** Files are checked by their first bytes (PDF, PNG, JPG), kept under `<organization>/leases/<lease id>/` and listed newest first; `/documents/[id]` opens one. Owners and property managers upload to leases (`manage_leases`).

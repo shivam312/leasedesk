@@ -754,6 +754,10 @@ export function LeaseForm({
             {formatArea(review.areaHundredths)}. Amounts are before GST, in the
             month they&apos;re billed.
           </p>
+          <p className="text-sm text-muted-foreground">
+            After saving, upload the signed agreement on the lease&apos;s page,
+            under Documents.
+          </p>
           <ul className="flex flex-col gap-1 text-sm">
             {review.criticalDates.map((d) => (
               <li key={`${d.type}-${d.date}`}>

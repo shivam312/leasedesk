@@ -24,6 +24,25 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
   await addTenant(page);
   const today = todayInIndia();
   await addLease(page, today);
+  // The signed agreement, kept on the lease page.
+  await page.getByText("Upload a document", { exact: true }).click();
+  await page
+    .getByLabel("File", { exact: true })
+    .filter({ visible: true })
+    .setInputFiles({
+      name: "Signed lease 301.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4\n% e2e signed lease\n%%EOF\n"),
+    });
+  await page.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(page.getByText("Uploaded Signed lease 301.pdf.")).toBeVisible();
+  const opened = page.waitForEvent("popup");
+  await page
+    .getByRole("link", {
+      name: /^Signed lease 301\.pdf \(opens in a new tab\)/,
+    })
+    .click();
+  await (await opened).close();
   // A phone shows the next 12 months of the schedule, then "Show all".
   if (test.info().project.name === "phone") {
     const all = page.getByText(/^Show all \d+ months$/);

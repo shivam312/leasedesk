@@ -187,7 +187,7 @@ Pilot blockers (what a real landlord's first month would hit):
 
 The rest (v1 promises not yet kept, and smaller fixes):
 
-- [ ] Documents on a lease: step 6 of the lease form uploads the signed agreement to the `documents` table and bucket; the lease page lists and opens them
+- [x] Documents on a lease: step 6 of the lease form uploads the signed agreement to the `documents` table and bucket; the lease page lists and opens them
 - [ ] Documents on a tenant, and uploads go direct to Storage so `MAX_UPLOAD_BYTES` can rise from 3 MB to 25 MB with a clear size error
 - [ ] Activity section on the tenant, lease, invoice and payment pages: who changed what and when, from `activity_log`
 - [ ] Custom critical dates on a lease, and "In discussion" on a lease-end alert so Today stops repeating it

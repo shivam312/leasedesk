@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { DocumentsSection } from "@/components/documents/DocumentsSection";
 import { EndLeaseForm } from "@/components/leases/EndLeaseForm";
 import { ScheduleTable } from "@/components/leases/LeaseForm";
 import { LEASE_STATUS } from "@/components/leases/status";
@@ -12,6 +13,7 @@ import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { monthOf } from "@/lib/billing/dates";
 import { runScoped } from "@/lib/db/scoped";
+import { documentsFor } from "@/lib/files/documents";
 import { formatArea, formatDate, formatINR } from "@/lib/format";
 import { bpText } from "@/lib/leases/prefill";
 import { getLease } from "@/lib/leases/queries";
@@ -67,10 +69,14 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
       tenantId: saved.lease.tenantId,
       leaseSettings: saved.lease.settings,
     });
-    return { saved, rows: reviewRows(saved.input, billingSettings(settings)) };
+    return {
+      saved,
+      rows: reviewRows(saved.input, billingSettings(settings)),
+      docs: await documentsFor(s, "lease", id),
+    };
   });
   if (!data) notFound();
-  const { saved, rows } = data;
+  const { saved, rows, docs } = data;
   const { lease } = saved;
   const editable = can(member.role, "manage_leases");
   const status = LEASE_STATUS[lease.status];
@@ -215,6 +221,18 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </details>
       )}
+
+      <DocumentsSection
+        ownerType="lease"
+        ownerId={lease.id}
+        list={docs}
+        canUpload={editable}
+        empty={
+          editable
+            ? "No documents yet. Upload the signed agreement so it's here when you need it."
+            : "No documents yet."
+        }
+      />
 
       <section aria-labelledby="schedule-heading" className="max-w-2xl">
         <h2 id="schedule-heading" className="mb-2 text-lg font-semibold">

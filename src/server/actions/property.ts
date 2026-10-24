@@ -4,6 +4,7 @@
 
 import { eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { redirect } from "next/navigation";
 import { appDb } from "@/lib/auth";
 import type { FormState } from "@/lib/auth/forms";
@@ -17,6 +18,9 @@ import {
   prefixClash,
   unitSchema,
 } from "@/lib/property/forms";
+import { planPropertyImport } from "@/lib/imports/property";
+import { pastedUnitsSheet } from "@/lib/imports/paste-units";
+import { existingProperty, saveProperty } from "@/lib/imports/save-property";
 import { guardedForm } from "./guard";
 
 /** Postgres unique violation: a duplicate unit code or floor label. */
@@ -149,4 +153,56 @@ export async function saveUnit(
     redirect(`/leases/buildings/${buildingId}`);
   }
   return result;
+}
+
+/** "Paste units from Excel": the rows, checked and saved as the Excel import does. */
+export async function pasteUnits(
+  buildingId: string,
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  return guardedForm(
+    "manage_property",
+    z.object({
+      rows: z
+        .string()
+        .trim()
+        .min(1, "Paste the rows copied from Excel: unit, floor, carpet area.")
+        .max(200_000),
+    }),
+    form,
+    (member, { rows }) =>
+      runScoped(appDb, member, async (s) => {
+        const existing = await existingProperty(s);
+        const building = existing.buildings.find((b) => b.id === buildingId);
+        if (!building)
+          return { message: "This building isn't in your account." };
+        const result = planPropertyImport(
+          [pastedUnitsSheet(rows, building.name)],
+          existing,
+        );
+        if ("errors" in result)
+          return {
+            fieldErrors: {
+              rows: result.errors
+                .slice(0, 5)
+                .map((e) => `Line ${Math.max(e.row - 1, 1)}: ${e.message}`)
+                .join(" "),
+            },
+            values: { rows },
+          };
+        if (result.plan.units.length === 0)
+          return {
+            fieldErrors: { rows: "No units in what you pasted." },
+            values: { rows },
+          };
+        await saveProperty(s, result.plan);
+        revalidatePath(`/leases/buildings/${buildingId}`);
+        const n = result.plan.units.length;
+        return {
+          tone: "success",
+          message: `Added ${n} ${n === 1 ? "unit" : "units"}.`,
+        };
+      }),
+  );
 }

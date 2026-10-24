@@ -53,8 +53,18 @@ test("an owner adds a building, a floor and units", async ({ page }) => {
     page.getByText("Unit 301 already exists in this building."),
   ).toBeVisible();
 
+  // Units pasted from Excel: unit, floor, carpet area (tab-separated).
+  const buildingUrl = page.url().replace(/\/units\/.*$/, "");
+  await page.goto(buildingUrl);
+  await page.getByText("Paste units from Excel", { exact: true }).click();
+  await page
+    .getByLabel("Rows from your sheet")
+    .fill("Unit\tFloor\tCarpet area\n302\t3rd\t1,200\n401\t4th\t900");
+  await page.getByRole("button", { name: "Add these units" }).click();
+  await expect(page.getByText("Added 2 units.")).toBeVisible();
+
   await page.goto("/leases/buildings");
   await expect(
-    page.getByText(/Mumbai · 1 unit, 1 vacant · 0% leased/),
+    page.getByText(/Mumbai · 3 units, 3 vacant · 0% leased/),
   ).toBeVisible();
 });

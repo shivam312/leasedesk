@@ -12,7 +12,7 @@ import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { GST_STATES } from "@/lib/india/identifiers";
 import { getBuilding } from "@/lib/property/queries";
-import { addFloor } from "@/server/actions/property";
+import { addFloor, pasteUnits } from "@/server/actions/property";
 
 export const metadata: Metadata = { title: "Building" };
 
@@ -133,6 +133,36 @@ async function Building({ params }: { params: Promise<{ id: string }> }) {
           />
         )}
       </section>
+
+      {editable && (
+        <section aria-labelledby="paste-heading" className="max-w-2xl">
+          <details>
+            <summary
+              id="paste-heading"
+              className="inline-flex min-h-11 cursor-pointer items-center font-medium md:min-h-0"
+            >
+              Paste units from Excel
+            </summary>
+            <div className="pt-3">
+              <SimpleForm
+                action={pasteUnits.bind(null, building.id)}
+                fields={[
+                  {
+                    name: "rows",
+                    label: "Rows from your sheet",
+                    type: "textarea",
+                    required: true,
+                    hint: "Copy the columns unit, floor, carpet area (sq ft) and, if different, billed area, and paste them here. New floors are added.",
+                  },
+                ]}
+                submitLabel="Add these units"
+                pendingLabel="Adding…"
+                secondary
+              />
+            </div>
+          </details>
+        </section>
+      )}
     </div>
   );
 }

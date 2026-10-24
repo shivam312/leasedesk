@@ -93,6 +93,31 @@ test("an owner adds a tenant with a contact, then finds them in the list", async
     page.getByRole("heading", { name: "Contacts (1)" }),
   ).toBeVisible();
 
+  // A tenant's document: over 25 MB is refused before it's sent; a PDF is kept.
+  await page.getByText("Upload a document", { exact: true }).click();
+  const file = page
+    .getByLabel("File", { exact: true })
+    .filter({ visible: true });
+  await file.setInputFiles({
+    name: "huge scan.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.alloc(26 * 1024 * 1024, 0x25),
+  });
+  await page.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(
+    page.getByText("That file is 26 MB; the most is 25 MB.", { exact: false }),
+  ).toBeVisible();
+  await file.setInputFiles({
+    name: "PAN card.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n% e2e PAN\n%%EOF\n"),
+  });
+  await page.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(page.getByText("Uploaded PAN card.pdf.")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /^PAN card\.pdf \(opens in a new tab\)/ }),
+  ).toBeVisible();
+
   await page.goto("/tenants");
   // Rahul became the main contact when Priya was removed.
   await page.getByLabel("Search tenants").fill("accounts@acme.in");

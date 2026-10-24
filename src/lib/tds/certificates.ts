@@ -11,7 +11,7 @@ import type { Scoped } from "@/lib/db/scoped";
 import { TAX_LABELS } from "@/lib/config/tax-labels";
 import {
   CERTIFICATE_TYPES,
-  MAX_UPLOAD_BYTES,
+  MAX_ACTION_UPLOAD_BYTES,
   sniffType,
   type FileStore,
 } from "@/lib/files/store";
@@ -71,7 +71,7 @@ export async function attachCertificate(
     );
   if (input.bytes.length === 0)
     throw new CertificateError("That file is empty.");
-  if (input.bytes.length > MAX_UPLOAD_BYTES)
+  if (input.bytes.length > MAX_ACTION_UPLOAD_BYTES)
     throw new CertificateError(
       "That file is over 3 MB. Upload the PDF from TRACES, or a smaller scan.",
     );

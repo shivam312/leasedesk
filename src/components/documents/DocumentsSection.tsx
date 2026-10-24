@@ -4,7 +4,10 @@ import { DOCUMENT_KINDS, type DocumentOwner } from "@/lib/files/documents";
 import { MAX_UPLOAD_BYTES } from "@/lib/files/store";
 import { formatDate } from "@/lib/format";
 import { todayInIndia } from "@/lib/today";
-import { uploadDocumentAction } from "@/server/actions/documents";
+import {
+  finishDocumentUpload,
+  prepareDocumentUpload,
+} from "@/server/actions/documents";
 import { UploadDocumentForm } from "./UploadDocumentForm";
 
 /** A lease's or tenant's documents, each opening in a new tab, and an upload form for those who can. */
@@ -62,8 +65,9 @@ export function DocumentsSection({
             <UploadDocumentForm
               kinds={Object.entries(DOCUMENT_KINDS)}
               defaultKind={ownerType === "lease" ? "agreement" : "id_proof"}
-              maxMb={Math.round(MAX_UPLOAD_BYTES / (1024 * 1024))}
-              action={uploadDocumentAction.bind(null, ownerType, ownerId)}
+              maxBytes={MAX_UPLOAD_BYTES}
+              prepare={prepareDocumentUpload.bind(null, ownerType, ownerId)}
+              finish={finishDocumentUpload.bind(null, ownerType, ownerId)}
             />
           </div>
         </details>

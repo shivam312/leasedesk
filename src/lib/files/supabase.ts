@@ -17,6 +17,9 @@ export async function supabaseStore(): Promise<FileStore> {
       });
       if (error) throw new Error(`Upload to ${path} failed: ${error.message}`);
     },
+    async remove(path) {
+      await bucket.remove([path]);
+    },
     async get(path) {
       const { data, error } = await bucket.download(path);
       if (error || !data) return null;
@@ -26,4 +29,18 @@ export async function supabaseStore(): Promise<FileStore> {
       };
     },
   };
+}
+
+/**
+ * A one-time URL the browser PUTs a file to, as the signed-in user (the
+ * bucket's upload policy still applies to the path).
+ */
+export async function signedUploadUrl(path: string): Promise<string> {
+  const supabase = await createSupabase();
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUploadUrl(path);
+  if (error || !data)
+    throw new Error(`Couldn't sign the upload: ${error?.message}`);
+  return data.signedUrl;
 }

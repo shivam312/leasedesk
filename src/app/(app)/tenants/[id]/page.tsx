@@ -7,6 +7,7 @@ import { ApplyCreditForm } from "@/components/payments/ApplyCreditForm";
 import { LEASE_STATUS } from "@/components/leases/status";
 import { PaymentList } from "@/components/payments/PaymentList";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { DocumentsSection } from "@/components/documents/DocumentsSection";
 import { InvoiceStatusBadge } from "@/components/invoices/StatusBadge";
 import { contactFields } from "@/components/tenants/fields";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { formatDate, formatINR, formatMonth } from "@/lib/format";
+import { documentsFor } from "@/lib/files/documents";
 import { invoicesOfTenant } from "@/lib/invoices/queries";
 import { todayInIndia } from "@/lib/today";
 import { addressWithState } from "@/lib/india/address";
@@ -67,7 +69,8 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
       unpaidInvoices(s, id, settings),
       invoicesOfTenant(s, id),
     ]);
-    return { ...found, leases, payments, credits, unpaid, invoiceList };
+    const docs = await documentsFor(s, "tenant", id);
+    return { ...found, leases, payments, credits, unpaid, invoiceList, docs };
   });
   if (!data) notFound();
   const { tenant: t, contacts, leases, payments, credits, unpaid } = data;
@@ -274,6 +277,14 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
           <PaymentList payments={payments} />
         )}
       </section>
+
+      <DocumentsSection
+        ownerType="tenant"
+        ownerId={t.id}
+        list={data.docs}
+        canUpload={editable}
+        empty="No documents yet: the tenant's ID proof, insurance or other papers go here. TDS certificates are on the TDS tracker."
+      />
 
       <section aria-labelledby="contacts-heading" className="max-w-2xl">
         <h2 id="contacts-heading" className="mb-2 text-lg font-semibold">

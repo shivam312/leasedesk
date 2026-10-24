@@ -314,6 +314,7 @@ export async function seedDemo(
     async get() {
       return null;
     },
+    async remove() {},
   };
   const quarters = await asUser((s) =>
     s.tx

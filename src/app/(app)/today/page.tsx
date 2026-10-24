@@ -6,6 +6,7 @@ import { WhatsappReminderLink } from "@/components/reminders/WhatsappReminderLin
 import { PageHeader } from "@/components/shell/PageHeader";
 import { DailyRunNotice } from "@/components/today/DailyRunNotice";
 import { DateActions } from "@/components/today/DateActions";
+import { RemindAllForm } from "@/components/today/RemindAllForm";
 import {
   NoticeArea,
   TodayRunBillingForm,
@@ -19,6 +20,7 @@ import {
   inDays,
   mainActionKey,
   needsAttention,
+  overdueByTenant,
   SNOOZE_DAYS,
   todayList,
   unpaidTotals,
@@ -39,6 +41,7 @@ import {
 import { todayInIndia } from "@/lib/today";
 import { markDateDoneAction, snoozeDateAction } from "@/server/actions/alerts";
 import { runBillingNow, sendAllInvoices } from "@/server/actions/billing";
+import { remindAllAction } from "@/server/actions/reminders";
 
 export const metadata: Metadata = { title: "Today" };
 
@@ -94,6 +97,7 @@ async function Today() {
       items,
       totals,
       unpaid: unpaidTotals(input.open, today),
+      lateTenants: overdueByTenant(input.open, today).length,
       whatsapp,
       noEmail,
     };
@@ -147,6 +151,9 @@ async function Today() {
         <h2 className="font-medium">
           Needs attention{items.length > 0 ? ` (${items.length})` : ""}
         </h2>
+        {canBill && data.lateTenants > 0 && (
+          <RemindAllForm count={data.lateTenants} action={remindAllAction} />
+        )}
         <NoticeArea>
           {items.length === 0 ? (
             <NothingToDo anyLeases={data.anyLeases} />

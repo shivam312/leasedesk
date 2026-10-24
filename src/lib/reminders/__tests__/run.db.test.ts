@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import * as schema from "@/lib/db/schema";
 import { runScoped, type Transactional } from "@/lib/db/scoped";
@@ -58,8 +58,14 @@ async function remind(
   return sendDueReminders(asDb(tx), organizationId, today, driver);
 }
 
+// Only this test's rows: now() is the start of the test's transaction, and
+// the shared local database may hold other reminders (the demo's).
 const rows = (tx: TestTx) =>
-  tx.select().from(schema.reminders).orderBy(schema.reminders.createdAt);
+  tx
+    .select()
+    .from(schema.reminders)
+    .where(sql`${schema.reminders.createdAt} >= now()`)
+    .orderBy(schema.reminders.createdAt);
 
 describe.skipIf(skipDbTests)("sendDueReminders", () => {
   afterAll(closeDb);
@@ -108,7 +114,12 @@ describe.skipIf(skipDbTests)("sendDueReminders", () => {
       const logged = await tx
         .select()
         .from(schema.activityLog)
-        .where(eq(schema.activityLog.entityType, "reminder_email"));
+        .where(
+          and(
+            eq(schema.activityLog.entityType, "reminder_email"),
+            sql`${schema.activityLog.at} >= now()`,
+          ),
+        );
       expect(logged).toHaveLength(2);
     });
   });
@@ -221,8 +232,8 @@ describe.skipIf(skipDbTests)("sendDueReminders", () => {
         failed: 1,
         noEmail: 0,
       });
-      expect((await rows(tx))[1]).toMatchObject({
-        step: "after:1",
+      // Both rows share the transaction's created_at, so find it by step.
+      expect((await rows(tx)).find((r) => r.step === "after:1")).toMatchObject({
         status: "failed",
       });
     });

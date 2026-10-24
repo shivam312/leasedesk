@@ -89,7 +89,9 @@ describe.skipIf(skipDbTests)("daily jobs never cross organizations", () => {
       expect(sent.map((e) => e.to)).toEqual([["ap@a.test"]]);
       const claimed = await tx
         .select({ invoiceId: schema.reminders.invoiceId })
-        .from(schema.reminders);
+        .from(schema.reminders)
+        // This test's rows only (now() is the transaction's start).
+        .where(sql`${schema.reminders.createdAt} >= now()`);
       expect(claimed.map((r) => r.invoiceId)).toEqual([a.invoice.id]);
       expect(claimed.map((r) => r.invoiceId)).not.toContain(b.invoice.id);
     }));

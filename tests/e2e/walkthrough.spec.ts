@@ -11,7 +11,7 @@ import { formatDate, formatINR, formatMonth } from "../../src/lib/format";
 import { makeGstin } from "../../src/lib/india/identifiers";
 import { todayInIndia } from "../../src/lib/today";
 import { expectedDemoInvoices } from "../../src/lib/demo/expected";
-import { demoBillingMonth } from "../../src/lib/demo/plan";
+import { demoBillingMonth, SPOTLIGHT } from "../../src/lib/demo/plan";
 import {
   walkthroughPage,
   type WalkthroughFacts,
@@ -98,6 +98,15 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
         .first(),
     ).not.toHaveText("₹0");
   await shot(page, "1", "today");
+  // "Remind all": one email to each overdue tenant, asked once first.
+  const lateCount = Object.keys(SPOTLIGHT.unpaid).length;
+  await page.getByRole("button", { name: `Remind all ${lateCount}` }).click();
+  await page
+    .getByRole("button", { name: `Email ${lateCount} reminders` })
+    .click();
+  await expect(
+    visible(page, new RegExp(`^Emailed a reminder to ${lateCount} tenants\\.`)),
+  ).toBeVisible();
   // The demo's spotlight tenants haven't sent a certificate that's past its
   // due date, so Today counts them and links to the tracker's missing list.
   expect(demo.certificatesMissing).toBeGreaterThan(0);

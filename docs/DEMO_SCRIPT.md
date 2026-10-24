@@ -30,6 +30,7 @@ Running the seed again at any time puts the demo back exactly as it was, so you 
 
 **Point at**, in order:
 - "Rangoli Media Labs hasn't paid ₹…: three invoices, the oldest more than three months late. One tap sends them a WhatsApp reminder."
+- **Remind all 3** above the list: "Or one tap emails every late tenant a reminder for the amount after TDS, and tells you who has no email address."
 - The boxes at the top: "October's invoices went out on the 1st; this is what's come in so far."
 - "3 TDS certificates missing": "tenants who kept back TDS but haven't sent their Form 16A for the last quarter whose certificates are due (April–June, due 15 August, when seeded in late October). You lose that credit if you don't chase it."
 - "Rent increase in … days" cards: "LeaseDesk knows every increase in every lease."

@@ -296,7 +296,7 @@ export function LeaseForm({
               {buildingUnits.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   This building has no units yet. Add them under Leases →
-                  Buildings and units.
+                  Buildings.
                 </p>
               )}
               <div className="grid grid-cols-2 gap-2 md:grid-cols-3">

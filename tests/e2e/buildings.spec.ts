@@ -10,7 +10,10 @@ test("an owner adds a building, a floor and units", async ({ page }) => {
 
   await addGstin(page);
   await page.goto("/leases");
-  await page.getByRole("link", { name: /Buildings and units/ }).click();
+  await page
+    .getByRole("navigation", { name: "Leases views" })
+    .getByRole("link", { name: "Buildings" })
+    .click();
   await expect(page.getByText(/No buildings yet/)).toBeVisible();
   await expect(
     page

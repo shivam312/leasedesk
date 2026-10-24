@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { LEASES_TABS, SectionTabs } from "@/components/shell/SectionTabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
@@ -20,6 +21,11 @@ export default function BuildingsPage() {
       <PageHeader
         title="Buildings"
         description="Your buildings, their floors and units."
+      />
+      <SectionTabs
+        label="Leases views"
+        tabs={LEASES_TABS}
+        current="/leases/buildings"
       />
       <Suspense
         fallback={

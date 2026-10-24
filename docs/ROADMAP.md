@@ -217,7 +217,7 @@ Opening position:
 
 Setup:
 
-- [ ] Buildings tab on Leases (Leases | Buildings), so buildings, units and the floor plan are one tap away
+- [x] Buildings tab on Leases (Leases | Buildings), so buildings, units and the floor plan are one tap away
 - [ ] Setup checklist on Today until setup is done: business details and GSTIN, buildings and units, tenants and leases (or import), check one rent schedule, opening balances, invite the team; each step links to its screen and the checklist disappears when complete
 - [ ] Import templates downloadable from the import screens, with two sample rows each and the column rules explained in the sheet
 

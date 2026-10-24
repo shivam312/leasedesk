@@ -59,6 +59,45 @@ describe("readTenantRow", () => {
     });
   });
 
+  it("reads an opening balance with its as-on date, both or neither (D-028)", () => {
+    // The example: ₹1,25,000 owed as on 31-03-2026 = 1,25,00,000 paise.
+    const read = readTenantRow(tenantExample);
+    if ("error" in read) throw new Error(read.error);
+    expect(read.opening).toEqual({
+      amountPaise: 12_500_000,
+      asOnDate: "2026-03-31",
+    });
+    const none = readTenantRow({
+      ...tenantExample,
+      opening: "",
+      openingAsOn: "",
+    });
+    if ("error" in none) throw new Error(none.error);
+    expect(none.opening).toBeNull();
+    // ₹45,678.50 → 45,67,850 paise.
+    const paise = readTenantRow({ ...tenantExample, opening: "45678.50" });
+    if ("error" in paise) throw new Error(paise.error);
+    expect(paise.opening?.amountPaise).toBe(4_567_850);
+    expect(readTenantRow({ ...tenantExample, openingAsOn: "" })).toEqual({
+      error:
+        "Balance as on: type the date the opening balance was owed on, as DD-MM-YYYY.",
+    });
+    expect(readTenantRow({ ...tenantExample, opening: "" })).toEqual({
+      error:
+        "Opening balance (₹): type the amount owed on that date, or leave both columns blank.",
+    });
+    expect(readTenantRow({ ...tenantExample, opening: "0" })).toEqual({
+      error:
+        "Opening balance (₹): type the amount owed in rupees, like 1,25,000, or leave it blank if nothing is owed.",
+    });
+    expect(
+      readTenantRow({ ...tenantExample, openingAsOn: "31-02-2026" }),
+    ).toEqual({
+      error:
+        "Balance as on: type the date the opening balance was owed on, as DD-MM-YYYY.",
+    });
+  });
+
   it("an unregistered tenant needs its state; TDS can be off", () => {
     const base = { ...tenantExample, gstin: "", deductsTds: "No" };
     expect(readTenantRow(base)).toEqual({

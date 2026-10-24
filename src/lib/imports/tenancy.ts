@@ -31,6 +31,8 @@ export const TENANT_COLUMNS = [
   { key: "whatsapp", heading: "WhatsApp" },
   { key: "deductsTds", heading: "Deducts TDS" },
   { key: "tdsRate", heading: "TDS rate (%)" },
+  { key: "opening", heading: "Opening balance (₹)" },
+  { key: "openingAsOn", heading: "Balance as on" },
 ] as const satisfies readonly ColumnSpec[];
 
 export const LEASE_COLUMNS = [
@@ -74,11 +76,41 @@ function yesNo(s: string, blank: boolean): boolean | null {
 const firstIssue = (e: { issues: { message: string }[] }) =>
   e.issues[0]?.message ?? "Check this row.";
 
+/** What a tenant owed before LeaseDesk (D-028), from two optional cells. */
+export type ImportedOpening = { amountPaise: number; asOnDate: PlainDate };
+
+function readOpening(
+  v: Pick<TenantValues, "opening" | "openingAsOn">,
+): ImportedOpening | null | { error: string } {
+  const amount = v.opening.trim().replace(/[₹,\s]/g, "");
+  const date = v.openingAsOn.trim();
+  if (!amount && !date) return null;
+  if (!amount)
+    return {
+      error:
+        "Opening balance (₹): type the amount owed on that date, or leave both columns blank.",
+    };
+  const amountPaise = rupeesToPaise(amount);
+  if (amountPaise === null || amountPaise <= 0)
+    return {
+      error:
+        "Opening balance (₹): type the amount owed in rupees, like 1,25,000, or leave it blank if nothing is owed.",
+    };
+  const asOnDate = date ? parseBankDate(date) : null;
+  if (!asOnDate)
+    return {
+      error:
+        "Balance as on: type the date the opening balance was owed on, as DD-MM-YYYY.",
+    };
+  return { amountPaise, asOnDate };
+}
+
 /** One Tenants row as the tenant form's data and its main contact, or what's wrong. */
 export function readTenantRow(v: TenantValues):
   | {
       tenant: ReturnType<typeof tenantSchema.parse>;
       contact: ReturnType<typeof contactSchema.parse>;
+      opening: ImportedOpening | null;
     }
   | { error: string } {
   const gstin = v.gstin.trim().toUpperCase();
@@ -122,7 +154,9 @@ export function readTenantRow(v: TenantValues):
     whatsapp: whatsapp ? "yes" : "no",
   });
   if (!contact.success) return { error: firstIssue(contact.error) };
-  return { tenant: tenant.data, contact: contact.data };
+  const opening = readOpening(v);
+  if (opening && "error" in opening) return opening;
+  return { tenant: tenant.data, contact: contact.data, opening };
 }
 
 /** Excel dates arrive as DD-MM-YYYY; the forms take YYYY-MM-DD. */
@@ -401,6 +435,9 @@ export const TENANCY_TEMPLATE = {
         whatsapp: "Yes to send reminders by WhatsApp; blank is No",
         deductsTds: "Yes or No; blank is Yes",
         tdsRate: "Blank is 10",
+        opening:
+          "Optional. What they still owe from invoices in your old Excel or Tally, including GST. It isn't sent as an invoice",
+        openingAsOn: "The date that amount was owed on, DD-MM-YYYY",
       },
       example: {
         name: "Acme Software Pvt Ltd",
@@ -414,6 +451,8 @@ export const TENANCY_TEMPLATE = {
         whatsapp: "Yes",
         deductsTds: "Yes",
         tdsRate: "10",
+        opening: "1,25,000",
+        openingAsOn: "31-03-2026",
       },
     },
     {

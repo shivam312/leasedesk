@@ -66,6 +66,63 @@ async function withUnit102(tx: TestTx) {
 describe.skipIf(skipDbTests)("importTenancy", () => {
   afterAll(closeDb);
 
+  it("saves an imported opening balance with its as-on date (D-028)", () =>
+    inRollback(async (tx) => {
+      const { ctx } = await withUnit102(tx);
+      await runScoped(asDb(tx), ctx, (s) =>
+        importTenancy(
+          s,
+          [
+            tenantsSheet({
+              ...beta,
+              opening: "2,50,000.50",
+              openingAsOn: "30-09-2026",
+            }),
+          ],
+          "2026-10-23",
+        ),
+      );
+      const [row] = await tx
+        .select({
+          amount: schema.openingBalances.amount,
+          asOnDate: schema.openingBalances.asOnDate,
+          name: schema.tenants.companyName,
+        })
+        .from(schema.openingBalances)
+        .innerJoin(
+          schema.tenants,
+          eq(schema.tenants.id, schema.openingBalances.tenantId),
+        );
+      // ₹2,50,000.50 = 2,50,00,050 paise.
+      expect(row).toEqual({
+        amount: 25_000_050,
+        asOnDate: "2026-09-30",
+        name: "Beta Foods LLP",
+      });
+    }));
+
+  it("refuses an opening balance from someone who can't manage billing, or dated after today", () =>
+    inRollback(async (tx) => {
+      const { ctx } = await withUnit102(tx);
+      const row = { ...beta, opening: "50,000", openingAsOn: "30-09-2026" };
+      await expect(
+        runScoped(asDb(tx), ctx, (s) =>
+          importTenancy(s, [tenantsSheet(row)], "2026-10-23", {
+            canSetOpening: false,
+          }),
+        ),
+      ).rejects.toBeInstanceOf(ImportRefused);
+      await expect(
+        runScoped(asDb(tx), ctx, (s) =>
+          importTenancy(
+            s,
+            [tenantsSheet({ ...row, openingAsOn: "24-10-2026" })],
+            "2026-10-23",
+          ),
+        ),
+      ).rejects.toBeInstanceOf(ImportRefused);
+    }));
+
   it("saves a tenant with its contact and a lease with its charges, rule and dates", () =>
     inRollback(async (tx) => {
       const { ctx } = await withUnit102(tx);

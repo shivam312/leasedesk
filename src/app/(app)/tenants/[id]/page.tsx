@@ -32,7 +32,13 @@ import { toFieldValue } from "@/lib/settings/rules-form";
 import { receivesInvoices } from "@/lib/tenants/contacts";
 import { CONTACT_ROLE_LABELS } from "@/lib/tenants/forms";
 import { getTenant } from "@/lib/tenants/queries";
-import { applyCreditAction } from "@/server/actions/payments";
+import {
+  applyCreditAction,
+  removeOpeningBalanceAction,
+  saveOpeningBalanceAction,
+} from "@/server/actions/payments";
+import { paiseText } from "@/lib/leases/prefill";
+import { openingBalanceFor } from "@/lib/payments/opening-balances";
 import { addContact } from "@/server/actions/tenants";
 
 export const metadata: Metadata = { title: "Tenant" };
@@ -71,10 +77,30 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
       invoicesOfTenant(s, id),
     ]);
     const docs = await documentsFor(s, "tenant", id);
-    return { ...found, leases, payments, credits, unpaid, invoiceList, docs };
+    const opening = await openingBalanceFor(s, id);
+    return {
+      ...found,
+      leases,
+      payments,
+      credits,
+      unpaid,
+      invoiceList,
+      docs,
+      opening,
+    };
   });
   if (!data) notFound();
-  const { tenant: t, contacts, leases, payments, credits, unpaid } = data;
+  const {
+    tenant: t,
+    contacts,
+    leases,
+    payments,
+    credits,
+    unpaid,
+    opening,
+  } = data;
+  const unpaidInvoiceCount = unpaid.filter((u) => !u.openingBalance).length;
+  const openingLeft = unpaid.find((u) => u.openingBalance)?.outstandingPaise;
   const editable = can(member.role, "manage_tenants");
   const canBill = can(member.role, "manage_billing");
   const canLease = can(member.role, "manage_leases");
@@ -227,13 +253,88 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
         )}
       </section>
 
+      {(opening || canBill) && (
+        <section aria-labelledby="opening-heading" className="max-w-2xl">
+          <h2 id="opening-heading" className="mb-2 text-lg font-semibold">
+            Opening balance
+          </h2>
+          {opening ? (
+            <p className="mb-3 text-sm">
+              {formatINR(opening.amount)} owed as on{" "}
+              {formatDate(opening.asOnDate)}, from before LeaseDesk. It is
+              collected like an invoice but never sent as one.
+              {opening.note ? ` Note: ${opening.note}.` : ""}
+              {opening.locked
+                ? " A payment has been applied to it, so it can't be changed."
+                : ""}
+            </p>
+          ) : (
+            <p className="mb-3 text-sm text-muted-foreground">
+              Did {t.companyName} owe rent when you started on LeaseDesk? Enter
+              it once, from your old Excel or Tally, so Today, reminders and the
+              ledger include it.
+            </p>
+          )}
+          {canBill && !opening?.locked && (
+            <details>
+              <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium md:min-h-0">
+                {opening ? "Change opening balance" : "Add opening balance"}
+              </summary>
+              <div className="flex flex-col gap-3 pt-3">
+                <SimpleForm
+                  action={saveOpeningBalanceAction.bind(null, t.id)}
+                  fields={[
+                    {
+                      name: "amount",
+                      label: "Amount owed (₹)",
+                      required: true,
+                      inputMode: "decimal",
+                      defaultValue: opening ? paiseText(opening.amount) : "",
+                      hint: "Everything still unpaid from your old invoices, including GST.",
+                    },
+                    {
+                      name: "asOnDate",
+                      label: "Owed as on",
+                      type: "date",
+                      required: true,
+                      defaultValue: opening?.asOnDate ?? "",
+                      hint: "Usually the day before you started on LeaseDesk.",
+                    },
+                    {
+                      name: "note",
+                      label: "Note",
+                      defaultValue: opening?.note ?? "",
+                    },
+                  ]}
+                  submitLabel="Save opening balance"
+                  pendingLabel="Saving…"
+                  secondary
+                />
+                {opening && (
+                  <ApplyCreditForm
+                    tenantId={t.id}
+                    label="Remove opening balance"
+                    pendingLabel="Removing…"
+                    action={removeOpeningBalanceAction}
+                  />
+                )}
+              </div>
+            </details>
+          )}
+        </section>
+      )}
+
       <section aria-labelledby="payments-heading" className="max-w-2xl">
         <h2 id="payments-heading" className="mb-2 text-lg font-semibold">
           Payments
         </h2>
         <p className="mb-3 text-sm">
           {owed > 0
-            ? `${formatINR(owed)} unpaid on ${unpaid.length} ${unpaid.length === 1 ? "invoice" : "invoices"}.`
+            ? `${formatINR(owed)} unpaid${
+                unpaidInvoiceCount > 0
+                  ? ` on ${unpaidInvoiceCount} ${unpaidInvoiceCount === 1 ? "invoice" : "invoices"}`
+                  : ""
+              }${openingLeft ? ` ${unpaidInvoiceCount > 0 ? "and" : "on"} the opening balance` : ""}.`
             : "Nothing unpaid."}{" "}
           <Link
             href={`/tenants/${t.id}/ledger`}
@@ -247,7 +348,7 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
             <p className="text-sm">
               {formatINR(credit)} paid in advance is kept as credit.
               {unpaid.length > 0 && canBill
-                ? " Apply it to their unpaid invoices, oldest first."
+                ? " Apply it to what they owe, oldest first."
                 : ""}
             </p>
             {unpaid.length > 0 && canBill && (

@@ -11,6 +11,8 @@ import type { Scoped } from "@/lib/db/scoped";
 import { checkLease } from "@/lib/leases/build";
 import { parseLeaseForm } from "@/lib/leases/draft";
 import { createLease } from "@/lib/leases/queries";
+import { formatDate } from "@/lib/format";
+import { setOpeningBalance } from "@/lib/payments/opening-balances";
 import {
   findSheet,
   readRows,
@@ -40,6 +42,8 @@ export async function importTenancy(
   s: Scoped,
   sheets: readonly Sheet[],
   today: PlainDate,
+  /** Opening balances are money: only owners and accounts bring them in. */
+  { canSetOpening = true }: { canSetOpening?: boolean } = {},
 ): Promise<{ tenants: number; leases: number }> {
   const tenantSheet = findSheet(sheets, "Tenants");
   const leaseSheet = findSheet(sheets, "Leases");
@@ -87,12 +91,38 @@ export async function importTenancy(
           err(parsed.error);
           continue;
         }
+        if (parsed.opening && !canSetOpening) {
+          err(
+            "Opening balance (₹): only an owner or accounts can bring in what tenants owe. Leave the two opening balance columns blank, or ask them to import this file.",
+          );
+          continue;
+        }
+        if (
+          parsed.opening &&
+          compareDates(parsed.opening.asOnDate, today) > 0
+        ) {
+          err(
+            `Balance as on: the date can't be after today (${formatDate(today)}).`,
+          );
+          continue;
+        }
         const saved = await insertLogged(s, tenants, parsed.tenant);
         await insertLogged(s, tenantContacts, {
           ...parsed.contact,
           tenantId: saved.id,
           isPrimary: true,
         });
+        if (parsed.opening)
+          await setOpeningBalance(
+            s,
+            {
+              tenantId: saved.id,
+              asOnDate: parsed.opening.asOnDate,
+              amountPaise: parsed.opening.amountPaise,
+              note: "Imported",
+            },
+            today,
+          );
         tenantIds.set(key(values.name), saved.id);
         tenantCount++;
       }

@@ -7,6 +7,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { appDb } from "@/lib/auth";
+import { can } from "@/lib/auth/roles";
 import type { FormState } from "@/lib/auth/forms";
 import { parseWorkbookSheets } from "@/lib/bank/xlsx";
 import { runScoped } from "@/lib/db/scoped";
@@ -95,7 +96,9 @@ export async function importTenantsAndLeases(
     if ("message" in read) return { message: read.message };
     try {
       const n = await runScoped(appDb, member, (s) =>
-        importTenancy(s, read.sheets, todayInIndia()),
+        importTenancy(s, read.sheets, todayInIndia(), {
+          canSetOpening: can(member.role, "manage_billing"),
+        }),
       );
       revalidatePath("/leases", "layout");
       revalidatePath("/tenants", "layout");

@@ -10,7 +10,12 @@ import { appDb, requireMember } from "@/lib/auth";
 import type { FormState } from "@/lib/auth/forms";
 import { PermissionError, requirePermission } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
-import { formatINR } from "@/lib/format";
+import { formatDate, formatINR } from "@/lib/format";
+import { openingBalanceSchema } from "@/lib/payments/opening-balance-form";
+import {
+  removeOpeningBalance,
+  setOpeningBalance,
+} from "@/lib/payments/opening-balances";
 import { DEPOSIT_KINDS, depositEntrySchema } from "@/lib/payments/deposit-form";
 import { DepositError, recordDepositEntry } from "@/lib/payments/deposits";
 import { parsePaymentForm } from "@/lib/payments/forms";
@@ -179,6 +184,77 @@ export async function recordDepositEntryAction(
         tone: "success",
         message: `Recorded: ${DEPOSIT_KINDS[d.kind].toLowerCase()}, ${formatINR(d.amount)}.`,
       };
+    },
+  );
+}
+
+/** "Save opening balance" on a tenant page (D-028: A). */
+export async function saveOpeningBalanceAction(
+  tenantId: string,
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  return guardedForm(
+    "manage_billing",
+    openingBalanceSchema,
+    form,
+    async (member, d) => {
+      if (!z.uuid().safeParse(tenantId).success)
+        return { message: "That tenant couldn't be found." };
+      try {
+        await runScoped(appDb, member, (s) =>
+          setOpeningBalance(
+            s,
+            {
+              tenantId,
+              asOnDate: d.asOnDate,
+              amountPaise: d.amount,
+              note: d.note,
+            },
+            todayInIndia(),
+          ),
+        );
+      } catch (error) {
+        if (error instanceof PaymentError)
+          return {
+            message: error.message,
+            values: Object.fromEntries(
+              [...form.entries()].map(([k, v]) => [k, String(v)]),
+            ),
+          };
+        throw error;
+      }
+      revalidatePath(`/tenants/${tenantId}`);
+      revalidatePath("/today");
+      return {
+        tone: "success",
+        message: `Saved: ${formatINR(d.amount)} owed as on ${formatDate(d.asOnDate)}.`,
+      };
+    },
+  );
+}
+
+/** "Remove opening balance": only while no payment is applied to it. */
+export async function removeOpeningBalanceAction(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  return guardedForm(
+    "manage_billing",
+    z.object({ tenantId: z.uuid() }),
+    form,
+    async (member, { tenantId }) => {
+      try {
+        await runScoped(appDb, member, (s) =>
+          removeOpeningBalance(s, tenantId),
+        );
+      } catch (error) {
+        if (error instanceof PaymentError) return { message: error.message };
+        throw error;
+      }
+      revalidatePath(`/tenants/${tenantId}`);
+      revalidatePath("/today");
+      return { tone: "success", message: "Opening balance removed." };
     },
   );
 }

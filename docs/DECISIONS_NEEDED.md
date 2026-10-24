@@ -489,7 +489,7 @@ Things only a person can do. Tick them when done.
   - B) Run the tests only on the laptop before pushing (no CI); the deploy runbook lists the commands
   - C) Another CI service (needs a new account and vendor)
 - Recommendation: A, because it costs nothing at this pace, needs no new vendor, and the pipeline already assumes git.
-- Done meanwhile: the M9 task writes `.github/workflows/ci.yml`; it runs as soon as the repository is pushed to GitHub.
+- Done meanwhile: built A: `.github/workflows/ci.yml` (typecheck, lint, formatting, unit and database tests on a local Supabase stack, then the browser tests on a production build; no secrets needed). It runs as soon as the repository is pushed to GitHub.
 - Answer:
 
 ### D-033: Which unkept v1 promises wait until after the pilot?

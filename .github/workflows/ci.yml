@@ -1,0 +1,73 @@
+# CI: every push to main and every pull request runs the same checks as
+# /ship-check: typecheck, lint, unit and database tests, and the browser
+# tests at 375px and 1280px against a production build. The database tests
+# and the app use a local Supabase stack started here, with the CLI's local
+# keys, so CI needs no secrets. It runs once the repository is on GitHub
+# (D-032, a human task).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Formatting
+        run: pnpm format:check
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start the local Supabase stack
+        run: supabase start
+
+      - name: Apply migrations
+        run: pnpm db:migrate
+
+      - name: Unit and database tests
+        run: pnpm test
+
+      - name: Install the browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser tests (production build)
+        run: pnpm test:e2e
+        env:
+          CI: "true"
+
+      - name: Keep the browser test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

@@ -37,8 +37,8 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-025 | Codex review of M6: unresolved items | product | no | open |
 | D-026 | Which month an invoice or credit note counts in on the GST summary | ca | no | open |
 | D-027 | How payments, TDS and reversals go into Tally | ca | no | open |
-| D-028 | Bringing in what tenants already owe when a landlord starts | product | M9 | open |
-| D-029 | How users reach LeaseDesk support | product | no | open |
+| D-028 | Bringing in what tenants already owe when a landlord starts | product | M10 | answered |
+| D-029 | How users reach LeaseDesk support | product | no | answered |
 | D-030 | Codex review of M8: unresolved items | product | no | open |
 | D-031 | Codex review of M5A: unresolved items | product | no | open |
 | D-032 | Run the test suites on GitHub Actions (CI)? | spend | no | open |
@@ -420,9 +420,9 @@ Things only a person can do. Tick them when done.
 - Answer:
 
 ### D-028: Bringing in what tenants already owe when a landlord starts
-- Status: open
+- Status: answered
 - Type: product
-- Blocking: M9 (three opening-balance tasks). Both audit reviewers ranked this the #1 pilot gap on 2026-10-24: without it, a tenant who is behind on day one is wrong on Today, in the ageing report, in reminders and in bank matching, and the "invoices match Excel" gate can't be met.
+- Blocking: M10 (three opening-balance tasks, moved from M9). Both audit reviewers ranked this the #1 pilot gap on 2026-10-24: without it, a tenant who is behind on day one is wrong on Today, in the ageing report, in reminders and in bank matching, and the "invoices match Excel" gate can't be met.
 - Context: The Excel import brings in buildings, units, tenants and leases, so billing starts correctly from the next month. It doesn't bring in rent a tenant still owes from before (invoices made in the old Excel or Tally), so Today, reminders and the unpaid report don't know about it, and the tenant ledger starts at zero.
 - Options:
   - A) An opening balance per tenant (amount owed and the date, imported or typed once), shown first on the tenant ledger and in unpaid and ageing, and settled by payments like an invoice, but never numbered or sent as a GST invoice
@@ -430,10 +430,10 @@ Things only a person can do. Tick them when done.
   - C) Leave old dues in the old system until they are paid
 - Recommendation: A, because it is one number per tenant that the accountant already has, it can't clash with GST invoice numbering, and payments and reminders then work from day one.
 - Done meanwhile: nothing; the import covers buildings, units, tenants and leases. The tenant ledger says there is no opening balance yet.
-- Answer:
+- Answer: A
 
 ### D-029: How users reach LeaseDesk support
-- Status: open
+- Status: answered
 - Type: product
 - Blocking: no
 - Context: The error pages say "contact support" or "tell us what you were doing", but the app has no support email or WhatsApp number anywhere, so a pilot landlord who hits an error has no way to reach you from the screen (UX review M8).
@@ -444,7 +444,7 @@ Things only a person can do. Tick them when done.
 - Recommendation: B for the pilot, because owners already report problems on WhatsApp and it needs no new account; add email when there are paying customers.
 - Audit note (2026-10-24): needed before any landlord outside the team uses the app; not a code gap until answered.
 - Done meanwhile: the error pages no longer promise a support contact; they say to try again, then go to Today (a page error) or ask the person who set up LeaseDesk (the whole app failed) (UX review M8, 2026-10-24). Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
-- Answer:
+- Answer: WhatsApp +91 XXXXXXXXXX, email support@<domain>; show on error pages and in Settings → Help
 
 ### D-030: Codex review of M8: unresolved items
 - Status: open

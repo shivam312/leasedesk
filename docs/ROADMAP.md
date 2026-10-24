@@ -4,7 +4,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 Each task is one commit. Tasks tagged `(human)` need a person and are listed in `docs/DECISIONS_NEEDED.md` under Human tasks; the pipeline skips them. Tasks tagged `(blocked: D-xxx)` wait for that decision. See `PIPELINE.md`.
 
-**Current milestone:** M9 (audit findings), open only on its three opening-balance tasks `(blocked: D-028)`. Every other M9 task is built, reviewed and wrapped up (report: `docs/milestones/M9.md`, 2026-10-24). M8's `(human)` tasks (and those in M4 and M5) stay open alongside. There is no buildable task until D-028 is answered; the new questions from M9 are D-032 (CI, built), D-033 (late v1 features, all built), D-034 (using a deposit for unpaid rent) and D-035 (GST on a kept deposit) [2026-10-24].
+**Current milestone:** M10 (pilot onboarding and trust). M9 is built, reviewed and wrapped up (report: `docs/milestones/M9.md`, 2026-10-24); its three opening-balance tasks moved to M10 once D-028 was answered (A). M8's `(human)` tasks (and those in M4 and M5) stay open alongside [2026-10-24].
 
 ## M0. Project setup (week 3)
 
@@ -169,9 +169,7 @@ Pilot blockers (what a real landlord's first month would hit):
 - [x] Email fails closed in production: without `RESEND_API_KEY`, sending refuses with "Email isn't set up yet" and Settings → Business shows the same; the console driver runs only outside production or with `EMAIL_DRIVER=console`
 - [x] Tenant contacts: edit and remove a contact and choose who receives invoices, keeping at least one usable email; "Add a contact" collapses behind a secondary button (was backlog row, must-fix before pilot)
 - [x] Team: remove a member and cancel a pending invite, owner-only, with confirmation and activity log (was backlog rows)
-- [ ] (blocked: D-028) Opening balance per tenant: schema and ledger row, shown first on the tenant ledger and in Unpaid and ageing and Today, never numbered or sent as an invoice
-- [ ] (blocked: D-028) Opening balance entry: typed on the tenant page and an "Opening balance (₹)" column with "as on" date in the tenants and leases import
-- [ ] (blocked: D-028) Opening balances settle like invoices: payment allocation, bank matching and reminders include them
+- Opening balances (three tasks, D-028) moved to M10 on 2026-10-24.
 - [x] Tally export writes the party ledger masters (and the TDS Receivable and bank ledgers it posts to) ahead of the vouchers, and saves each tenant's Tally name at first export so a rename doesn't split postings
 - [x] Tally export page gets a business (GSTIN) filter, one file per Tally company (was backlog row)
 - [x] Job health: record each daily run; Today and Settings warn "The daily run hasn't happened since …" with "Run now" when it is more than a day late
@@ -204,6 +202,41 @@ The rest (v1 promises not yet kept, and smaller fixes):
 - [x] Delete `vitest.config.mts` (Vitest loads `vitest.config.ts`, which has the unit and database projects) and tidy `PIPELINE OLD.md`, `INSTALL_CODEX.md`, `INSTALL_PROMPT.md` into `docs/archive/`
 
 Reviewed by the billing and UX reviewers on 2026-10-24. Fixed: a sent invoice's stored PDF is served only while the invoice is still sent and uncredited, so a part-paid, paid, cancelled or credited invoice prints its notice and no QR for money no longer owed; "Remind all" asks for the oldest invoice's own amount, not the tenant's total, and a failed email can be tried again the same day; the deposit settlement statement settles dues from the tenant's unapplied payment credit before the deposit and says unbilled charges aren't included; a deposit outflow is checked against what was held on its date; "Request from tenant" works the TDS amount out on the server; a failed Google login says so; the tenant page's documents empty state links to Billing → TDS certificates; the deposit form says entries can't be edited; plus smaller wording and tap-target fixes ("Automatic billing hasn't run since …"). The billing reviewer re-read the fixes: the settlement statement now also shows credit left over as to pay back and says the credit is the tenant's across leases; a deposit entry already short on its own doesn't block later entries; "Request from tenant" asks only once the certificate is overdue, for the part not yet covered. The rest is in `docs/BACKLOG.md` (Tally per-business reversals, duplicate Tally names, a deposit reversal kind, Remind all's email count); no new founder decisions, no new settings, no TODOs; Open questions is empty. Checks: typecheck, lint, 1,099 unit and database tests and 63 browser tests pass (2026-10-24). Wrapped up on 2026-10-24 (report: `docs/milestones/M9.md`): both suites run again and passed; the docs (README, architecture, data model, settings) match the code. M9 stays open on the three D-028 tasks.
+
+## M10. Pilot onboarding and trust
+
+Goal: a landlord sets themselves up in a day, with what tenants already owe and the deposits already held, and trusts that their data is theirs.
+
+Opening position:
+
+- [ ] Opening balance per tenant: schema and ledger row, shown first on the tenant ledger, in Unpaid and ageing and on Today; never numbered or sent as an invoice (D-028: A)
+- [ ] Opening balance entry: typed on the tenant page, and an "Opening balance (₹)" column with an "as on" date in the tenants and leases import
+- [ ] Opening balances settle like invoices: payment allocation, bank matching and reminders include them
+- [ ] Deposits already held: record a "received" entry for leases that pre-date the deposit ledger, and a "Deposit held (₹)" column in the lease import
+- [ ] Settlement statement counts a tenant's unused advance once across all their leases (the open finding from the M9 sign-off)
+
+Setup:
+
+- [ ] Buildings tab on Leases (Leases | Buildings), so buildings, units and the floor plan are one tap away
+- [ ] Setup checklist on Today until setup is done: business details and GSTIN, buildings and units, tenants and leases (or import), check one rent schedule, opening balances, invite the team; each step links to its screen and the checklist disappears when complete
+- [ ] Import templates downloadable from the import screens, with two sample rows each and the column rules explained in the sheet
+
+Trust:
+
+- [ ] Settings → Export all data: one zip of Excel files (buildings, units, tenants, leases, invoices, lines, credit notes, payments, deposits, TDS) plus all stored PDFs and documents; owner-only, logged
+- [ ] Support contact (WhatsApp and email from D-029) on every error page and in Settings → Help; never promise what isn't set up
+- [ ] Load test: a `pnpm db:seed:load` organisation with 120 tenants, 3 billing entities and 36 months of invoices and payments; Today, the invoice list, the tenant ledger, each report and a billing run each load in under 2 seconds on it; fix what doesn't, add the indexes, and record the timings in docs/milestones/M10.md
+
+Small fixes (from docs/BACKLOG.md; delete the rows that move here):
+
+- [ ] "Remind all N" counts only tenants with an email address and the confirmation names who has none
+- [ ] Wording and phone-layout fixes on leases, tenants and buildings
+- [ ] Wording and phone-layout fixes on billing, payments, bank matching and TDS
+- [ ] Wording fixes on log in, sign up, password reset and Settings
+
+Housekeeping:
+
+- [ ] Close D-033 as stale (all eight features are built) and update the decisions summary table
 
 ## Later (v2, in order)
 

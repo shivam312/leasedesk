@@ -159,7 +159,7 @@ Demo blockers (what a landlord would see go wrong in the 10-minute demo):
 - [x] Dates read DD-MM-YYYY beside or instead of the native date picker on the lease form, payment form, reports' "As on" and the Tally page (was backlog rows on native date inputs)
 - [x] After every invoice of a month is sent, "Make … invoices" is no longer the filled button; "Make missing … invoices" shows only when a lease has no draft
 - [x] The lease page folds the rent schedule on phones: the next 12 months, then "Show all N months"
-- [ ] Invoice lines in one fixed order, rent first, the same on screen and on the PDF
+- [x] Invoice lines in one fixed order, rent first, the same on screen and on the PDF
 - [ ] The tenant page's address doesn't repeat the state
 - [ ] Building cards count vacant units from active leases, not `units.status`, show occupancy %, and show fit-out units separately so the card and the Vacancy report agree (was backlog row on `units.status`)
 

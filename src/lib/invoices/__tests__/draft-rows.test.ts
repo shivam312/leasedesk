@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "@/lib/billing/__tests__/billing-settings";
 import { draftInvoice } from "@/lib/billing/draft-invoice";
 import type { LeaseInput } from "@/lib/billing/schedule";
+import type { Charge } from "@/lib/billing/types";
 import { tenantTdsDefaults } from "@/lib/billing/tds";
 import { draftChanged, invoiceRow, lineRows } from "../draft-rows";
 
@@ -39,6 +40,38 @@ const stored = {
 };
 
 describe("draft rows", () => {
+  it("puts lines in one fixed order, rent first, whatever order the lease lists them", () => {
+    const fixed = (id: string, type: Charge["type"], amountPaise: number) =>
+      ({
+        id,
+        type,
+        basis: "fixed",
+        amountPaise,
+        startDate: "2026-04-01",
+        gstRateBp: 1800,
+        sacCode: "997212",
+      }) satisfies Charge;
+    const mixed: LeaseInput = {
+      ...lease,
+      charges: [
+        fixed("parking", "parking", 500_000),
+        fixed("cam", "cam", 1_000_000),
+        fixed("rent", "rent", 9_000_000),
+        fixed("other", "other", 100_000),
+      ],
+    };
+    // Rent, maintenance (CAM), parking, then anything else; numbered 1 to 4
+    // the same on screen and on the PDF (both read lines by position).
+    expect(
+      lineRows(draft(mixed)!).map((l) => [l.position, l.chargeId]),
+    ).toEqual([
+      [1, "rent"],
+      [2, "cam"],
+      [3, "parking"],
+      [4, "other"],
+    ]);
+  });
+
   it("saves the engine's amounts as invoice and line columns", () => {
     expect(stored.invoice).toMatchObject({
       invoiceDate: "2026-11-01",

@@ -23,9 +23,28 @@ export function invoiceRow(draft: DraftInvoice, supply: SupplyType) {
   };
 }
 
-/** The draft's line columns, in order. */
+/** Invoice lines' order on screen and on the PDF: rent first, then by charge type. */
+const LINE_ORDER = ["rent", "cam", "parking", "utilities", "signage", "other"];
+
+const rank = (type: string) => {
+  const i = LINE_ORDER.indexOf(type);
+  return i === -1 ? LINE_ORDER.length : i;
+};
+
+/**
+ * The draft's line columns, in one fixed order whatever order the lease lists
+ * its charges: rent, maintenance (CAM), parking, utilities, signage, other.
+ * Lines of the same type keep the engine's order (e.g. before and after a
+ * mid-month increase). Only the order changes; the amounts are the engine's.
+ */
 export function lineRows(draft: DraftInvoice) {
-  return draft.lines.map((line, i) => ({
+  const lines = draft.lines
+    .map((line, i) => ({ line, i }))
+    .sort(
+      (a, b) => rank(a.line.chargeType) - rank(b.line.chargeType) || a.i - b.i,
+    )
+    .map(({ line }) => line);
+  return lines.map((line, i) => ({
     chargeId: line.chargeId,
     chargeType: line.chargeType,
     position: i + 1,

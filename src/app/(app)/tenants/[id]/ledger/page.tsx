@@ -4,12 +4,22 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { InvoiceStatusBadge } from "@/components/invoices/StatusBadge";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import type { LedgerEntry } from "@/lib/billing/ledger";
+import { sumPaise } from "@/lib/billing/money";
 import { runScoped } from "@/lib/db/scoped";
 import { formatDate, formatINR } from "@/lib/format";
 import { ledgerFor } from "@/lib/payments/ledger";
+import {
+  financialYearDates,
+  ledgerForYear,
+  parseFinancialYear,
+  statementYears,
+} from "@/lib/payments/statement";
+import { can } from "@/lib/auth/roles";
+import { cn } from "@/lib/utils";
 import { getTenant } from "@/lib/tenants/queries";
 import { todayInIndia } from "@/lib/today";
 
@@ -17,6 +27,7 @@ export const metadata: Metadata = { title: "Ledger" };
 
 export default function LedgerPage({
   params,
+  searchParams,
 }: PageProps<"/tenants/[id]/ledger">) {
   return (
     <Suspense
@@ -24,7 +35,7 @@ export default function LedgerPage({
         <p className="text-sm text-muted-foreground">Loading the ledger…</p>
       }
     >
-      <TenantLedger params={params} />
+      <TenantLedger params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
@@ -97,8 +108,15 @@ function cardAmount(e: LedgerEntry) {
 
 const amount = (paise: number) => (paise === 0 ? "" : formatINR(paise));
 
-async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
+async function TenantLedger({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: PageProps<"/tenants/[id]/ledger">["searchParams"];
+}) {
   const { id } = await params;
+  const fy = parseFinancialYear((await searchParams).fy);
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const member = await requireMember();
   const data = await runScoped(appDb, member, async (s) => {
@@ -106,8 +124,18 @@ async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
     return found && { tenant: found.tenant, ledger: await ledgerFor(s, id) };
   });
   if (!data) notFound();
-  const { tenant, ledger } = data;
+  const { tenant } = data;
   const today = todayInIndia();
+  const ledger = ledgerForYear(data.ledger, fy);
+  const canPay = can(member.role, "manage_billing");
+  const base = `/tenants/${tenant.id}/ledger`;
+  const chip = (active: boolean) =>
+    cn(
+      "inline-flex h-11 items-center rounded-full border px-3 text-sm md:h-9",
+      active
+        ? "border-primary bg-primary text-primary-foreground"
+        : "bg-background hover:bg-accent",
+    );
 
   return (
     <>
@@ -119,13 +147,62 @@ async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
       </Link>
       <PageHeader
         title="Ledger"
-        description={`Everything billed to and paid by ${tenant.companyName}, oldest first. The balance is after each line. Balance now: ${balanceWords(ledger.closingPaise)}.`}
+        description={`Everything billed to and paid by ${tenant.companyName}, oldest first. The balance is after each line. Balance now: ${balanceWords(data.ledger.closingPaise)}.`}
       />
+      <div className="mb-4 flex max-w-5xl flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
+          {canPay && (
+            <Link
+              href={`/billing/payments/new?tenant=${tenant.id}`}
+              className={buttonVariants({ className: "h-11 md:h-9" })}
+            >
+              Record payment
+            </Link>
+          )}
+          <a
+            href={`${base}/pdf${fy ? `?fy=${fy}` : ""}`}
+            download
+            className={buttonVariants({
+              variant: "outline",
+              className: "h-11 md:h-9",
+            })}
+          >
+            Download statement (PDF)
+          </a>
+        </div>
+        <nav aria-label="Financial year" className="flex flex-wrap gap-2">
+          <Link
+            href={base}
+            aria-current={!fy ? "page" : undefined}
+            className={chip(!fy)}
+          >
+            All
+          </Link>
+          {statementYears(today).map((y) => (
+            <Link
+              key={y}
+              href={`${base}?fy=${y}`}
+              aria-current={fy === y ? "page" : undefined}
+              className={chip(fy === y)}
+            >
+              FY {y}
+            </Link>
+          ))}
+        </nav>
+        {fy && (
+          <p className="text-sm">
+            Brought forward on {formatDate(financialYearDates(fy).from)}:{" "}
+            {balanceWords(ledger.openingPaise)}. At the end of this year&apos;s
+            lines: {balanceWords(ledger.closingPaise)}.
+          </p>
+        )}
+      </div>
       {ledger.entries.length === 0 ? (
         <Card className="max-w-2xl">
           <p className="text-sm">
-            Nothing yet. Sent invoices and payments will show here; invoices not
-            sent yet don&apos;t count.
+            {fy
+              ? `Nothing billed or paid in FY ${fy}.`
+              : "Nothing yet. Sent invoices and payments will show here; invoices not sent yet don't count."}
           </p>
         </Card>
       ) : (
@@ -150,7 +227,7 @@ async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
                     <What e={e} />
                     <Status
                       e={e}
-                      statuses={ledger.invoiceStatus}
+                      statuses={data.ledger.invoiceStatus}
                       today={today}
                     />
                   </td>
@@ -172,10 +249,12 @@ async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
                   Total
                 </td>
                 <td className="py-2 text-right tabular-nums">
-                  {formatINR(ledger.totalDebitPaise)}
+                  {formatINR(sumPaise(ledger.entries.map((e) => e.debitPaise)))}
                 </td>
                 <td className="py-2 text-right tabular-nums">
-                  {formatINR(ledger.totalCreditPaise)}
+                  {formatINR(
+                    sumPaise(ledger.entries.map((e) => e.creditPaise)),
+                  )}
                 </td>
                 <td className="py-2 text-right tabular-nums">
                   {balanceWords(ledger.closingPaise)}
@@ -194,7 +273,7 @@ async function TenantLedger({ params }: { params: Promise<{ id: string }> }) {
                     <What e={e} />
                     <Status
                       e={e}
-                      statuses={ledger.invoiceStatus}
+                      statuses={data.ledger.invoiceStatus}
                       today={today}
                     />
                   </span>

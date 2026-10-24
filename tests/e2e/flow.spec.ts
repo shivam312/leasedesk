@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { formatMonth } from "../../src/lib/format";
+import { statementYears } from "../../src/lib/payments/statement";
 import { todayInIndia } from "../../src/lib/today";
 import {
   addBuilding,
@@ -56,4 +57,29 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
   await expect(
     page.getByText("Paid", { exact: true }).filter({ visible: true }).first(),
   ).toBeVisible();
+
+  // The tenant's ledger for this financial year, and its statement PDF.
+  await page.goto("/tenants");
+  await page
+    .getByRole("link", { name: "Acme Software Pvt Ltd" })
+    .filter({ visible: true })
+    .first()
+    .click();
+  await page
+    .locator('a[href$="/ledger"]')
+    .filter({ visible: true })
+    .first()
+    .click();
+  const fy = statementYears(today)[0]!;
+  await page.getByRole("link", { name: `FY ${fy}` }).click();
+  await expect(page).toHaveURL(new RegExp(`/ledger\\?fy=${fy}$`));
+  await expect(page.getByText(/^Brought forward on 01-04-/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Record payment" }),
+  ).toBeVisible();
+  const pdf = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download statement (PDF)" }).click();
+  expect((await pdf).suggestedFilename()).toBe(
+    `statement-acme-software-pvt-ltd-${fy}.pdf`,
+  );
 });

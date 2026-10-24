@@ -115,6 +115,7 @@ describe("settlementReport", () => {
     });
     expect(settlement).toEqual({
       creditUsedPaise: 0,
+      creditLeftPaise: 0,
       adjustPaise: 1_26_360_00,
       refundPaise: 1_73_640_00,
       stillOwedPaise: 0,
@@ -147,6 +148,7 @@ describe("settlementReport", () => {
     });
     expect(settlement).toEqual({
       creditUsedPaise: 1_26_360_00,
+      creditLeftPaise: 0,
       adjustPaise: 0,
       refundPaise: 3_00_000_00,
       stillOwedPaise: 0,
@@ -160,29 +162,37 @@ describe("settlementReport", () => {
       ["Less: dues", 0],
       ["Deposit to refund", 3_00_000_00],
     ]);
-    // Credit larger than the dues: only the dues' worth is used here.
-    // Held ₹1,00,000, dues ₹50,000, credit ₹80,000: refund ₹1,00,000.
-    expect(
-      settlementReport({
-        tenantName: "Acme",
-        property: "Unit 301, E2E Tower",
-        asOf: "2026-11-30",
-        heldPaise: 1_00_000_00,
-        creditPaise: 80_000_00,
-        unpaid: [
-          {
-            number: "ET/26-27/0002",
-            dueDate: "2026-11-08",
-            outstandingPaise: 50_000_00,
-            toPayPaise: 50_000_00,
-          },
-        ],
-      }).settlement,
-    ).toEqual({
+    // Credit larger than the dues: the dues' worth settles them and the
+    // rest is the tenant's money too. Held ₹1,00,000, dues ₹50,000, credit
+    // ₹80,000: deposit refund ₹1,00,000, plus ₹30,000 of credit left over.
+    const bigger = settlementReport({
+      tenantName: "Acme",
+      property: "Unit 301, E2E Tower",
+      asOf: "2026-11-30",
+      heldPaise: 1_00_000_00,
+      creditPaise: 80_000_00,
+      unpaid: [
+        {
+          number: "ET/26-27/0002",
+          dueDate: "2026-11-08",
+          outstandingPaise: 50_000_00,
+          toPayPaise: 50_000_00,
+        },
+      ],
+    });
+    expect(bigger.settlement).toEqual({
       creditUsedPaise: 50_000_00,
+      creditLeftPaise: 30_000_00,
       adjustPaise: 0,
       refundPaise: 1_00_000_00,
       stillOwedPaise: 0,
     });
+    expect(bigger.report.sections[1]!.rows.at(-1)).toEqual({
+      what: "Credit left over, also to pay back",
+      amount: 30_000_00,
+    });
+    expect((bigger.report.notes ?? []).join(" ")).toContain(
+      "across all their leases",
+    );
   });
 });

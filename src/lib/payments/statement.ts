@@ -158,16 +158,21 @@ export function settlementReport(input: {
   settlement: ReturnType<typeof depositSettlement> & {
     /** The part of the dues the tenant's credit settles, before the deposit. */
     creditUsedPaise: Paise;
+    /** Credit beyond the dues: the tenant's money too, to pay back with the deposit. */
+    creditLeftPaise: Paise;
   };
 } {
   const duesPaise = sumPaise(input.unpaid.map((u) => u.toPayPaise));
   const creditPaise = Math.max(0, input.creditPaise ?? 0);
   // Credit the tenant already paid settles the dues first; the deposit
-  // covers only what's left, so the refund isn't understated.
+  // covers only what's left, so the refund isn't understated. Credit beyond
+  // the dues is still theirs and is shown as also to pay back.
   const creditUsedPaise = Math.min(creditPaise, duesPaise);
+  const creditLeftPaise = creditPaise - creditUsedPaise;
   const netDuesPaise = duesPaise - creditUsedPaise;
   const settlement = {
     creditUsedPaise,
+    creditLeftPaise,
     ...depositSettlement(input.heldPaise, netDuesPaise),
   };
   const report: Report = {
@@ -229,6 +234,14 @@ export function settlementReport(input: {
                 },
               ]
             : []),
+          ...(creditLeftPaise > 0
+            ? [
+                {
+                  what: "Credit left over, also to pay back",
+                  amount: creditLeftPaise,
+                },
+              ]
+            : []),
         ],
       },
     ],
@@ -236,7 +249,7 @@ export function settlementReport(input: {
       "Dues are what the tenant is asked to pay, after the TDS they may still keep back; their TDS certificates cover the rest. Charges not invoiced yet (this month's draft, or anything billed in arrears after the lease ends) aren't included.",
       ...(creditPaise > 0
         ? [
-            'The tenant has payment credit not yet applied to invoices. Use "Apply credit" on the tenant\'s page so it settles the dues before the deposit is refunded.',
+            'The tenant has payment credit not yet applied to invoices. It is theirs across all their leases, so a tenant with another lease may want it there instead. Use "Apply credit" on the tenant\'s page so it settles the dues before the deposit is refunded.',
           ]
         : []),
       "This statement doesn't record anything. Record the refund in the lease's deposit, and settle the dues on the invoices. Ask your accountant whether GST applies on any part of the deposit used for dues or kept (D-035).",

@@ -204,13 +204,18 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
                         {[
                           l.quantityLabel,
                           `GST ${formatINR(l.cgst + l.sgst + l.igst)}`,
-                          `SAC ${l.sacCode}`,
                         ]
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
                     </summary>
                     <div className="flex flex-col gap-3 px-4 pb-4 text-sm">
+                      {l.sacCode && (
+                        <p className="text-xs text-muted-foreground">
+                          SAC {l.sacCode}: the GST service code, printed on the
+                          PDF.
+                        </p>
+                      )}
                       {working ? (
                         <>
                           <Working explanation={working.amount} />
@@ -239,6 +244,12 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
               <span className="tabular-nums">{formatINR(amount)}</span>
             </p>
           ))}
+          {invoice.roundOff !== 0 && (
+            <p className="text-xs text-muted-foreground">
+              Round off: the total is rounded to the nearest rupee, and this is
+              the difference.
+            </p>
+          )}
           <details className="group border-t pt-2">
             <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 rounded-lg py-2 font-medium focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
               <span>Total</span>

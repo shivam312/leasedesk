@@ -136,7 +136,12 @@ export function UnitList({
                 <th className="py-2 font-medium">Unit</th>
                 <th className="py-2 font-medium">Floor</th>
                 <th className="py-2 text-right font-medium">Carpet area</th>
-                <th className="py-2 text-right font-medium">Billed area</th>
+                <th
+                  className="py-2 text-right font-medium"
+                  title="The area the lease charges for (chargeable or super built-up)"
+                >
+                  Billed area
+                </th>
                 <th className="py-2 pl-4 font-medium">Status</th>
               </tr>
             </thead>

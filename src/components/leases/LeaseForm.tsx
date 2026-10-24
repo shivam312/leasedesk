@@ -337,16 +337,21 @@ export function LeaseForm({
               )}
             </fieldset>
           )}
-          {field("areaBasis", "Rent per sq ft is charged on", (common) => (
-            <Select
-              {...common}
-              value={values.areaBasis}
-              onChange={(e) => set({ areaBasis: e.target.value })}
-            >
-              <option value="chargeable">Billed area</option>
-              <option value="carpet">Carpet area</option>
-            </Select>
-          ))}
+          {field(
+            "areaBasis",
+            "Rent per sq ft is charged on",
+            (common) => (
+              <Select
+                {...common}
+                value={values.areaBasis}
+                onChange={(e) => set({ areaBasis: e.target.value })}
+              >
+                <option value="chargeable">Billed area</option>
+                <option value="carpet">Carpet area</option>
+              </Select>
+            ),
+            "Billed area is the area the lease charges for (often called chargeable or super built-up). Carpet area is the usable floor inside the walls.",
+          )}
         </div>
       )}
 
@@ -497,21 +502,26 @@ export function LeaseForm({
                     ))}
                   </Select>
                 ))}
-                {field(k("basis"), "Charged as", (common) => (
-                  <Select
-                    {...common}
-                    value={String(c.basis)}
-                    onChange={(e) =>
-                      setRow("charges", i, { basis: e.target.value })
-                    }
-                  >
-                    {Object.entries(BASES).map(([v, l]) => (
-                      <option key={v} value={v}>
-                        {l}
-                      </option>
-                    ))}
-                  </Select>
-                ))}
+                {field(
+                  k("basis"),
+                  "Charged as",
+                  (common) => (
+                    <Select
+                      {...common}
+                      value={String(c.basis)}
+                      onChange={(e) =>
+                        setRow("charges", i, { basis: e.target.value })
+                      }
+                    >
+                      {Object.entries(BASES).map(([v, l]) => (
+                        <option key={v} value={v}>
+                          {l}
+                        </option>
+                      ))}
+                    </Select>
+                  ),
+                  "How the amount is worked out: a rate for each sq ft of the lease's area, one fixed amount, or a rate for each parking slot.",
+                )}
                 {rowField(
                   "amount",
                   c.basis === "fixed"

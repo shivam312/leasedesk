@@ -1,0 +1,2 @@
+CREATE INDEX "tds_records_invoice_id_index" ON "tds_records" USING btree ("invoice_id");--> statement-breakpoint
+CREATE INDEX "tds_records_opening_balance_id_index" ON "tds_records" USING btree ("opening_balance_id");

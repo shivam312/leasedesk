@@ -215,6 +215,9 @@ export const tdsRecords = pgTable(
     index().on(t.organizationId),
     index().on(t.tenantId, t.financialYear, t.quarter),
     index().on(t.paymentId),
+    // What is settled on each invoice or opening balance (load test, M10).
+    index().on(t.invoiceId),
+    index().on(t.openingBalanceId),
     foreignKey({
       columns: [t.organizationId, t.tenantId, t.paymentId],
       foreignColumns: [payments.organizationId, payments.tenantId, payments.id],

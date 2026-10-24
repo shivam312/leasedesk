@@ -86,6 +86,19 @@ export function demoPassword(): string {
  * the organization named "Sharma Estates" that the demo login belongs to.
  */
 export async function removeDemo(db: Transactional) {
+  await removeSeededOrg(db, DEMO_ORG_NAME, DEMO_EMAIL);
+}
+
+/**
+ * Remove a seeded organization (the demo, or the load test's) and its login:
+ * only an organization of that name the login belongs to, and only against
+ * the local database.
+ */
+export async function removeSeededOrg(
+  db: Transactional,
+  orgName: string,
+  email: string,
+) {
   if (!isLocalDatabaseUrl(databaseUrl()))
     throw new Error(
       "The demo seed deletes and rebuilds an organization, so it only runs against the local database.",
@@ -102,8 +115,8 @@ export async function removeDemo(db: Transactional) {
       )
       .where(
         and(
-          eq(schema.organizations.name, DEMO_ORG_NAME),
-          eq(schema.memberships.email, DEMO_EMAIL),
+          eq(schema.organizations.name, orgName),
+          eq(schema.memberships.email, email),
         ),
       );
     const ids = orgs.map((o) => o.id);
@@ -122,7 +135,7 @@ export async function removeDemo(db: Transactional) {
       // Back on, so deleting the login also removes its sessions.
       await tx.execute(sql`set local session_replication_role = origin`);
     }
-    await tx.execute(sql`delete from auth.users where email = ${DEMO_EMAIL}`);
+    await tx.execute(sql`delete from auth.users where email = ${email}`);
   });
 }
 
@@ -408,7 +421,7 @@ export async function seedDemo(
   };
 }
 
-function charge(
+export function charge(
   type: string,
   basis: string,
   ratePaise: number,

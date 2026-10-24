@@ -49,6 +49,7 @@ Database (local Supabase via `supabase start`; needs Docker running):
 - `pnpm db:migrate`: apply migrations (refuses non-local databases unless `ALLOW_REMOTE_DB=yes`; always ask before using that)
 - `pnpm db:seed`: load demo data (2 buildings, 40 tenants, 45 leases; same remote-database guard)
 - `pnpm db:seed:demo`: reset and load the "Sharma Estates" demo (2 buildings, 45 tenants, invoice and payment history up to this month, sent on its 1st) and print the login `demo@sharma-estates.example` with a new password, plus the payment to record and the bank statement to import (`.local-demo/hdfc-statement.csv`) in `docs/DEMO_SCRIPT.md`; local database only
+- `pnpm db:seed:load`: reset and load "Load Test Estates" (120 tenants, 3 GSTINs, 36 months of invoices and payments), then time each screen's data (`--time-only` to time it again); local database only; results in `docs/milestones/M10.md`
 - `pnpm db:reset`: wipe the local database, then migrate and seed
 
 Background jobs: `pnpm jobs:dev` runs Inngest's local dev server against `pnpm dev` (http://localhost:8288), where the daily billing run can be triggered by hand.

@@ -59,6 +59,24 @@ describe.skipIf(skipDbTests)("export all data", () => {
         read(zip["tenants.xlsx"]!).Sheets.tenants!,
       );
       expect(tenantsSheet.map((t) => t.id)).toEqual([a.tenant.id]);
+      // The organization and its businesses (who invoices are from: GSTIN,
+      // bank details), A's only.
+      const orgSheet = utils.sheet_to_json<{ id: string; name: string }>(
+        read(zip["organization.xlsx"]!).Sheets.organization!,
+      );
+      expect(orgSheet.map((o) => o.id)).toEqual([a.org.id]);
+      const businessSheet = utils.sheet_to_json<Record<string, unknown>>(
+        read(zip["businesses.xlsx"]!).Sheets.businesses!,
+      );
+      expect(businessSheet.map((e) => e.id)).toEqual([a.entity.id]);
+      expect(Object.keys(businessSheet[0]!)).toEqual(
+        expect.arrayContaining([
+          "legal_name",
+          "state_code",
+          "address",
+          "settings",
+        ]),
+      );
       const [log] = await tx
         .select()
         .from(schema.activityLog)

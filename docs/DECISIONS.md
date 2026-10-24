@@ -446,6 +446,6 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 ## D57. "Export all data" keeps values exactly as stored (2026-10-24)
 
-**Decision:** Settings → Export all data (owners only, logged as `export` in the activity log) is one zip: an Excel file per table, with snake_case columns and values as stored (paise, hundredths of a sq ft, basis points, ids), a "Read me.txt" explaining the units, and a `files/` folder with every stored invoice PDF and uploaded document (`src/lib/exports/all-data.ts`, `fflate`).
+**Decision:** Settings → Export all data (owners only, logged as `export` in the activity log) is one zip: an Excel file per table (starting with the organization and its businesses, so the GSTIN and bank details invoices are issued under go with it), with snake_case columns and values as stored (paise, hundredths of a sq ft, basis points, ids), a "Read me.txt" explaining the units, and a `files/` folder with every stored invoice PDF and uploaded document (`src/lib/exports/all-data.ts`, `fflate`).
 **Why:** It is for keeping or moving the landlord's data, so it must be exact and complete; turning paise into rupees would mean decimals in the file, and the reports (Reports, Tally) already give friendly views.
 **Consequences:** The zip is built in memory in one request; a landlord with gigabytes of documents would need a background export (backlog). Credit note PDFs aren't stored, so they aren't in it; their rows are.

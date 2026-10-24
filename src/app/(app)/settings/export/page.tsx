@@ -41,11 +41,11 @@ async function Export() {
   return (
     <div className="flex max-w-2xl flex-col gap-4 text-sm">
       <p>
-        One zip file with an Excel file for each kind of record (buildings,
-        units, tenants, leases, invoices and their lines, credit notes,
-        payments, deposits, TDS and opening balances), every invoice PDF as it
-        was sent, and every document you uploaded. A &ldquo;Read me&rdquo;
-        inside says how amounts and areas are written.
+        One zip file with an Excel file for each kind of record (your business
+        details, buildings, units, tenants, leases, invoices and their lines,
+        credit notes, payments, deposits, TDS and opening balances), every
+        invoice PDF as it was sent, and every document you uploaded. A
+        &ldquo;Read me&rdquo; inside says how amounts and areas are written.
       </p>
       <p className="text-muted-foreground">
         It can take a minute with many documents. Each export is recorded in the

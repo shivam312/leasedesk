@@ -1,17 +1,20 @@
 // Settings → Export all data (M10): one zip with an Excel file per table
-// (buildings, units, tenants, leases, invoices and their lines, credit notes,
+// (the organization, its businesses with their GSTIN and bank details,
+// buildings, units, tenants, leases, invoices and their lines, credit notes,
 // payments, deposits, TDS, opening balances) and every stored PDF and
 // document, so a landlord can take their data with them. Values are exactly
 // as stored (D57): amounts in paise, areas in hundredths of a sq ft, rates
 // in basis points, with a "Read me" saying so. Owner only; logged.
 
 import { strToU8, zipSync, type Zippable } from "fflate";
+import { eq } from "drizzle-orm";
 import { utils, write } from "xlsx";
 import type { PgTable } from "drizzle-orm/pg-core";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import type { PlainDate } from "@/lib/billing/dates";
 import { logActivity } from "@/lib/db/activity-log";
 import {
+  billingEntities,
   buildings,
   creditNoteLines,
   creditNotes,
@@ -27,6 +30,7 @@ import {
   leases,
   leaseUnits,
   openingBalances,
+  organizations,
   paymentAllocations,
   payments,
   tdsRecords,
@@ -41,6 +45,7 @@ type OrgTable = PgTable & { organizationId: PgColumn };
 
 /** File name in the zip → table. Order is the order in the zip. */
 const TABLES: [string, OrgTable][] = [
+  ["businesses", billingEntities],
   ["buildings", buildings],
   ["floors", floors],
   ["units", units],
@@ -118,7 +123,19 @@ export function allDataZip(
 
 /** Every table's rows for this organization. */
 export async function allDataTables(s: Scoped): Promise<ExportTable[]> {
-  const out: ExportTable[] = [];
+  // The organization row itself is keyed by id, not organization_id.
+  const out: ExportTable[] = [
+    {
+      name: "organization",
+      rows: (await s.tx
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, s.organizationId))) as Record<
+        string,
+        unknown
+      >[],
+    },
+  ];
   for (const [name, table] of TABLES)
     out.push({
       name,

@@ -440,7 +440,7 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 ## D56. The setup checklist reads the data, and keeps hand-ticked steps in the activity log (2026-10-24)
 
-**Decision:** Today shows owners a six-step "Set up LeaseDesk" checklist (`src/lib/setup/`) until every step is done. Business and GSTIN, buildings and units, and tenants and leases tick themselves from the data. "Check one rent schedule", "Opening balances" and "Invite your team" tick from the data where they can (an opening balance, a second person); otherwise an owner marks them done ("It's right", "Nobody owes anything", "Just me for now"), which is an `activity_log` row (`entity_type` "setup", `action` "setup_done", `after.step`).
+**Decision:** Today shows owners a six-step "Set up LeaseDesk" checklist (`src/lib/setup/`) until every step is done. Business and GSTIN, buildings and units, and tenants and leases tick themselves from the data. "Check one rent schedule", "Opening balances" and "Invite your team" tick from the data where they can (an opening balance for every tenant, a second person); otherwise an owner marks them done ("Yes, the schedule is right", "Nobody owes anything" or, once some balances are in, "The rest owe nothing", "Just me for now"), which is an `activity_log` row (`entity_type` "setup", `action` "setup_done", `after.step`).
 **Why:** No new table or column for a one-time list; the activity log already records who did what, and a marked step can't be lost by editing settings.
 **Consequences:** The checklist is worked out on every visit, so if data a step depends on is removed (the last unit, say), that step unticks and the checklist comes back; hand-marked steps stay done.
 

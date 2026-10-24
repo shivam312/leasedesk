@@ -6,6 +6,7 @@ const none: SetupFacts = {
   unitCount: 0,
   leaseCount: 0,
   firstLeaseId: null,
+  tenantCount: 0,
   openingBalanceCount: 0,
   teamCount: 1,
   marked: [],
@@ -87,5 +88,40 @@ describe("setupChecklist business step", () => {
     expect(step.key).toBe("business");
     expect(step.done).toBe(true);
     expect(step.title).toBe("Business details");
+  });
+});
+
+describe("setupChecklist opening balances step", () => {
+  const opening = (f: Partial<SetupFacts>) =>
+    setupChecklist({ ...none, ...f }).steps.find((s) => s.key === "opening");
+
+  it("isn't done by one tenant's balance while others have none", () => {
+    // 40 tenants, 1 opening balance typed in: 39 tenants not yet looked at.
+    const step = opening({ tenantCount: 40, openingBalanceCount: 1 });
+    expect(step?.done).toBe(false);
+    // Someone has an opening balance, so "Nobody owes anything" would be wrong.
+    expect(step?.canMark).toBe(true);
+    expect(step?.markLabel).toBe("The rest owe nothing");
+  });
+
+  it("is done when every tenant has an opening balance", () => {
+    // 3 tenants, 3 opening balances (one per tenant, enforced by the schema).
+    expect(opening({ tenantCount: 3, openingBalanceCount: 3 })?.done).toBe(
+      true,
+    );
+  });
+
+  it("is done when marked, with or without some balances typed in", () => {
+    expect(opening({ tenantCount: 40, marked: ["opening"] })?.done).toBe(true);
+    expect(
+      opening({ tenantCount: 40, openingBalanceCount: 5, marked: ["opening"] })
+        ?.done,
+    ).toBe(true);
+  });
+
+  it('isn\'t done before there are tenants, and offers "Nobody owes anything"', () => {
+    const step = opening({ tenantCount: 0, openingBalanceCount: 0 });
+    expect(step?.done).toBe(false);
+    expect(step?.markLabel).toBe("Nobody owes anything");
   });
 });

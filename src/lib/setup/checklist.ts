@@ -24,6 +24,8 @@ export type SetupFacts = {
   /** Leases that aren't drafts. */
   leaseCount: number;
   firstLeaseId: string | null;
+  tenantCount: number;
+  /** At most one per tenant (the schema enforces it). */
   openingBalanceCount: number;
   /** People in the organization, invited or joined, including the owner. */
   teamCount: number;
@@ -97,9 +99,16 @@ export function setupChecklist(f: SetupFacts): {
         "What each tenant still owes from before, on their tenant page (or in the import).",
       href: "/tenants",
       action: "Open tenants",
-      done: f.openingBalanceCount > 0 || marked.has("opening"),
+      // One tenant's balance doesn't answer for the others: done when every
+      // tenant has one, or when someone says the rest owe nothing.
+      done:
+        (f.tenantCount > 0 && f.openingBalanceCount >= f.tenantCount) ||
+        marked.has("opening"),
       canMark: true,
-      markLabel: "Nobody owes anything",
+      markLabel:
+        f.openingBalanceCount > 0
+          ? "The rest owe nothing"
+          : "Nobody owes anything",
     },
     {
       key: "team",

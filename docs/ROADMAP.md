@@ -195,7 +195,7 @@ The rest (v1 promises not yet kept, and smaller fixes):
 - [x] Search and a month filter on the Payments list and the TDS tracker, and a search on Match payments (was backlog row)
 - [x] Global search in the header: tenant, unit, invoice number
 - [x] Deposit ledger: receipt, adjustments, refund or forfeit per lease, replacing the single `depositAmount` (D-033). Built: received, refunded and kept; using it for unpaid rent waits on D-034 (billing review), GST on a kept deposit on D-035
-- [ ] Deposit settlement statement on tenant exit: dues less deposit, PDF (D-033)
+- [x] Deposit settlement statement on tenant exit: dues less deposit, PDF (D-033). Dues are after expected TDS; the statement records nothing (D-034)
 - [ ] "Log in with Google" button shown only when the Supabase Google provider is configured (the OAuth client is a human task)
 - [ ] Paste units from Excel on the building page (rows of unit code, floor, area)
 - [ ] TDS gets its own entry under Billing with a back link to Billing; rent roll gets a phone card layout with the unit as anchor

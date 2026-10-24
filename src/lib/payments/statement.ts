@@ -9,6 +9,7 @@ import {
 import type { Ledger, LedgerEntry } from "@/lib/billing/ledger";
 import { sumPaise, type Paise } from "@/lib/billing/money";
 import { formatDate } from "@/lib/format";
+import { depositSettlement } from "@/lib/billing/deposit";
 import type { Report } from "@/lib/reports/report";
 
 export type LedgerYear = {
@@ -129,4 +130,84 @@ export function statementReport(tenantName: string, year: LedgerYear): Report {
       "Sent invoices, credit notes and payments (with the TDS kept back) in date order. Invoices not sent yet aren't included.",
     ],
   };
+}
+
+/**
+ * The deposit settlement statement at a tenant's exit: the lease's unpaid
+ * invoices (each at what the tenant is asked to pay, after the TDS they may
+ * keep back), the deposit held, and what's left to refund or still owed. It
+ * records nothing (using a deposit for dues waits on D-034).
+ */
+export function settlementReport(input: {
+  tenantName: string;
+  property: string;
+  asOf: PlainDate;
+  heldPaise: Paise;
+  unpaid: readonly {
+    number: string;
+    dueDate: PlainDate;
+    outstandingPaise: Paise;
+    toPayPaise: Paise;
+  }[];
+}): { report: Report; settlement: ReturnType<typeof depositSettlement> } {
+  const duesPaise = sumPaise(input.unpaid.map((u) => u.toPayPaise));
+  const settlement = depositSettlement(input.heldPaise, duesPaise);
+  const report: Report = {
+    slug: `deposit-settlement-${input.asOf}`,
+    title: `Deposit settlement: ${input.tenantName}`,
+    period: `${input.property}, as on ${formatDate(input.asOf)}`,
+    sections: [
+      {
+        title: "Unpaid invoices",
+        empty: "Nothing is unpaid on this lease.",
+        columns: [
+          { key: "number", label: "Invoice", kind: "text" },
+          { key: "dueDate", label: "Due on", kind: "date" },
+          { key: "left", label: "Left on the invoice", kind: "money" },
+          {
+            key: "toPay",
+            label: "To pay after TDS",
+            kind: "money",
+            hint: "What's left less the TDS the tenant may still keep back",
+          },
+        ],
+        rows: input.unpaid.map((u) => ({
+          number: u.number,
+          dueDate: u.dueDate,
+          left: u.outstandingPaise,
+          toPay: u.toPayPaise,
+        })),
+        totals:
+          input.unpaid.length > 0
+            ? { number: "Dues", toPay: duesPaise }
+            : undefined,
+      },
+      {
+        title: "Settlement",
+        empty: "",
+        columns: [
+          { key: "what", label: "", kind: "text" },
+          { key: "amount", label: "Amount", kind: "money" },
+        ],
+        rows: [
+          { what: "Security deposit held", amount: input.heldPaise },
+          { what: "Less: dues", amount: settlement.adjustPaise },
+          { what: "Deposit to refund", amount: settlement.refundPaise },
+          ...(settlement.stillOwedPaise > 0
+            ? [
+                {
+                  what: "Still owed by the tenant",
+                  amount: settlement.stillOwedPaise,
+                },
+              ]
+            : []),
+        ],
+      },
+    ],
+    notes: [
+      "Dues are what the tenant is asked to pay, after the TDS they may still keep back; their TDS certificates cover the rest.",
+      "This statement doesn't record anything. Record the refund in the lease's deposit, and settle the dues on the invoices. Ask your accountant whether GST applies on any deposit you keep.",
+    ],
+  };
+  return { report, settlement };
 }

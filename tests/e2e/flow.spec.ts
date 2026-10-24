@@ -56,6 +56,15 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
     page.getByText("Recorded: received from the tenant, ₹3,00,000."),
   ).toBeVisible();
   await expect(page.getByText(/Held now: ₹3,00,000\./)).toBeVisible();
+  const settlement = page.waitForEvent("download");
+  await page
+    .getByRole("link", {
+      name: "Download the deposit settlement statement (PDF)",
+    })
+    .click();
+  expect((await settlement).suggestedFilename()).toBe(
+    `deposit-settlement-${today}.pdf`,
+  );
 
   // A date of the landlord's own, shown on Today within its reminder.
   const review = addDays(today, 10);

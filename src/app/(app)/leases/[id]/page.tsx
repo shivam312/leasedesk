@@ -328,6 +328,16 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
             unpaid rent or kept.
           </p>
         )}
+        <p className="mb-3 text-sm">
+          <a
+            href={`/leases/${lease.id}/settlement`}
+            download
+            className="inline-flex min-h-11 items-center underline md:min-h-0"
+          >
+            Download the deposit settlement statement (PDF)
+          </a>
+          : unpaid dues after TDS, less the deposit held, and the refund due.
+        </p>
         {canBill && (
           <details>
             <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium md:min-h-0">

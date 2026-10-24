@@ -65,6 +65,7 @@ export class PaymentError extends Error {}
 
 /** An unpaid invoice, with what the payment form shows. */
 export type UnpaidInvoice = OpenInvoice & {
+  leaseId: string;
   invoiceDate: PlainDate;
   periodStart: PlainDate;
   grandTotalPaise: number;
@@ -246,6 +247,7 @@ export async function unpaidInvoices(
     });
     return {
       id: r.id,
+      leaseId: r.leaseId,
       number: r.number ?? "",
       dueDate: r.dueDate,
       invoiceDate: r.invoiceDate,

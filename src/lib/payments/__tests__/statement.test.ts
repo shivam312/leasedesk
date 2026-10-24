@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Ledger, LedgerEntry } from "@/lib/billing/ledger";
 import {
   ledgerForYear,
+  settlementReport,
   parseFinancialYear,
   statementReport,
   statementYears,
@@ -90,6 +91,37 @@ describe("financial year choices", () => {
       "2026-27",
       "2025-26",
       "2024-25",
+    ]);
+  });
+});
+
+describe("settlementReport", () => {
+  it("takes the dues after TDS from the deposit and refunds the rest", () => {
+    // Held ₹3,00,000. One invoice ₹1,38,060 left, ₹11,700 TDS expected:
+    // dues ₹1,26,360, refund ₹3,00,000 − ₹1,26,360 = ₹1,73,640.
+    const { report, settlement } = settlementReport({
+      tenantName: "Acme",
+      property: "Unit 301, E2E Tower",
+      asOf: "2026-11-30",
+      heldPaise: 3_00_000_00,
+      unpaid: [
+        {
+          number: "ET/26-27/0001",
+          dueDate: "2026-11-08",
+          outstandingPaise: 1_38_060_00,
+          toPayPaise: 1_26_360_00,
+        },
+      ],
+    });
+    expect(settlement).toEqual({
+      adjustPaise: 1_26_360_00,
+      refundPaise: 1_73_640_00,
+      stillOwedPaise: 0,
+    });
+    expect(report.sections[1]!.rows.map((r) => r.what)).toEqual([
+      "Security deposit held",
+      "Less: dues",
+      "Deposit to refund",
     ]);
   });
 });

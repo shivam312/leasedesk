@@ -22,6 +22,8 @@ Read the relevant doc before starting work on an area. Do not load them all at o
 - `docs/DEPLOY.md`: first deploy, releases and rollback, cloud migrations, environment variables, Inngest sync, Storage, backups and the restore drill (all human steps)
 - `docs/DEMO_SCRIPT.md`: the 10-minute landlord demo on the demo data, with the exact clicks
 - `docs/milestones/`: a plain-language report per finished milestone
+- `docs/audit/`: the 2026-10-24 audit of M0–M8 (summary and rulings) that M9 came from
+- `docs/archive/`: old setup notes; nothing in it is current
 - `PIPELINE.md`: how the autonomous build pipeline (`scripts/pipeline.mjs`) runs
 
 ## Stack (fixed; do not swap without asking)

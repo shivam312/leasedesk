@@ -14,7 +14,7 @@ import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { formatDate, formatINR } from "@/lib/format";
-import { GST_STATES } from "@/lib/india/identifiers";
+import { addressWithState } from "@/lib/india/address";
 import { listLeases } from "@/lib/leases/queries";
 import {
   paymentSettings,
@@ -83,7 +83,7 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
       <div>
         <PageHeader
           title={t.companyName}
-          description={`${t.billingAddress}, ${GST_STATES[t.stateCode] ?? t.stateCode}`}
+          description={addressWithState(t.billingAddress, t.stateCode)}
         />
         {(editable || canBill) && (
           <div className="-mt-3 flex flex-wrap gap-2">

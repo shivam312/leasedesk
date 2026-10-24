@@ -4,7 +4,7 @@
 // tenant's TDS out of the deposit twice and reach Tally as money banked.
 
 import { asc, eq } from "drizzle-orm";
-import type { PlainDate } from "@/lib/billing/dates";
+import { compareDates, type PlainDate } from "@/lib/billing/dates";
 import {
   depositHeld,
   depositProblem,
@@ -125,7 +125,7 @@ export async function recordDepositHeld(
     {
       leaseId,
       kind: "received",
-      date: lease.startDate < today ? lease.startDate : today,
+      date: compareDates(lease.startDate, today) < 0 ? lease.startDate : today,
       amountPaise: lease.depositAmount,
       reference: null,
       note: "Held before LeaseDesk",

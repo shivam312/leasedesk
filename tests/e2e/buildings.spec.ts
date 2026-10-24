@@ -54,5 +54,7 @@ test("an owner adds a building, a floor and units", async ({ page }) => {
   ).toBeVisible();
 
   await page.goto("/leases/buildings");
-  await expect(page.getByText(/Mumbai · 1 unit, 1 vacant/)).toBeVisible();
+  await expect(
+    page.getByText(/Mumbai · 1 unit, 1 vacant · 0% leased/),
+  ).toBeVisible();
 });

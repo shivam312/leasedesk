@@ -26,14 +26,52 @@ export type UnitLease = {
   endDate: PlainDate;
 };
 
+/** Units a saved lease covers on `asOf`: leased, whatever their marked status says. */
+export function leasedUnitIds(
+  leases: readonly UnitLease[],
+  asOf: PlainDate,
+): Set<string> {
+  return new Set(
+    leases.filter((l) => leaseCovers(l, asOf)).map((l) => l.unitId),
+  );
+}
+
+export type Occupancy = {
+  units: number;
+  /** Units no lease covers, fit-out ones included (as in the Vacancy report). */
+  vacant: number;
+  /** Of the vacant units, those marked as in fit-out. */
+  fitOut: number;
+  area: number;
+  vacantArea: number;
+  /** Whole percent of billed area under a running lease. */
+  leasedPercent: number;
+};
+
+/** One building's occupancy, counted the way the Vacancy report counts it. */
+export function occupancyOf(
+  units: readonly Pick<VacancyUnit, "id" | "area" | "status">[],
+  leased: ReadonlySet<string>,
+): Occupancy {
+  const vacant = units.filter((u) => !leased.has(u.id));
+  const area = units.reduce((t, u) => t + u.area, 0);
+  const vacantArea = vacant.reduce((t, u) => t + u.area, 0);
+  return {
+    units: units.length,
+    vacant: vacant.length,
+    fitOut: vacant.filter((u) => u.status === "fit_out").length,
+    area,
+    vacantArea,
+    leasedPercent: occupiedPercent(area, vacantArea),
+  };
+}
+
 export function vacancy(
   units: readonly VacancyUnit[],
   leases: readonly UnitLease[],
   asOf: PlainDate,
 ): Report {
-  const leased = new Set(
-    leases.filter((l) => leaseCovers(l, asOf)).map((l) => l.unitId),
-  );
+  const leased = leasedUnitIds(leases, asOf);
   const buildings = new Map<
     string,
     { units: number; vacant: number; area: number; vacantArea: number }

@@ -161,7 +161,7 @@ Demo blockers (what a landlord would see go wrong in the 10-minute demo):
 - [x] The lease page folds the rent schedule on phones: the next 12 months, then "Show all N months"
 - [x] Invoice lines in one fixed order, rent first, the same on screen and on the PDF
 - [x] The tenant page's address doesn't repeat the state
-- [ ] Building cards count vacant units from active leases, not `units.status`, show occupancy %, and show fit-out units separately so the card and the Vacancy report agree (was backlog row on `units.status`)
+- [x] Building cards count vacant units from active leases, not `units.status`, show occupancy %, and show fit-out units separately so the card and the Vacancy report agree (was backlog row on `units.status`)
 
 Pilot blockers (what a real landlord's first month would hit):
 

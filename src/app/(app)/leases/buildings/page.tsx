@@ -10,6 +10,7 @@ import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { formatArea } from "@/lib/format";
 import { listBuildings } from "@/lib/property/queries";
+import { todayInIndia } from "@/lib/today";
 
 export const metadata: Metadata = { title: "Buildings" };
 
@@ -35,7 +36,9 @@ export default function BuildingsPage() {
 
 async function Buildings() {
   const member = await requireMember();
-  const list = await runScoped(appDb, member, listBuildings);
+  const list = await runScoped(appDb, member, (s) =>
+    listBuildings(s, todayInIndia()),
+  );
   const editable = can(member.role, "manage_property");
 
   return (
@@ -70,10 +73,9 @@ async function Buildings() {
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{b.name}</span>
                   <span className="block text-sm text-muted-foreground">
-                    {b.city} · {b.unitCount}{" "}
-                    {b.unitCount === 1 ? "unit" : "units"}
-                    {b.unitCount > 0 &&
-                      `, ${b.vacantCount} vacant · ${formatArea(b.totalArea)} billed`}
+                    {b.city} · {b.units} {b.units === 1 ? "unit" : "units"}
+                    {b.units > 0 &&
+                      `, ${b.vacant} vacant${b.fitOut ? ` (${b.fitOut} in fit-out)` : ""} · ${b.leasedPercent}% leased · ${formatArea(b.area)} billed`}
                   </span>
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" />

@@ -1,24 +1,57 @@
 // Reads for the buildings and units screens, always through withOrg/runScoped.
 
-import { asc, eq, sql } from "drizzle-orm";
-import { billingEntities, buildings, floors, units } from "@/lib/db/schema";
+import { asc, eq, ne } from "drizzle-orm";
+import type { PlainDate } from "@/lib/billing/dates";
+import {
+  billingEntities,
+  buildings,
+  floors,
+  leases,
+  leaseUnits,
+  units,
+} from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
+import { leasedUnitIds, occupancyOf } from "@/lib/reports/vacancy";
 
-export async function listBuildings(s: Scoped) {
-  return s.tx
-    .select({
-      id: buildings.id,
-      name: buildings.name,
-      city: buildings.city,
-      unitCount: sql<number>`count(${units.id})::int`,
-      vacantCount: sql<number>`count(${units.id}) filter (where ${units.status} = 'vacant')::int`,
-      totalArea: sql<number>`coalesce(sum(${units.chargeableArea}), 0)::int`,
-    })
-    .from(buildings)
-    .leftJoin(units, eq(units.buildingId, buildings.id))
-    .where(s.where(buildings))
-    .groupBy(buildings.id)
-    .orderBy(asc(buildings.name));
+/**
+ * Every building with its occupancy on `today`, counted from running leases
+ * the way the Vacancy report counts it (not from units' marked status).
+ */
+export async function listBuildings(s: Scoped, today: PlainDate) {
+  const [list, unitRows, leaseRows] = await Promise.all([
+    s.tx
+      .select({ id: buildings.id, name: buildings.name, city: buildings.city })
+      .from(buildings)
+      .where(s.where(buildings))
+      .orderBy(asc(buildings.name)),
+    s.tx
+      .select({
+        id: units.id,
+        buildingId: units.buildingId,
+        area: units.chargeableArea,
+        status: units.status,
+      })
+      .from(units)
+      .where(s.where(units)),
+    s.tx
+      .select({
+        unitId: leaseUnits.unitId,
+        status: leases.status,
+        startDate: leases.startDate,
+        endDate: leases.endDate,
+      })
+      .from(leaseUnits)
+      .innerJoin(leases, eq(leases.id, leaseUnits.leaseId))
+      .where(s.where(leaseUnits, ne(leases.status, "draft"))),
+  ]);
+  const leased = leasedUnitIds(leaseRows, today);
+  return list.map((b) => ({
+    ...b,
+    ...occupancyOf(
+      unitRows.filter((u) => u.buildingId === b.id),
+      leased,
+    ),
+  }));
 }
 
 export async function getBuilding(s: Scoped, id: string) {

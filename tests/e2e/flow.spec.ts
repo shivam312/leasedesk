@@ -65,6 +65,10 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
     .filter({ visible: true })
     .first()
     .click();
+  // The tenant page lists the invoice, paid.
+  await expect(
+    page.getByRole("link", { name: /ET\/\d{2}-\d{2}\/0001/ }),
+  ).toContainText("Paid");
   await page
     .locator('a[href$="/ledger"]')
     .filter({ visible: true })

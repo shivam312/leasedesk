@@ -7,13 +7,16 @@ import { ApplyCreditForm } from "@/components/payments/ApplyCreditForm";
 import { LEASE_STATUS } from "@/components/leases/status";
 import { PaymentList } from "@/components/payments/PaymentList";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { InvoiceStatusBadge } from "@/components/invoices/StatusBadge";
 import { contactFields } from "@/components/tenants/fields";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge, Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
-import { formatDate, formatINR } from "@/lib/format";
+import { formatDate, formatINR, formatMonth } from "@/lib/format";
+import { invoicesOfTenant } from "@/lib/invoices/queries";
+import { todayInIndia } from "@/lib/today";
 import { addressWithState } from "@/lib/india/address";
 import { listLeases } from "@/lib/leases/queries";
 import {
@@ -57,13 +60,14 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
     const found = await getTenant(s, id);
     if (!found) return null;
     const settings = await paymentSettings(s, id);
-    const [leases, payments, credits, unpaid] = await Promise.all([
+    const [leases, payments, credits, unpaid, invoiceList] = await Promise.all([
       listLeases(s, id),
       paymentsFor(s, id),
       paymentsWithCredit(s, id),
       unpaidInvoices(s, id, settings),
+      invoicesOfTenant(s, id),
     ]);
-    return { ...found, leases, payments, credits, unpaid };
+    return { ...found, leases, payments, credits, unpaid, invoiceList };
   });
   if (!data) notFound();
   const { tenant: t, contacts, leases, payments, credits, unpaid } = data;
@@ -163,6 +167,59 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section aria-labelledby="invoices-heading" className="max-w-2xl">
+        <h2 id="invoices-heading" className="mb-2 text-lg font-semibold">
+          Invoices
+        </h2>
+        {data.invoiceList.invoices.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No invoices yet. They appear here once the month&apos;s invoices are
+            made on Billing.
+          </p>
+        ) : (
+          <>
+            <ul className="flex flex-col divide-y rounded-lg border">
+              {data.invoiceList.invoices.map((i) => (
+                <li key={i.id}>
+                  <Link
+                    href={`/billing/invoices/${i.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-accent"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-medium break-words">
+                        {i.number ??
+                          `Not sent yet (${formatMonth(i.periodStart.slice(0, 7))})`}
+                      </span>
+                      <span className="block text-sm text-muted-foreground">
+                        {formatDate(i.invoiceDate)} · due{" "}
+                        {formatDate(i.dueDate)}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="tabular-nums">
+                        {formatINR(i.grandTotal)}
+                      </span>
+                      <InvoiceStatusBadge invoice={i} today={todayInIndia()} />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {data.invoiceList.more && (
+              <p className="mt-2 text-sm">
+                Showing the latest {data.invoiceList.invoices.length}.{" "}
+                <Link
+                  href={`/tenants/${t.id}/ledger`}
+                  className="inline-flex min-h-11 items-center underline md:min-h-0"
+                >
+                  See every invoice on the ledger
+                </Link>
+              </p>
+            )}
+          </>
         )}
       </section>
 

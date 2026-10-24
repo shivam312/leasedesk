@@ -181,7 +181,7 @@ Pilot blockers (what a real landlord's first month would hit):
 - [x] Invoice list: search by tenant or building, status chips, row selection and "Send selected"; phone cards show the invoice number (was backlog rows)
 - [x] "Remind all" on Today: one action sends the reminder email to every overdue tenant with an address and lists who has none (was backlog rows)
 - [x] Tenant statement PDF from the ledger, financial-year filter, "Record payment" on the ledger
-- [ ] Tenant page lists the tenant's invoices with status and a link to each (was backlog rows)
+- [x] Tenant page lists the tenant's invoices with status and a link to each (was backlog rows)
 - [ ] Settings → Billing rules shows a preview of the reminder email and its timing before reminders are turned on
 - [ ] Store the sent invoice PDF at send time (`pdf_path`) and serve it for later downloads; existing invoices keep rendering from frozen copies (was backlog row; do before the first change to the PDF layout)
 

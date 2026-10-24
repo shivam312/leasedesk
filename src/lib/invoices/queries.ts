@@ -1,6 +1,6 @@
 // Reading one invoice with its lines, for the invoice page and the PDF.
 
-import { asc, eq, sum } from "drizzle-orm";
+import { asc, desc, eq, sum } from "drizzle-orm";
 import {
   billingEntities,
   buildings,
@@ -62,4 +62,27 @@ export async function getInvoiceDocument(s: Scoped, id: string) {
     .from(creditNotes)
     .where(s.where(creditNotes, eq(creditNotes.invoiceId, id)));
   return invoiceDocument({ ...saved, unitCodes, credited: credit?.total ?? 0 });
+}
+
+/** A tenant's invoices, newest first (the tenant page shows the latest few). */
+export async function invoicesOfTenant(
+  s: Scoped,
+  tenantId: string,
+  limit = 12,
+) {
+  const rows = await s.tx
+    .select({
+      id: invoices.id,
+      number: invoices.number,
+      status: invoices.status,
+      invoiceDate: invoices.invoiceDate,
+      dueDate: invoices.dueDate,
+      periodStart: invoices.periodStart,
+      grandTotal: invoices.grandTotal,
+    })
+    .from(invoices)
+    .where(s.where(invoices, eq(invoices.tenantId, tenantId)))
+    .orderBy(desc(invoices.invoiceDate), desc(invoices.createdAt))
+    .limit(limit + 1);
+  return { invoices: rows.slice(0, limit), more: rows.length > limit };
 }

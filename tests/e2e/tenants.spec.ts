@@ -47,23 +47,55 @@ test("an owner adds a tenant with a contact, then finds them in the list", async
     ),
   ).toBeVisible();
   await expect(page.getByText("+919820012345 (WhatsApp)")).toBeVisible();
+  // Priya has a phone but no email, so nobody receives invoices yet.
   await expect(
     page.getByText("Receives invoices", { exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
 
   const visible = (label: string) =>
     page.getByLabel(label, { exact: true }).filter({ visible: true });
-  await visible("Contact name").fill("Rahul Admin");
-  await visible("Role").selectOption("admin");
-  await visible("Email (optional)").fill("admin@acme.in");
+  // "Add a contact" is folded behind a secondary button.
+  await page.getByText("Add a contact", { exact: true }).click();
+  await visible("Contact name").fill("Rahul Accounts");
+  await visible("Role").selectOption("billing");
+  await visible("Email (optional)").fill("accounts@acme.in");
   await page.getByRole("button", { name: "Add contact" }).click();
-  await expect(page.getByText("Added Rahul Admin.")).toBeVisible();
+  await expect(page.getByText("Added Rahul Accounts.")).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Contacts (2)" }),
   ).toBeVisible();
+  await expect(
+    page.getByText("Receives invoices", { exact: true }),
+  ).toHaveCount(1);
+
+  // Making Rahul Legal would leave invoices with no email: refused.
+  await page.getByRole("link", { name: "Edit Rahul Accounts" }).click();
+  await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}$/);
+  await visible("Role").selectOption("legal");
+  await page.getByRole("button", { name: "Save contact" }).click();
+  await expect(
+    page.getByText(/Invoices would have no email to go to/),
+  ).toBeVisible();
+
+  // Removing Priya, the main contact, is fine: Rahul still gets invoices.
+  await page.getByRole("link", { name: /^← Acme Software/ }).click();
+  await page.getByRole("link", { name: "Edit Priya Shah" }).click();
+  await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}$/);
+  await page.getByRole("button", { name: "Remove Priya Shah" }).click();
+  await expect(
+    page.getByText(/^Remove Priya Shah from Acme Software/),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Remove Priya Shah" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Acme Software Pvt Ltd",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Contacts (1)" }),
+  ).toBeVisible();
 
   await page.goto("/tenants");
-  await page.getByLabel("Search tenants").fill("9820012345");
+  // Rahul became the main contact when Priya was removed.
+  await page.getByLabel("Search tenants").fill("accounts@acme.in");
   await expect(
     page.getByText("Acme Software Pvt Ltd").filter({ visible: true }),
   ).toBeVisible();

@@ -146,27 +146,49 @@ export function tenantFields(
   ];
 }
 
-export function contactFields(prefix = ""): FormField[] {
+/** A contact's fields; `saved` fills them in to edit an existing contact. */
+export function contactFields(
+  prefix = "",
+  saved?: {
+    name: string;
+    role: string;
+    email: string | null;
+    phone: string | null;
+    whatsapp: boolean;
+  },
+): FormField[] {
   return [
-    { name: `${prefix}name`, label: "Contact name", required: true },
+    {
+      name: `${prefix}name`,
+      label: "Contact name",
+      required: true,
+      defaultValue: saved?.name,
+    },
     {
       name: `${prefix}role`,
       label: "Role",
       type: "select",
       required: true,
+      hint: "Accounts contacts get invoices and payment reminders.",
       options: Object.entries(CONTACT_ROLE_LABELS).map(([value, label]) => ({
         value,
         label,
       })),
-      defaultValue: "billing",
+      defaultValue: saved?.role ?? "billing",
     },
     {
       name: `${prefix}email`,
       label: "Email",
       type: "email",
-      hint: "Invoices are sent here.",
+      hint: "Invoices go here if the role is Accounts.",
+      defaultValue: saved?.email ?? undefined,
     },
-    { name: `${prefix}phone`, label: "Phone", inputMode: "tel" },
+    {
+      name: `${prefix}phone`,
+      label: "Phone",
+      inputMode: "tel",
+      defaultValue: saved?.phone ?? undefined,
+    },
     {
       name: `${prefix}whatsapp`,
       label: "WhatsApp on this number",
@@ -176,7 +198,7 @@ export function contactFields(prefix = ""): FormField[] {
         { value: "yes", label: "Yes" },
         { value: "no", label: "No" },
       ],
-      defaultValue: "no",
+      defaultValue: saved ? (saved.whatsapp ? "yes" : "no") : "no",
     },
   ];
 }

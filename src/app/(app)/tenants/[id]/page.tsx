@@ -23,6 +23,7 @@ import {
   unpaidInvoices,
 } from "@/lib/payments/payments";
 import { toFieldValue } from "@/lib/settings/rules-form";
+import { receivesInvoices } from "@/lib/tenants/contacts";
 import { CONTACT_ROLE_LABELS } from "@/lib/tenants/forms";
 import { getTenant } from "@/lib/tenants/queries";
 import { applyCreditAction } from "@/server/actions/payments";
@@ -234,9 +235,19 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
               <li key={c.id}>
                 <Card className="flex flex-col gap-1">
                   <p className="flex flex-wrap items-center gap-2 font-medium">
-                    {c.name}
+                    {editable ? (
+                      <Link
+                        href={`/tenants/${t.id}/contacts/${c.id}`}
+                        className="inline-flex min-h-11 items-center hover:underline md:min-h-0"
+                        aria-label={`Edit ${c.name}`}
+                      >
+                        {c.name}
+                      </Link>
+                    ) : (
+                      c.name
+                    )}
                     <Badge>{CONTACT_ROLE_LABELS[c.role]}</Badge>
-                    {c.isPrimary && (
+                    {receivesInvoices(c, contacts) && (
                       <Badge tone="good">Receives invoices</Badge>
                     )}
                   </p>
@@ -254,16 +265,25 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
           </ul>
         )}
         {editable && (
-          <>
-            <h3 className="mb-2 font-medium">Add a contact</h3>
-            <SimpleForm
-              action={addContact.bind(null, t.id)}
-              fields={contactFields()}
-              submitLabel="Add contact"
-              pendingLabel="Adding…"
-              secondary
-            />
-          </>
+          <details className="group">
+            <summary
+              className={buttonVariants({
+                variant: "outline",
+                className: "h-11 cursor-pointer list-none md:h-9",
+              })}
+            >
+              Add a contact
+            </summary>
+            <div className="pt-4">
+              <SimpleForm
+                action={addContact.bind(null, t.id)}
+                fields={contactFields()}
+                submitLabel="Add contact"
+                pendingLabel="Adding…"
+                secondary
+              />
+            </div>
+          </details>
         )}
       </section>
     </div>

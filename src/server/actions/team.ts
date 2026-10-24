@@ -14,6 +14,7 @@ import {
   inviteMember,
 } from "@/lib/auth/invites";
 import { PermissionError, requirePermission, ROLES } from "@/lib/auth/roles";
+import { removeMember, TeamError } from "@/lib/auth/team";
 import { runScoped } from "@/lib/db/scoped";
 import { createSupabase } from "@/lib/supabase/server";
 
@@ -119,4 +120,33 @@ export async function joinTeam(
     throw error;
   }
   redirect("/today");
+}
+
+/** Remove a member or cancel an invite (owners only; confirmed on screen). */
+export async function removeFromTeam(membershipId: string): Promise<FormState> {
+  const member = await requireMember();
+  try {
+    requirePermission(member, "manage_team");
+  } catch (error) {
+    if (error instanceof PermissionError) return { message: error.message };
+    throw error;
+  }
+  if (!z.uuid().safeParse(membershipId).success)
+    return { message: "That person isn't on the team any more." };
+  try {
+    const { email, kind } = await runScoped(appDb, member, (s) =>
+      removeMember(s, membershipId),
+    );
+    revalidatePath("/settings/team");
+    return {
+      tone: "success",
+      message:
+        kind === "removed"
+          ? `Removed ${email}. They can't log in to your account any more.`
+          : `Cancelled the invite to ${email}. Its link no longer works.`,
+    };
+  } catch (error) {
+    if (error instanceof TeamError) return { message: error.message };
+    throw error;
+  }
 }

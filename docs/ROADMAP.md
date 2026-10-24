@@ -168,7 +168,7 @@ Pilot blockers (what a real landlord's first month would hit):
 - [x] Credit note lines start at ₹0, with the total shown before "Issue credit note" (a sent credit note can't be undone)
 - [x] Email fails closed in production: without `RESEND_API_KEY`, sending refuses with "Email isn't set up yet" and Settings → Business shows the same; the console driver runs only outside production or with `EMAIL_DRIVER=console`
 - [x] Tenant contacts: edit and remove a contact and choose who receives invoices, keeping at least one usable email; "Add a contact" collapses behind a secondary button (was backlog row, must-fix before pilot)
-- [ ] Team: remove a member and cancel a pending invite, owner-only, with confirmation and activity log (was backlog rows)
+- [x] Team: remove a member and cancel a pending invite, owner-only, with confirmation and activity log (was backlog rows)
 - [ ] (blocked: D-028) Opening balance per tenant: schema and ledger row, shown first on the tenant ledger and in Unpaid and ageing and Today, never numbered or sent as an invoice
 - [ ] (blocked: D-028) Opening balance entry: typed on the tenant page and an "Opening balance (₹)" column with "as on" date in the tenants and leases import
 - [ ] (blocked: D-028) Opening balances settle like invoices: payment allocation, bank matching and reminders include them

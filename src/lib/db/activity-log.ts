@@ -16,7 +16,8 @@ export type ActivityAction =
   | "reverse"
   | "invite"
   | "accept"
-  | "remove";
+  | "remove"
+  | "cancel_invite";
 
 export interface ActivityEntry {
   entityType: string;

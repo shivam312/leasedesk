@@ -38,6 +38,36 @@ test("an owner invites someone, who joins with the link", async ({
   await context.close();
 
   await page.reload();
-  await expect(page.getByText(invitee)).toBeVisible();
+  await expect(page.getByText(invitee, { exact: true })).toBeVisible();
   await expect(page.getByText("Invite not accepted yet")).toHaveCount(0);
+
+  // Removing them takes their access away at once.
+  await page.getByRole("button", { name: `Remove ${invitee}` }).click();
+  await expect(
+    page.getByText(`Remove ${invitee} from your team?`, { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Remove", exact: true }).click();
+  await expect(page.getByText(invitee, { exact: true })).toHaveCount(0);
+
+  // An invite not accepted yet can be cancelled, and its link stops working.
+  const second = `viewer-${Date.now()}@e2e.test`;
+  await page.getByLabel("Email").fill(second);
+  await page.getByLabel("What they can do").selectOption("viewer");
+  await page.getByRole("button", { name: "Create invite link" }).click();
+  const link2 = (await page.locator("code").textContent())?.trim() ?? "";
+  await page.reload();
+  await page
+    .getByRole("button", { name: `Cancel invite to ${second}` })
+    .click();
+  await page
+    .getByRole("button", { name: "Cancel invite", exact: true })
+    .click();
+  await expect(page.getByText(second, { exact: true })).toHaveCount(0);
+  const other = await browser.newContext();
+  const visitor = await other.newPage();
+  await visitor.goto(link2);
+  await expect(visitor.getByRole("heading", { level: 1 })).toHaveText(
+    "This invite link doesn't work any more",
+  );
+  await other.close();
 });

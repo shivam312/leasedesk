@@ -13,11 +13,15 @@ import type { FormState } from "@/lib/auth/forms";
 export function ConfirmActionForm({
   action,
   label,
+  name = label,
   question,
   confirmLabel,
 }: {
   action: (state: FormState, form: FormData) => Promise<FormState>;
+  /** The button's words, e.g. "Remove". */
   label: string;
+  /** What it does in full, for screen readers, e.g. "Remove priya@acme.in". */
+  name?: string;
   question: string;
   confirmLabel: string;
 }) {
@@ -34,7 +38,7 @@ export function ConfirmActionForm({
       {asking ? (
         <div
           role="group"
-          aria-label={label}
+          aria-label={name}
           className="flex flex-col gap-3 rounded-lg border p-4"
         >
           <p className="text-sm">{question}</p>
@@ -68,6 +72,7 @@ export function ConfirmActionForm({
             type="button"
             variant="outline"
             className="h-11 md:h-9"
+            aria-label={name}
             onClick={() => setAsking(true)}
           >
             {label}

@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { asc } from "drizzle-orm";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { ConfirmActionForm } from "@/components/forms/ConfirmActionForm";
 import { InviteForm } from "@/components/settings/InviteForm";
 import { Badge, Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { memberships } from "@/lib/db/schema";
 import { runScoped } from "@/lib/db/scoped";
+import { removeFromTeam } from "@/server/actions/team";
 
 export const metadata: Metadata = { title: "Team" };
 
@@ -75,9 +77,32 @@ async function Team() {
                     {ROLE_LABELS[p.role].description}
                   </p>
                 </div>
-                {p.status === "invited" && (
-                  <Badge tone="warn">Invite not accepted yet</Badge>
-                )}
+                <div className="flex flex-col items-start gap-2 md:items-end">
+                  {p.status === "invited" && (
+                    <Badge tone="warn">Invite not accepted yet</Badge>
+                  )}
+                  {member.role === "owner" && p.userId !== member.userId && (
+                    <ConfirmActionForm
+                      action={removeFromTeam.bind(null, p.id)}
+                      label={
+                        p.status === "invited" ? "Cancel invite" : "Remove"
+                      }
+                      name={
+                        p.status === "invited"
+                          ? `Cancel invite to ${p.email}`
+                          : `Remove ${p.email}`
+                      }
+                      question={
+                        p.status === "invited"
+                          ? `Cancel the invite to ${p.email}? The link you sent stops working.`
+                          : `Remove ${p.email} from your team? They can't log in to your account any more. What they did stays in the activity log.`
+                      }
+                      confirmLabel={
+                        p.status === "invited" ? "Cancel invite" : "Remove"
+                      }
+                    />
+                  )}
+                </div>
               </Card>
             </li>
           ))}

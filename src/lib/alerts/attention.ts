@@ -70,6 +70,8 @@ export type OverdueItem = {
   invoiceCount: number;
   oldestInvoiceId: string;
   oldestDueDate: PlainDate;
+  /** The oldest invoice's own ask, for a reminder about that one invoice. */
+  oldestAmountPaise: Paise;
   daysOverdue: number;
 };
 
@@ -166,6 +168,7 @@ export function overdueByTenant(
         invoiceCount: 1,
         oldestInvoiceId: inv.id,
         oldestDueDate: inv.dueDate,
+        oldestAmountPaise: ask,
         daysOverdue: daysFrom(inv.dueDate, today),
       });
       continue;
@@ -175,6 +178,7 @@ export function overdueByTenant(
     if (compareDates(inv.dueDate, item.oldestDueDate) < 0) {
       item.oldestInvoiceId = inv.id;
       item.oldestDueDate = inv.dueDate;
+      item.oldestAmountPaise = ask;
       item.sortDate = inv.dueDate;
       item.daysOverdue = daysFrom(inv.dueDate, today);
     }

@@ -1,8 +1,9 @@
 // "Remind all" on Today: one reminder email, now, to every tenant with an
-// overdue invoice, for their oldest one (as the Today card), asking for the
-// amount less the TDS they may keep back. A tenant already reminded by a
-// person today is skipped, so a second tap sends nothing twice; tenants with
-// no email address are listed instead.
+// overdue invoice, for their oldest one (as the Today card), asking for what
+// is left on that invoice less the TDS they may keep back (section 14), not
+// the tenant's total across invoices. A tenant already reminded by a person
+// today is skipped, so a second tap sends nothing twice; tenants with no
+// email address are listed instead.
 
 import { and, eq, gte, inArray, isNull } from "drizzle-orm";
 import { overdueByTenant } from "@/lib/alerts/attention";
@@ -90,7 +91,7 @@ export async function remindAllOverdue(
         invoiceId: t.oldestInvoiceId,
         channel: "email",
         step: null,
-        amountAsked: t.amountPaise,
+        amountAsked: t.oldestAmountPaise,
         sentBy: s.userId,
         sentTo: to,
         status: "sending",
@@ -104,7 +105,7 @@ export async function remindAllOverdue(
           kind: "after",
           today,
           dueDate: t.oldestDueDate,
-          amountPaise: t.amountPaise,
+          amountPaise: t.oldestAmountPaise,
         }),
       });
     }

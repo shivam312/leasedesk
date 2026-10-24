@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import * as schema from "@/lib/db/schema";
 import { runScoped, type Transactional } from "@/lib/db/scoped";
@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/__tests__/harness";
 import type { Email, EmailDriver } from "@/lib/email";
 import { madeDraft } from "@/lib/invoices/__tests__/db-fixtures";
+import { runBilling } from "@/lib/invoices/run";
 import { issueInvoice } from "@/lib/invoices/send";
 import { remindAllMessage, remindAllOverdue } from "../remind-all";
 
@@ -79,6 +80,43 @@ describe.skipIf(skipDbTests)("Remind all", () => {
       const again = await remindAllOverdue(asDb(tx), ctx, "2026-11-20", driver);
       expect(again.alreadyToday).toEqual([a.tenant.companyName]);
       expect(sent).toHaveLength(1);
+    }));
+
+  it("asks for the oldest invoice's own amount, not the tenant's total", () =>
+    inRollback(async (tx) => {
+      const { a, ctx, invoice } = await overdue(tx, "ap@a.test");
+      // December's invoice too: both overdue by 20-01-2027. The email is
+      // about November's (the oldest) and asks for its ₹1,26,360, not the
+      // ₹2,52,720 the tenant owes across both.
+      await runScoped(asDb(tx), ctx, (s) => runBilling(s, "2026-12"));
+      const [december] = await tx
+        .select({ id: schema.invoices.id })
+        .from(schema.invoices)
+        .where(
+          and(
+            eq(schema.invoices.leaseId, a.lease.id),
+            eq(schema.invoices.runMonth, "2026-12-01"),
+          ),
+        );
+      await runScoped(asDb(tx), ctx, (s) =>
+        issueInvoice(s, december!.id, new Date("2026-12-01T04:30:00Z")),
+      );
+      await tx.execute(sql`reset role`);
+      const { sent, driver } = outbox();
+      const r = await remindAllOverdue(asDb(tx), ctx, "2027-01-20", driver);
+      expect(r.sent).toEqual([a.tenant.companyName]);
+      expect(sent).toHaveLength(1);
+      expect(sent[0]!.subject).toBe(
+        "Overdue: invoice T/26-27/0001, ₹1,26,360 was due on 08-11-2026",
+      );
+      const [row] = await tx
+        .select()
+        .from(schema.reminders)
+        .where(sql`${schema.reminders.createdAt} >= now()`);
+      expect(row).toMatchObject({
+        invoiceId: invoice.id,
+        amountAsked: 12_636_000,
+      });
     }));
 
   it("lists tenants with no email address instead", () =>

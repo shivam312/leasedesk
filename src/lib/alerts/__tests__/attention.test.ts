@@ -110,6 +110,9 @@ describe("overdueByTenant", () => {
         invoiceCount: 2,
         oldestInvoiceId: "b",
         oldestDueDate: "2026-09-08",
+        // The oldest invoice's own ask (₹50,000, no TDS), for a reminder
+        // about that one invoice; never the tenant's total under its number.
+        oldestAmountPaise: 50_000_00,
         daysOverdue: 45,
       }),
     ]);

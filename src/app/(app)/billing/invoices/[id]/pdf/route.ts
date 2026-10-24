@@ -1,6 +1,8 @@
 // The invoice as a PDF, opened in the browser. A draft prints with a "Draft"
 // notice and no payment QR; a sent invoice is the PDF stored when it was
-// sent, or, if sent before that was kept, prints from its frozen copies.
+// sent while nothing has changed since, or prints from its frozen copies
+// (sent before the file was kept, or since paid, part-paid, cancelled or
+// credited, so the notice and the amount to pay are today's).
 
 import { notFound } from "next/navigation";
 import { appDb, requireMember } from "@/lib/auth";
@@ -23,8 +25,8 @@ export async function GET(
   if (!doc) notFound();
   let pdf: Uint8Array;
   try {
-    // A sent invoice's stored file, exactly as it went; otherwise rendered
-    // (drafts, and invoices sent before the PDF was kept).
+    // A sent invoice's stored file, exactly as it went, while it's still
+    // current; otherwise rendered from the frozen copies.
     const stored = await runScoped(appDb, member, async (s) =>
       storedPdf(s, await supabaseStore(), id),
     ).catch(() => null);

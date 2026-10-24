@@ -410,7 +410,7 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 ## D51. A sent invoice's PDF is stored when it's sent, and served as stored (2026-10-24)
 
-**Decision:** Sending renders the PDF once, stores it at `<organization id>/invoices/<invoice id>.pdf` in the private `documents` bucket and fills `invoices.pdf_path` (once, logged; `src/lib/invoices/stored-pdf.ts`). The email attaches that same file, and later downloads serve it. Invoices sent before this, and any whose upload failed, keep rendering from their frozen copies (D18). Drafts always render.
+**Decision:** Sending renders the PDF once, stores it at `<organization id>/invoices/<invoice id>.pdf` in the private `documents` bucket and fills `invoices.pdf_path` (once, logged; `src/lib/invoices/stored-pdf.ts`). The email attaches that same file, and later downloads and "Email again" serve it while the invoice is still sent (or overdue) with nothing credited; once it is part-paid, paid, cancelled or credited, the PDF renders from the frozen copies again, so it carries the PAID or CANCELLED notice and no QR for money no longer owed (M9 review; `storedPdfIsCurrent`). Invoices sent before this, and any whose upload failed, keep rendering from their frozen copies (D18). Drafts always render.
 **Why:** The tenant's copy and the landlord's later download must be the same document, even after the PDF layout changes (audit; must happen before the first layout change).
 **Consequences:** The stored file is the invoice as sent: it still shows the payment QR after the invoice is paid, as the tenant's copy does. A storage failure doesn't stop the send; it's reported to Sentry. Credit notes still render from their frozen copies.
 

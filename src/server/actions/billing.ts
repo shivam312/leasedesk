@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { appDb, requireMember, type Member } from "@/lib/auth";
 import type { FormState } from "@/lib/auth/forms";
 import { runScoped } from "@/lib/db/scoped";
-import { emailDriver } from "@/lib/email";
+import { EMAIL_NOT_SET_UP, emailDriver, emailMode } from "@/lib/email";
 import {
   emailAgainMessage,
   invoiceIdSchema,
@@ -115,6 +115,7 @@ export async function sendAllInvoices(
     runMonthSchema,
     form,
     async (member, { month }) => {
+      if (emailMode() === "not_set_up") return { message: EMAIL_NOT_SET_UP };
       const drafts = await runScoped(appDb, member, (s) =>
         draftsForMonth(s, month),
       );
@@ -137,6 +138,7 @@ export async function sendInvoice(
     invoiceIdSchema,
     form,
     async (member, { invoiceId }) => {
+      if (emailMode() === "not_set_up") return { message: EMAIL_NOT_SET_UP };
       const saved = await runScoped(appDb, member, (s) =>
         getInvoiceDocument(s, invoiceId),
       );
@@ -170,6 +172,7 @@ export async function emailInvoiceAgain(
     invoiceIdSchema,
     form,
     async (member, { invoiceId }) => {
+      if (emailMode() === "not_set_up") return { message: EMAIL_NOT_SET_UP };
       const to = await runScoped(appDb, member, async (s) => {
         const saved = await getInvoice(s, invoiceId);
         if (

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { consoleDriver } from "../console";
-import { emailDriver } from "../index";
+import { emailDriver, emailMode } from "../index";
 import { resendDriver, type ResendClient } from "../resend";
 import { EmailError } from "../types";
 
@@ -84,6 +84,26 @@ describe("emailDriver", () => {
     expect(sent.driver).toBe("console");
     cwd.mockRestore();
     await rm(dir, { recursive: true, force: true });
+  });
+
+  it("fails closed in production without RESEND_API_KEY", async () => {
+    const prod = { NODE_ENV: "production" };
+    expect(emailMode(prod)).toBe("not_set_up");
+    await expect(emailDriver(prod).send(email)).rejects.toThrow(EmailError);
+    await expect(emailDriver(prod).send(email)).rejects.toThrow(
+      /Email isn't set up yet/,
+    );
+  });
+
+  it("uses the outbox in production only with EMAIL_DRIVER=console", () => {
+    expect(emailMode({ NODE_ENV: "production", EMAIL_DRIVER: "console" })).toBe(
+      "console",
+    );
+    expect(emailMode({ NODE_ENV: "development" })).toBe("console");
+    expect(emailMode({})).toBe("console");
+    expect(emailMode({ NODE_ENV: "production", RESEND_API_KEY: "re_x" })).toBe(
+      "resend",
+    );
   });
 
   it("needs EMAIL_FROM with a Resend key", () => {

@@ -39,6 +39,9 @@ export default defineConfig({
   webServer: {
     // A production build, so tests see what ships and pages are not compiled on first visit.
     command: `pnpm build && pnpm start --port ${PORT}`,
+    // A production server without RESEND_API_KEY refuses to send (D48);
+    // tests use the local outbox instead.
+    env: { EMAIL_DRIVER: "console" },
     url: `http://localhost:${PORT}/today`,
     reuseExistingServer: false,
     timeout: 180_000,

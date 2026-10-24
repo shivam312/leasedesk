@@ -11,6 +11,7 @@ import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { billingEntities, organizations } from "@/lib/db/schema";
 import { runScoped } from "@/lib/db/scoped";
+import { EMAIL_NOT_SET_UP, emailFrom, emailMode } from "@/lib/email";
 import { GST_STATES } from "@/lib/india/identifiers";
 import { saveOrganization } from "@/server/actions/business";
 
@@ -53,9 +54,46 @@ async function Business() {
   );
   if (!org) return null;
   const editable = can(member.role, "manage_settings");
+  const email = emailMode();
 
   return (
     <div className="flex flex-col gap-10">
+      <section aria-labelledby="email-heading" className="max-w-2xl">
+        <h2 id="email-heading" className="mb-3 text-lg font-semibold">
+          Email
+        </h2>
+        <Card className="flex flex-col gap-2">
+          {email === "not_set_up" ? (
+            <>
+              <div>
+                <Badge tone="bad">Not set up</Badge>
+              </div>
+              <p className="text-sm">{EMAIL_NOT_SET_UP}</p>
+              <p className="text-sm text-muted-foreground">
+                Whoever runs your LeaseDesk server adds the email account
+                (RESEND_API_KEY and EMAIL_FROM). Reminders and the daily summary
+                wait for it too.
+              </p>
+            </>
+          ) : email === "resend" ? (
+            <p className="text-sm">
+              Invoices, credit notes and reminders are emailed from{" "}
+              {emailFrom()}.
+            </p>
+          ) : (
+            <>
+              <div>
+                <Badge tone="warn">Test mode</Badge>
+              </div>
+              <p className="text-sm">
+                Emails are saved on this computer (in .local-outbox), not sent
+                to tenants. This is for trying LeaseDesk out.
+              </p>
+            </>
+          )}
+        </Card>
+      </section>
+
       {editable ? (
         <SimpleForm
           action={saveOrganization}

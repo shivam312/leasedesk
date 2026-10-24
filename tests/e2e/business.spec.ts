@@ -34,4 +34,6 @@ test("an owner sets business details and adds a GSTIN", async ({ page }) => {
   await page.getByRole("button", { name: "Add GSTIN" }).click();
   await expect(page).toHaveURL("/settings/business");
   await expect(page.getByText("27AAPFU0939F1ZV · Maharashtra")).toBeVisible();
+  // The e2e server writes email to the local outbox (EMAIL_DRIVER=console).
+  await expect(page.getByText("Test mode")).toBeVisible();
 });

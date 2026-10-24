@@ -389,3 +389,9 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Decision:** `next.config.ts` sets `experimental.instantInsights.validationLevel: "manual-warning"`, so Next 16 validates instant navigation only for segments that export `instant`.
 **Why:** Every signed-in page reads the session, so Next's default (validate every page, in dev) failed on every route with "Could not validate `instant`" and put a red issue badge on every screen, including the demo. Putting `instant = false` on `(app)/layout.tsx` only moved the error down to each page.
 **Consequences:** No route is validated today. If a page is made instant later, add `export const instant = true` to it and its errors will show again. The demo runs on `pnpm build && pnpm start` anyway (`docs/DEMO_SCRIPT.md`).
+
+## D48. Email fails closed in production (2026-10-24)
+
+**Decision:** `emailMode()` in `src/lib/email/index.ts` is `resend` with `RESEND_API_KEY`, `console` outside production or with `EMAIL_DRIVER=console`, and otherwise `not_set_up`. Then "Send all", "Send" and "Email again" refuse with "Email isn't set up yet…" and invoices stay drafts; reminders, digests and credit-note emails record the same failure; Settings → Business shows the state.
+**Why:** On a deployed server without a key, invoices looked sent while going to a local folder (audit, Claude 2.2).
+**Consequences:** The e2e server and the demo (`pnpm start`) set `EMAIL_DRIVER=console`. A credit note still issues without email (its PDF is on the invoice page), since correcting GST shouldn't wait on email.

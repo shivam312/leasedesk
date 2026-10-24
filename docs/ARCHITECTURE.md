@@ -17,7 +17,7 @@ One Next.js web app on Supabase Postgres, with background jobs for billing runs,
 | Validation | Zod | Every server action validates its input |
 | Background jobs | Inngest | Daily check that makes each organization's drafts on its run day (D23), daily payment reminders (D33), daily digests (D36). `pnpm jobs:dev` runs the local dev server |
 | PDF | @react-pdf/renderer | Invoice and credit note PDFs (built, with a UPI QR from `qrcode`), report PDFs |
-| Email | Resend | Invoices, credit notes and reminders, through the adapter in `src/lib/email/` (a console driver writes to `.local-outbox/` without `RESEND_API_KEY`). Delivery status is only in the activity log so far (backlog) |
+| Email | Resend | Invoices, credit notes and reminders, through the adapter in `src/lib/email/` (a console driver writes to `.local-outbox/` without `RESEND_API_KEY`, outside production or with `EMAIL_DRIVER=console`; production without a key refuses to send, D48). Delivery status is only in the activity log so far (backlog) |
 | Excel | SheetJS (`xlsx` 0.20.3 from cdn.sheetjs.com) | Bank statements (read in the browser, `src/lib/bank/xlsx.ts`, D30); since M7 the import templates and uploads (read on the server, `src/lib/imports/`, D40) and report Excel exports (`src/lib/exports/xlsx.ts`, D38) |
 | Tests | Vitest (unit), Playwright (end-to-end) | Unit tests sit next to code in `__tests__/`. Playwright runs at 375px and 1280px against a production build; `tests/e2e/screens.spec.ts` opens every screen, `flow.spec.ts` runs lease → invoice → send → payment, and `journey.spec.ts` (since M8) runs new organization → import → billing run → send → payment → reports; `auth.spec.ts` covers the password reset through Mailpit |
 | Hosting | Vercel + Supabase | Daily database backups |
@@ -84,7 +84,7 @@ src/
     settings/                setting keys and defaults (schema.ts), resolution (resolve.ts), load/save (store.ts),
                              BillingSettings for the engine (billing.ts), building defaults on charges (charge-defaults.ts),
                              Billing rules labels and form (labels.ts, rules-form.ts); docs/SETTINGS.md
-    email/                   email adapter: emailDriver() picks resend (RESEND_API_KEY + EMAIL_FROM) or console (.local-outbox/); the only way code sends email
+    email/                   email adapter: emailDriver() picks resend (RESEND_API_KEY + EMAIL_FROM), console (.local-outbox/; not in production unless EMAIL_DRIVER=console) or a driver that refuses (emailMode); the only way code sends email
     jobs/                    Inngest client (inngest.ts) and background jobs: monthlyBilling, the daily run (D23), with
                              dueRuns picking the organizations whose run day is today; dailyReminders (D33); dailyDigest (D36); served at /api/inngest
     invoices/                monthly run (run.ts, D22), its schedule day (schedule.ts), number format (number.ts) and

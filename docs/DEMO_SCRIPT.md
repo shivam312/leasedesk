@@ -6,7 +6,7 @@ The pictures for every step are in `docs/walkthrough/index.html` (made by `pnpm 
 
 ## Before the meeting (5 minutes, the morning of)
 
-1. Start the app on a production build: `supabase start`, then `pnpm build && pnpm start`. Don't demo on `pnpm dev`: it is slower on the first visit to each page, and Next.js's development badge can appear in a corner of the screen.
+1. Start the app on a production build: `supabase start`, then `pnpm build && EMAIL_DRIVER=console pnpm start` (the demo's emails go to `.local-outbox/`; without a Resend key, a production server otherwise refuses to send). Don't demo on `pnpm dev`: it is slower on the first visit to each page, and Next.js's development badge can appear in a corner of the screen.
 2. Reset the demo: `pnpm db:seed:demo`. It prints:
    - the login (`demo@sharma-estates.example`) and a new password: write it down;
    - the month to make invoices for in part 5 (next month, e.g. "Nov 2026"; this month only if you seed on the 1st);

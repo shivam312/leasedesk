@@ -109,6 +109,11 @@ export function EndLeaseForm({
           >
             End lease on this day
           </Button>
+          {!validDate && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Choose the last day first.
+            </p>
+          )}
         </div>
       )}
     </form>

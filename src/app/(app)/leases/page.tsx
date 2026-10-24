@@ -28,6 +28,19 @@ export default function LeasesPage() {
       >
         <Leases />
       </Suspense>
+      <Suspense fallback={null}>
+        <ImportCard />
+      </Suspense>
+    </>
+  );
+}
+
+/** Only for people who can add leases (the import page refuses others). */
+async function ImportCard() {
+  const member = await requireMember();
+  if (!can(member.role, "manage_leases")) return null;
+  return (
+    <>
       <Link
         href="/leases/import"
         className="mt-8 flex max-w-2xl items-center justify-between gap-4 rounded-lg border p-4 hover:bg-accent"

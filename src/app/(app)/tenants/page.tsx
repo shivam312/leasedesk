@@ -47,8 +47,9 @@ async function Tenants() {
       {list.length === 0 ? (
         <Card className="flex max-w-xl flex-col items-start gap-3">
           <p className="text-sm">
-            No tenants yet. Add your first tenant with their GSTIN and the
-            contact who receives invoices.
+            No tenants yet. Add your first tenant: their name, billing address
+            and the contact who receives invoices. A GSTIN is only needed if
+            they&apos;re GST-registered.
           </p>
           {editable && (
             <Button asChild className="h-11 md:h-9">

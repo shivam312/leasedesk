@@ -376,7 +376,7 @@ export function dateTitle(d: Pick<CriticalDateRow, "type" | "label">): string {
     case "escalation":
       return "Rent increase";
     case "renewal_option":
-      return "Renewal option";
+      return "Renewal deadline";
     case "notice_deadline":
       return "Last day to give notice";
     case "custom":

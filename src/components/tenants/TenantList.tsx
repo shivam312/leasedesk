@@ -86,7 +86,7 @@ export function TenantList({ tenants }: { tenants: TenantRow[] }) {
               setFilter("all");
             }}
           >
-            Clear search
+            {query.trim() ? "Clear search" : "Show all tenants"}
           </button>
         </p>
       ) : (

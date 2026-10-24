@@ -61,7 +61,7 @@ export function buildingFields(
       label: "Invoice number prefix",
       required: true,
       defaultValue: building?.invoicePrefix,
-      hint: "Up to 5 letters, like ABC: invoices are numbered ABC/26-27/0001.",
+      hint: "Up to 5 letters, usually the building's initials (Orchid Towers → OT): invoices are numbered OT/26-27/0001.",
       advanced: Boolean(building),
     },
     {
@@ -98,7 +98,7 @@ export function unitFields(
       type: "select",
       required: true,
       options: [
-        { value: "", label: "No floor" },
+        { value: "", label: "No floor (small buildings can skip floors)" },
         ...floorList.map((f) => ({ value: f.id, label: f.label })),
       ],
       defaultValue: unit?.floorId ?? floorList[0]?.id ?? "",

@@ -50,7 +50,7 @@ const DATE_NAMES = {
   expiry: "Lease ends",
   lock_in_end: "Lock-in ends",
   escalation: "Rent increase",
-  renewal_option: "Renewal option",
+  renewal_option: "Renewal deadline",
   notice_deadline: "Last day to give notice",
   custom: "Reminder",
 };
@@ -183,8 +183,8 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
                   )}
                   <p className="text-muted-foreground">
                     {c.timing === "advance"
-                      ? "Billed in advance"
-                      : "Billed after the month"}
+                      ? "Billed at the start of the month"
+                      : "Billed after the month ends"}
                     {" · "}GST {bpText(c.gstRateBp)}%
                     {c.endDate && ` · Ends ${formatDate(c.endDate)}`}
                   </p>

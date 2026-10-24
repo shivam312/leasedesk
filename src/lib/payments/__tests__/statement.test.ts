@@ -3,6 +3,7 @@ import type { Ledger, LedgerEntry } from "@/lib/billing/ledger";
 import {
   ledgerForYear,
   settlementReport,
+  settlementShare,
   parseFinancialYear,
   statementReport,
   statementYears,
@@ -191,8 +192,113 @@ describe("settlementReport", () => {
       what: "Credit left over, also to pay back",
       amount: 30_000_00,
     });
-    expect((bigger.report.notes ?? []).join(" ")).toContain(
+    // One lease: the credit is simply the tenant's; with other leases, the
+    // statement says it counts only this lease's share (settlementShare).
+    expect((bigger.report.notes ?? []).join(" ")).toContain("Apply credit");
+    expect((bigger.report.notes ?? []).join(" ")).not.toContain(
       "across all their leases",
     );
+  });
+});
+
+describe("settlementShare", () => {
+  // Tenant with two leases, L1 (ends first) and L2 (ends last), ₹50,000
+  // opening balance as on 31-03-2026 and ₹1,60,000 of unapplied credit.
+  // Dues after TDS, oldest first: opening ₹50,000 (31-03-2026), L1 ₹80,000
+  // (08-10-2026), L2 ₹1,00,000 (08-10-2026, number after L1's), L1 ₹20,000
+  // (08-11-2026). Credit ₹1,60,000 goes 50,000 → opening, 80,000 → L1,
+  // 30,000 → L2 (of 1,00,000); nothing left over.
+  const unpaid = [
+    {
+      leaseId: "L1",
+      openingBalance: false,
+      number: "A/0002",
+      dueDate: "2026-10-08",
+      toPayPaise: 8_000_000,
+    },
+    {
+      leaseId: "L2",
+      openingBalance: false,
+      number: "A/0003",
+      dueDate: "2026-10-08",
+      toPayPaise: 10_000_000,
+    },
+    {
+      leaseId: "L1",
+      openingBalance: false,
+      number: "A/0004",
+      dueDate: "2026-11-08",
+      toPayPaise: 2_000_000,
+    },
+    {
+      leaseId: null,
+      openingBalance: true,
+      number: "Opening balance",
+      dueDate: "2026-03-31",
+      toPayPaise: 5_000_000,
+    },
+  ];
+  const leases = [
+    { id: "L1", endDate: "2027-03-31" },
+    { id: "L2", endDate: "2029-03-31" },
+  ];
+
+  it("counts the credit once: each lease gets the share on its own dues, oldest first", () => {
+    const l1 = settlementShare({
+      leaseId: "L1",
+      leases,
+      unpaid,
+      creditPaise: 16_000_000,
+    });
+    const l2 = settlementShare({
+      leaseId: "L2",
+      leases,
+      unpaid,
+      creditPaise: 16_000_000,
+    });
+    // L1: its two invoices, credit 80,000 (all on the October one).
+    expect(l1.unpaid.map((u) => u.number)).toEqual(["A/0002", "A/0004"]);
+    expect(l1.creditPaise).toBe(8_000_000);
+    expect(l1.tenantWide).toBe(false);
+    // L2 ends last: the opening balance too, and credit 50,000 + 30,000.
+    expect(l2.unpaid.map((u) => u.number)).toEqual([
+      "Opening balance",
+      "A/0003",
+    ]);
+    expect(l2.creditPaise).toBe(8_000_000);
+    expect(l2.tenantWide).toBe(true);
+    // Together: exactly the ₹1,60,000 credit.
+    expect(l1.creditPaise + l2.creditPaise).toBe(16_000_000);
+  });
+
+  it("puts credit beyond all the dues on the lease that ends last only", () => {
+    // ₹3,00,000 credit against ₹2,50,000 of dues: ₹50,000 left over.
+    const l1 = settlementShare({
+      leaseId: "L1",
+      leases,
+      unpaid,
+      creditPaise: 30_000_000,
+    });
+    const l2 = settlementShare({
+      leaseId: "L2",
+      leases,
+      unpaid,
+      creditPaise: 30_000_000,
+    });
+    expect(l1.creditPaise).toBe(10_000_000);
+    // 50,000 opening + 1,00,000 L2 + 50,000 left over.
+    expect(l2.creditPaise).toBe(20_000_000);
+    expect(l1.creditPaise + l2.creditPaise).toBe(30_000_000);
+  });
+
+  it("a tenant with one lease gets everything on it", () => {
+    const one = settlementShare({
+      leaseId: "L1",
+      leases: [{ id: "L1", endDate: "2027-03-31" }],
+      unpaid: unpaid.filter((u) => u.leaseId !== "L2"),
+      creditPaise: 1_000_000,
+    });
+    expect(one.unpaid).toHaveLength(3);
+    expect(one.creditPaise).toBe(1_000_000);
   });
 });

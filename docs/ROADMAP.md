@@ -213,7 +213,7 @@ Opening position:
 - [x] Opening balance entry: typed on the tenant page, and an "Opening balance (₹)" column with an "as on" date in the tenants and leases import
 - [x] Opening balances settle like invoices: payment allocation, bank matching and reminders include them
 - [x] Deposits already held: record a "received" entry for leases that pre-date the deposit ledger, and a "Deposit held (₹)" column in the lease import
-- [ ] Settlement statement counts a tenant's unused advance once across all their leases (the open finding from the M9 sign-off)
+- [x] Settlement statement counts a tenant's unused advance once across all their leases (the open finding from the M9 sign-off)
 
 Setup:
 

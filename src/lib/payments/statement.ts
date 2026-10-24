@@ -133,6 +133,55 @@ export function statementReport(tenantName: string, year: LedgerYear): Report {
 }
 
 /**
+ * One lease's part of what its tenant owes and has paid ahead, for its
+ * settlement statement, so nothing is counted twice across a tenant's
+ * leases. The tenant's unapplied credit settles all their dues oldest first
+ * (as "Apply credit" would: by due date, the opening balance first on its
+ * day, then invoice number); each lease gets the credit that falls on its
+ * own invoices. Tenant-wide amounts, the opening balance (D-028) and credit
+ * beyond all the dues, go on the statement of the lease that ends last.
+ */
+export function settlementShare<
+  T extends {
+    leaseId: string | null;
+    openingBalance?: boolean;
+    number: string;
+    dueDate: PlainDate;
+    toPayPaise: Paise;
+  },
+>(input: {
+  leaseId: string;
+  /** The tenant's leases (not drafts). */
+  leases: readonly { id: string; endDate: PlainDate }[];
+  unpaid: readonly T[];
+  creditPaise: Paise;
+}): { unpaid: T[]; creditPaise: Paise; tenantWide: boolean } {
+  const last = [...input.leases].sort(
+    (a, b) =>
+      compareDates(b.endDate, a.endDate) ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  )[0];
+  const tenantWide = !last || last.id === input.leaseId;
+  const ordered = [...input.unpaid].sort(
+    (a, b) =>
+      compareDates(a.dueDate, b.dueDate) ||
+      Number(!a.openingBalance) - Number(!b.openingBalance) ||
+      (a.number < b.number ? -1 : a.number > b.number ? 1 : 0),
+  );
+  const mine = (u: T) =>
+    u.leaseId === input.leaseId || (tenantWide && u.leaseId === null);
+  let left = Math.max(0, input.creditPaise);
+  let credit = 0;
+  for (const u of ordered) {
+    const used = Math.min(left, Math.max(0, u.toPayPaise));
+    left -= used;
+    if (mine(u)) credit += used;
+  }
+  if (tenantWide) credit += left;
+  return { unpaid: ordered.filter(mine), creditPaise: credit, tenantWide };
+}
+
+/**
  * The deposit settlement statement at a tenant's exit: the lease's unpaid
  * invoices (each at what the tenant is asked to pay, after the TDS they may
  * keep back), less any payment credit the tenant already holds (an earlier
@@ -145,8 +194,16 @@ export function settlementReport(input: {
   property: string;
   asOf: PlainDate;
   heldPaise: Paise;
-  /** The tenant's payment credit not yet applied to invoices (paymentsWithCredit). */
+  /**
+   * The tenant's payment credit not yet applied to invoices
+   * (paymentsWithCredit), or this lease's share of it (settlementShare).
+   */
   creditPaise?: Paise;
+  /**
+   * The tenant has other leases: this is the one that ends last (and so
+   * carries the opening balance and credit left over), or not.
+   */
+  otherLeases?: "last" | "not_last";
   unpaid: readonly {
     number: string;
     dueDate: PlainDate;
@@ -249,9 +306,20 @@ export function settlementReport(input: {
       "Dues are what the tenant is asked to pay, after the TDS they may still keep back; their TDS certificates cover the rest. Charges not invoiced yet (this month's draft, or anything billed in arrears after the lease ends) aren't included.",
       ...(creditPaise > 0
         ? [
-            'The tenant has payment credit not yet applied to invoices. It is theirs across all their leases, so a tenant with another lease may want it there instead. Use "Apply credit" on the tenant\'s page so it settles the dues before the deposit is refunded.',
+            input.otherLeases
+              ? 'The tenant has payment credit not yet applied to invoices. It is theirs across all their leases, so it settles their dues oldest first and this statement counts only the part that falls on this lease. Use "Apply credit" on the tenant\'s page so it settles the dues before the deposit is refunded.'
+              : 'The tenant has payment credit not yet applied to invoices. Use "Apply credit" on the tenant\'s page so it settles the dues before the deposit is refunded.',
           ]
         : []),
+      ...(input.otherLeases === "not_last"
+        ? [
+            "The tenant's opening balance and any credit left over after all their dues are on the statement for their lease that ends last.",
+          ]
+        : input.otherLeases === "last"
+          ? [
+              "The tenant has other leases. This statement also includes their opening balance, if any, and any credit left over after all their dues.",
+            ]
+          : []),
       "This statement doesn't record anything. Record the refund in the lease's deposit, and settle the dues on the invoices. Ask your accountant whether GST applies on any part of the deposit used for dues or kept (D-035).",
     ],
   };

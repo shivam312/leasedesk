@@ -15,7 +15,9 @@ import {
   paymentsWithCredit,
   unpaidInvoices,
 } from "@/lib/payments/payments";
-import { settlementReport } from "@/lib/payments/statement";
+import { settlementReport, settlementShare } from "@/lib/payments/statement";
+import { and, eq, ne } from "drizzle-orm";
+import { leases } from "@/lib/db/schema";
 import { amountToAsk } from "@/lib/reminders/schedule";
 import { todayInIndia } from "@/lib/today";
 
@@ -31,19 +33,29 @@ export async function GET(
     const saved = await getLease(s, id);
     if (!saved) return null;
     const tenantId = saved.lease.tenantId;
-    const [deposit, open, credits] = await Promise.all([
+    const [deposit, open, credits, tenantLeases] = await Promise.all([
       depositLedger(s, id),
       unpaidInvoices(s, tenantId, await paymentSettings(s, tenantId)),
       paymentsWithCredit(s, tenantId),
+      s.tx
+        .select({ id: leases.id, endDate: leases.endDate })
+        .from(leases)
+        .where(
+          s.where(
+            leases,
+            and(eq(leases.tenantId, tenantId), ne(leases.status, "draft")),
+          ),
+        ),
     ]);
-    return {
-      saved,
-      deposit,
-      // The tenant's opening balance (D-028) belongs to no lease; like their
-      // credit, it is the tenant's, so it is settled on this statement too.
-      open: open.filter((o) => o.leaseId === id || o.openingBalance),
+    // The tenant's credit and opening balance (D-028) are counted once
+    // across all their leases (settlementShare).
+    const share = settlementShare({
+      leaseId: id,
+      leases: tenantLeases,
+      unpaid: open.map((o) => ({ ...o, toPayPaise: amountToAsk(o) })),
       creditPaise: sumPaise(credits.map((c) => c.creditPaise)),
-    };
+    });
+    return { saved, deposit, share, hasOtherLeases: tenantLeases.length > 1 };
   });
   if (!data) notFound();
   const { report } = settlementReport({
@@ -51,12 +63,17 @@ export async function GET(
     property: `${data.saved.units.map((u) => u.code).join(", ")}, ${data.saved.buildingName}`,
     asOf: today,
     heldPaise: data.deposit.heldPaise,
-    creditPaise: data.creditPaise,
-    unpaid: data.open.map((o) => ({
+    creditPaise: data.share.creditPaise,
+    otherLeases: data.hasOtherLeases
+      ? data.share.tenantWide
+        ? "last"
+        : "not_last"
+      : undefined,
+    unpaid: data.share.unpaid.map((o) => ({
       number: o.number,
       dueDate: o.dueDate,
       outstandingPaise: o.outstandingPaise,
-      toPayPaise: amountToAsk(o),
+      toPayPaise: o.toPayPaise,
     })),
   });
   let pdf: Buffer;

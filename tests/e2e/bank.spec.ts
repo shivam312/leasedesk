@@ -63,6 +63,13 @@ test("an owner imports a bank statement; the columns are remembered", async ({
   await page.goto("/billing/payments");
   await page.getByRole("link", { name: "Match payments (3)" }).click();
   await expect(page.getByText("No match found")).toHaveCount(3);
+  // A search narrows the lines; nothing hidden is counted.
+  await page.getByLabel("Search bank lines").fill("zzzz");
+  await expect(
+    page.getByText("No lines match “zzzz”.", { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Show all lines" }).click();
+  await expect(page.getByText("No match found")).toHaveCount(3);
   await expect(
     page.getByRole("button", { name: "Record 0 payments" }),
   ).toBeDisabled();

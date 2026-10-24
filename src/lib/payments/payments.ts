@@ -4,7 +4,20 @@
 // and TDS records in one transaction, and moves each invoice's status on.
 // Payments are never edited: a wrong one is reversed (reversePayment).
 
-import { and, asc, desc, eq, inArray, notInArray, sql, sum } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  lte,
+  notInArray,
+  or,
+  sql,
+  sum,
+} from "drizzle-orm";
 import {
   allocatePayment,
   checkAllocation,
@@ -16,7 +29,13 @@ import {
   type Allocation,
   type OpenInvoice,
 } from "@/lib/billing/allocation";
-import { compareDates, type PlainDate } from "@/lib/billing/dates";
+import {
+  compareDates,
+  endOfMonth,
+  startOfMonth,
+  type PlainDate,
+  type YearMonth,
+} from "@/lib/billing/dates";
 import { tdsQuarter } from "@/lib/billing/tds";
 import type { BillingSettings, ChargeType } from "@/lib/billing/types";
 import { insertLogged, logActivity, updateLogged } from "@/lib/db/activity-log";
@@ -577,7 +596,13 @@ export async function paymentsFor(s: Scoped, tenantId: string) {
 }
 
 /** Recent payments across tenants, newest first, for Billing → Payments. */
-export async function recentPayments(s: Scoped, limit = 100) {
+export async function recentPayments(
+  s: Scoped,
+  filter: { q?: string; month?: YearMonth | null } = {},
+  limit = 100,
+) {
+  const q = filter.q?.trim();
+  const like = q ? `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%` : null;
   return s.tx
     .select({
       payment: payments,
@@ -585,7 +610,23 @@ export async function recentPayments(s: Scoped, limit = 100) {
     })
     .from(payments)
     .innerJoin(tenants, eq(tenants.id, payments.tenantId))
-    .where(s.where(payments))
+    .where(
+      s.where(
+        payments,
+        filter.month
+          ? and(
+              gte(payments.receivedDate, startOfMonth(filter.month)),
+              lte(payments.receivedDate, endOfMonth(filter.month)),
+            )
+          : undefined,
+        like
+          ? or(
+              ilike(tenants.companyName, like),
+              ilike(payments.reference, like),
+            )
+          : undefined,
+      ),
+    )
     .orderBy(desc(payments.receivedDate), desc(payments.createdAt))
     .limit(limit);
 }

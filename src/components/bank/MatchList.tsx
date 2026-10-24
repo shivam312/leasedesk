@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge, FormMessage } from "@/components/ui/field";
 import { Select } from "@/components/ui/input";
 import type { FormState } from "@/lib/auth/forms";
@@ -55,16 +56,39 @@ export function MatchList({
   const [chosen, setChosen] = useState<Record<string, string>>(() =>
     Object.fromEntries(rows.map((r) => [r.id, r.tenantId ?? ""])),
   );
+  // Search: only the lines shown are counted and recorded.
+  const [query, setQuery] = useState("");
+  const tenantName = (id: string) =>
+    tenants.find((t) => t.id === id)?.name ?? "";
+  const q = query
+    .trim()
+    .toLowerCase()
+    .replace(/[₹,\s]/g, "");
+  const shown = q
+    ? rows.filter((r) =>
+        [
+          r.description,
+          r.reference,
+          tenantName(chosen[r.id] ?? r.tenantId ?? ""),
+          String(r.creditPaise / 100),
+          ...r.invoiceNumbers,
+        ]
+          .join(" ")
+          .toLowerCase()
+          .replace(/[₹,\s]/g, "")
+          .includes(q),
+      )
+    : rows;
   const count = [...ticked].filter((id) =>
-    rows.some((r) => r.id === id),
+    shown.some((r) => r.id === id),
   ).length;
   // Rows change after recording; a new row starts with its suggestion.
   const tenantOf = (r: MatchRow) => chosen[r.id] ?? r.tenantId ?? "";
-  const missingTenant = rows.some((r) => ticked.has(r.id) && !tenantOf(r));
+  const missingTenant = shown.some((r) => ticked.has(r.id) && !tenantOf(r));
   const pending = confirming || ignoring;
   const [askIgnore, setAskIgnore] = useState(false);
   const toggleAll = (on: boolean) =>
-    setTicked(new Set(on ? rows.map((r) => r.id) : []));
+    setTicked(new Set(on ? shown.map((r) => r.id) : []));
 
   return (
     <form
@@ -108,9 +132,9 @@ export function MatchList({
         <button
           type="button"
           className="min-h-11 text-sm underline md:min-h-0"
-          onClick={() => toggleAll(count < rows.length)}
+          onClick={() => toggleAll(count < shown.length)}
         >
-          {count < rows.length ? `Tick all ${rows.length}` : "Untick all"}
+          {count < shown.length ? `Tick all ${shown.length}` : "Untick all"}
         </button>
         {count === 0 && (
           <p className="w-full text-sm text-muted-foreground">
@@ -157,8 +181,28 @@ export function MatchList({
         )}
       </div>
 
+      <Input
+        type="search"
+        aria-label="Search bank lines"
+        placeholder="Search by name, reference, amount or invoice number"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="md:max-w-sm"
+      />
+      {shown.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          No lines match “{query.trim()}”.{" "}
+          <button
+            type="button"
+            className="py-3 underline"
+            onClick={() => setQuery("")}
+          >
+            Show all lines
+          </button>
+        </p>
+      )}
       <ul className="flex flex-col">
-        {rows.map((r) => {
+        {shown.map((r) => {
           const on = ticked.has(r.id);
           const suggested = tenantOf(r) === r.tenantId && r.tenantId;
           return (

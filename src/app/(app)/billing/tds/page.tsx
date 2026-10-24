@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Button } from "@/components/ui/button";
+import { Input, Select } from "@/components/ui/input";
 import { RequestCertificateForm } from "@/components/tds/RequestCertificateForm";
 import { lastRequests } from "@/lib/tds/requests";
 import { requestCertificateAction } from "@/server/actions/tds";
@@ -121,7 +123,17 @@ async function Tracker({
 }: {
   searchParams: PageProps<"/billing/tds">["searchParams"];
 }) {
-  const { fy: param, missing } = await searchParams;
+  const {
+    fy: param,
+    missing,
+    q: rawQ,
+    quarter: rawQuarter,
+  } = await searchParams;
+  const q = typeof rawQ === "string" ? rawQ.trim().slice(0, 80) : "";
+  const quarter =
+    typeof rawQuarter === "string" && /^[1-4]$/.test(rawQuarter)
+      ? Number(rawQuarter)
+      : null;
   const onlyMissing = missing === "1";
   await connection();
   const today = todayInIndia();
@@ -137,7 +149,17 @@ async function Tracker({
     today,
     records,
   });
-  const rows = onlyMissing ? all.filter((r) => r.missing > 0) : all;
+  const rows = all
+    .filter((r) => !onlyMissing || r.missing > 0)
+    .filter((r) => !q || r.tenantName.toLowerCase().includes(q.toLowerCase()))
+    // A quarter: tenants with TDS in it (missing only, if that's on).
+    .filter((r) => {
+      if (!quarter) return true;
+      const c = r.quarters.find((x) => x.quarter === quarter);
+      return (
+        !!c && c.status !== "none" && (!onlyMissing || c.status !== "received")
+      );
+    });
   const canUpload = can(member.role, "manage_billing");
   return (
     <div className="flex flex-col gap-6">
@@ -168,6 +190,39 @@ async function Tracker({
           </Link>
         )}
       </nav>
+      {all.length > 0 && (
+        <form
+          method="get"
+          className="flex flex-col gap-2 md:flex-row md:items-end"
+          aria-label="Find TDS"
+        >
+          <input type="hidden" name="fy" value={fy} />
+          {onlyMissing && <input type="hidden" name="missing" value="1" />}
+          <Input
+            type="search"
+            name="q"
+            defaultValue={q}
+            aria-label="Search tenants"
+            placeholder="Search by tenant"
+            className="md:max-w-sm"
+          />
+          <Select
+            name="quarter"
+            defaultValue={quarter ? String(quarter) : ""}
+            aria-label="Quarter"
+            className="md:w-56"
+          >
+            <option value="">All quarters</option>
+            <option value="1">Q1 (April–June)</option>
+            <option value="2">Q2 (July–September)</option>
+            <option value="3">Q3 (October–December)</option>
+            <option value="4">Q4 (January–March)</option>
+          </Select>
+          <Button type="submit" variant="outline" className="h-11 md:h-9">
+            Show
+          </Button>
+        </form>
+      )}
       {all.length === 0 ? (
         <div className="flex max-w-2xl flex-col gap-3">
           <p className="text-sm">
@@ -186,6 +241,13 @@ async function Tracker({
             </Link>
           )}
         </div>
+      ) : rows.length === 0 && (q || quarter) ? (
+        <p className="max-w-2xl text-sm">
+          No tenants match.{" "}
+          <Link href={`/billing/tds?fy=${fy}`} className="underline">
+            Show all tenants
+          </Link>
+        </p>
       ) : rows.length === 0 ? (
         <p className="max-w-2xl text-sm">
           Every certificate for FY {fy} is in.{" "}

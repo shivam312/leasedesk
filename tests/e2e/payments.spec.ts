@@ -44,4 +44,16 @@ test("an owner records an advance payment, then reverses it", async ({
   await expect(
     page.getByText("Reversal", { exact: true }).filter({ visible: true }),
   ).toBeVisible();
+  // Search and a month filter on the payments list.
+  await page.goto("/billing/payments");
+  await page.getByLabel("Search payments").fill("nobody");
+  await page.getByRole("button", { name: "Show" }).click();
+  await expect(page.getByText("No payments match.")).toBeVisible();
+  await page.getByLabel("Search payments").fill("acme");
+  await page.getByLabel("Month received").selectOption({ index: 1 });
+  await page.getByRole("button", { name: "Show" }).click();
+  await expect(page).toHaveURL(/q=acme&month=\d{4}-\d{2}/);
+  await expect(
+    page.getByText("Acme Software Pvt Ltd").filter({ visible: true }).first(),
+  ).toBeVisible();
 });

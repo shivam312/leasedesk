@@ -192,7 +192,7 @@ The rest (v1 promises not yet kept, and smaller fixes):
 - [x] Activity section on the tenant, lease, invoice and payment pages: who changed what and when, from `activity_log`
 - [x] Custom critical dates on a lease, and "In discussion" on a lease-end alert so Today stops repeating it
 - [x] "Request from tenant" on a missing TDS certificate: one tap emails the billing contact and records when it was asked
-- [ ] Search and a month filter on the Payments list and the TDS tracker, and a search on Match payments (was backlog row)
+- [x] Search and a month filter on the Payments list and the TDS tracker, and a search on Match payments (was backlog row)
 - [ ] Global search in the header: tenant, unit, invoice number
 - [ ] Deposit ledger: receipt, adjustments, refund or forfeit per lease, replacing the single `depositAmount` (D-033)
 - [ ] Deposit settlement statement on tenant exit: dues less deposit, PDF (D-033)

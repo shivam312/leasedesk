@@ -1,3 +1,4 @@
+import type React from "react";
 import { Card } from "@/components/ui/field";
 import type { documents } from "@/lib/db/schema";
 import { DOCUMENT_KINDS, type DocumentOwner } from "@/lib/files/documents";
@@ -22,7 +23,7 @@ export function DocumentsSection({
   ownerId: string;
   list: (typeof documents.$inferSelect)[];
   canUpload: boolean;
-  empty: string;
+  empty: React.ReactNode;
 }) {
   return (
     <section aria-labelledby={`documents-${ownerId}`} className="max-w-2xl">

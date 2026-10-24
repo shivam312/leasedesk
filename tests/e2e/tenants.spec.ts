@@ -47,6 +47,13 @@ test("an owner adds a tenant with a contact, then finds them in the list", async
     ),
   ).toBeVisible();
   await expect(page.getByText("+919820012345 (WhatsApp)")).toBeVisible();
+  // The documents empty state points to TDS certificates by the name the
+  // nav uses, as a link.
+  await expect(
+    page
+      .getByText(/No documents yet/)
+      .getByRole("link", { name: "Billing → TDS certificates" }),
+  ).toHaveAttribute("href", "/billing/tds");
   // Priya has a phone but no email, so nobody receives invoices yet.
   await expect(
     page.getByText("Receives invoices", { exact: true }),

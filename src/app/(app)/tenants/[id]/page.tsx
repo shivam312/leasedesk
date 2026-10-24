@@ -284,7 +284,16 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
         ownerId={t.id}
         list={data.docs}
         canUpload={editable}
-        empty="No documents yet: the tenant's ID proof, insurance or other papers go here. TDS certificates are on the TDS tracker."
+        empty={
+          <>
+            No documents yet: the tenant&apos;s ID proof, insurance or other
+            papers go here. TDS certificates are under{" "}
+            <Link href="/billing/tds" className="underline">
+              Billing → TDS certificates
+            </Link>
+            .
+          </>
+        }
       />
 
       <RecordActivity ids={[t.id, ...contacts.map((c) => c.id)]} />

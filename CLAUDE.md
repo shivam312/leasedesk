@@ -19,6 +19,7 @@ Read the relevant doc before starting work on an area. Do not load them all at o
 - `docs/SETTINGS.md`: every setting, its default and where it lives in code
 - `docs/DECISIONS_NEEDED.md`: the founder's inbox: open questions, CA checks and human tasks
 - `docs/BACKLOG.md`: review findings left for later
+- `docs/DEPLOY.md`: first deploy, releases and rollback, cloud migrations, environment variables, Inngest sync, Storage, backups and the restore drill (all human steps)
 - `docs/DEMO_SCRIPT.md`: the 10-minute landlord demo on the demo data, with the exact clicks
 - `docs/milestones/`: a plain-language report per finished milestone
 - `PIPELINE.md`: how the autonomous build pipeline (`scripts/pipeline.mjs`) runs

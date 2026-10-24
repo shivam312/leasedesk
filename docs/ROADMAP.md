@@ -183,7 +183,7 @@ Pilot blockers (what a real landlord's first month would hit):
 - [x] Tenant statement PDF from the ledger, financial-year filter, "Record payment" on the ledger
 - [x] Tenant page lists the tenant's invoices with status and a link to each (was backlog rows)
 - [x] Settings → Billing rules shows a preview of the reminder email and its timing before reminders are turned on
-- [ ] Store the sent invoice PDF at send time (`pdf_path`) and serve it for later downloads; existing invoices keep rendering from frozen copies (was backlog row; do before the first change to the PDF layout)
+- [x] Store the sent invoice PDF at send time (`pdf_path`) and serve it for later downloads; existing invoices keep rendering from frozen copies (was backlog row; do before the first change to the PDF layout)
 
 The rest (v1 promises not yet kept, and smaller fixes):
 

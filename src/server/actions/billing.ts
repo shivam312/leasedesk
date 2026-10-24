@@ -7,6 +7,8 @@ import { appDb, requireMember, type Member } from "@/lib/auth";
 import type { FormState } from "@/lib/auth/forms";
 import { runScoped } from "@/lib/db/scoped";
 import { EMAIL_NOT_SET_UP, emailDriver, emailMode } from "@/lib/email";
+import { supabaseStore } from "@/lib/files/supabase";
+import { storedPdf, storeSentPdf } from "@/lib/invoices/stored-pdf";
 import {
   emailAgainMessage,
   invoiceIdSchema,
@@ -86,8 +88,35 @@ async function sendOne(
     result.alreadySent += 1;
     return;
   }
-  const email = await emailSent(member, invoiceId, issued.to);
+  const pdf = await keepSentPdf(member, invoiceId);
+  const email = await emailSent(member, invoiceId, issued.to, pdf);
   result.sent.push({ tenantName, number: issued.number, email });
+}
+
+/**
+ * Render the just-sent invoice's PDF once and store it (pdf_path), so later
+ * downloads and the email use the same file. A storage failure doesn't undo
+ * the send: downloads then render from the frozen copies, as before.
+ */
+async function keepSentPdf(
+  member: Member,
+  invoiceId: string,
+): Promise<Buffer | null> {
+  try {
+    const doc = await runScoped(appDb, member, (s) =>
+      getInvoiceDocument(s, invoiceId),
+    );
+    if (!doc) return null;
+    const pdf = await renderInvoicePdf(doc);
+    const store = await supabaseStore();
+    await runScoped(appDb, member, (s) =>
+      storeSentPdf(s, store, invoiceId, new Uint8Array(pdf)),
+    );
+    return pdf;
+  } catch (error) {
+    reportError("Storing the sent PDF failed", error, { invoiceId });
+    return null;
+  }
 }
 
 /** Email a sent invoice's PDF, printed from its frozen copies, and log it. */
@@ -95,12 +124,20 @@ async function emailSent(
   member: Member,
   invoiceId: string,
   to: string[],
+  pdf: Buffer | null = null,
 ): Promise<EmailResult> {
   const doc = await runScoped(appDb, member, (s) =>
     getInvoiceDocument(s, invoiceId),
   );
+  const stored = pdf
+    ? null
+    : await runScoped(appDb, member, async (s) =>
+        storedPdf(s, await supabaseStore(), invoiceId),
+      ).catch(() => null);
+  const render = async (d: Parameters<typeof renderInvoicePdf>[0]) =>
+    pdf ?? (stored ? Buffer.from(stored) : renderInvoicePdf(d));
   const email = doc
-    ? await emailInvoice(doc, to, emailDriver(), renderInvoicePdf)
+    ? await emailInvoice(doc, to, emailDriver(), render)
     : ({ kind: "failed", message: "The invoice couldn't be found." } as const);
   await runScoped(appDb, member, (s) => logEmail(s, invoiceId, email));
   return email;

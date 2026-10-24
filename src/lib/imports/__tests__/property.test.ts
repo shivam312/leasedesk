@@ -321,16 +321,23 @@ describe("the template", () => {
     const filled = sheets.map((s) => {
       const spec = PROPERTY_TEMPLATE.sheets.find((t) => t.name === s.name);
       if (!spec) return s;
-      const ex = spec.example as Record<string, string>;
+      const examples = spec.examples as readonly Record<string, string>[];
+      expect(examples).toHaveLength(2);
       return {
         ...s,
-        rows: [...s.rows, spec.columns.map((c) => ex[c.key] ?? "")],
+        rows: [
+          ...s.rows,
+          ...examples.map((ex) => spec.columns.map((c) => ex[c.key] ?? "")),
+        ],
       };
     });
     expect(planPropertyImport(filled, none)).toHaveProperty("plan");
     expect(
       utils.sheet_to_json(read(bytes).Sheets.Units!, { header: 1 }),
     ).toEqual([UNIT_COLUMNS.map((c) => c.heading)]);
+    // Each heading carries its rule as a note.
+    const units = read(bytes, { cellComments: true } as never).Sheets.Units!;
+    expect(units.A1?.c?.[0]?.t).toContain("Required.");
   });
 });
 

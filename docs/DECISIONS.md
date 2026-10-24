@@ -442,4 +442,4 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 
 **Decision:** Today shows owners a six-step "Set up LeaseDesk" checklist (`src/lib/setup/`) until every step is done. Business and GSTIN, buildings and units, and tenants and leases tick themselves from the data. "Check one rent schedule", "Opening balances" and "Invite your team" tick from the data where they can (an opening balance, a second person); otherwise an owner marks them done ("It's right", "Nobody owes anything", "Just me for now"), which is an `activity_log` row (`entity_type` "setup", `action` "setup_done", `after.step`).
 **Why:** No new table or column for a one-time list; the activity log already records who did what, and a marked step can't be lost by editing settings.
-**Consequences:** Once complete the checklist never shows again, even if data is later removed (the data steps would untick, so it would come back; that is intended, as setup is then incomplete).
+**Consequences:** The checklist is worked out on every visit, so if data a step depends on is removed (the last unit, say), that step unticks and the checklist comes back; hand-marked steps stay done.

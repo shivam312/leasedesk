@@ -25,8 +25,14 @@ const blankTenant = Object.fromEntries(
 const blankLease = Object.fromEntries(
   LEASE_COLUMNS.map((c) => [c.key, ""]),
 ) as Record<(typeof LEASE_COLUMNS)[number]["key"], string>;
-const tenantExample = { ...blankTenant, ...TENANCY_TEMPLATE.sheets[0].example };
-const leaseExample = { ...blankLease, ...TENANCY_TEMPLATE.sheets[1].example };
+const tenantExample = {
+  ...blankTenant,
+  ...TENANCY_TEMPLATE.sheets[0].examples[0],
+};
+const leaseExample = {
+  ...blankLease,
+  ...TENANCY_TEMPLATE.sheets[1].examples[0],
+};
 
 const T = "00000000-0000-4000-8000-00000000000a";
 const B = "00000000-0000-4000-8000-00000000000b";
@@ -140,6 +146,34 @@ describe("readTenantRow", () => {
     expect(readTenantRow({ ...tenantExample, state: "Karnataka" })).toEqual({
       error: "This GSTIN is registered in Maharashtra. Choose that state.",
     });
+  });
+});
+
+describe("the template's second examples", () => {
+  it("read without errors: an unregistered tenant, a quarterly per-month lease", () => {
+    const tenant = readTenantRow({
+      ...blankTenant,
+      ...TENANCY_TEMPLATE.sheets[0].examples[1],
+    });
+    if ("error" in tenant) throw new Error(tenant.error);
+    expect(tenant.tenant).toMatchObject({
+      companyName: "Beta Foods LLP",
+      gstin: null,
+      deductsTdsRent: false,
+    });
+    expect(tenant.opening).toBeNull();
+    const lease = leaseRowInput(
+      { ...blankLease, ...TENANCY_TEMPLATE.sheets[1].examples[1] },
+      {
+        tenantId: (n) => (n === "Beta Foods LLP" ? T : null),
+        building: (n) =>
+          n === "Lotus Plaza"
+            ? { id: B, unitId: (c) => (c === "G01" ? U301 : null) }
+            : null,
+      },
+    );
+    if ("error" in lease) throw new Error(lease.error);
+    expect(parseLeaseForm(lease.input).ok).toBe(true);
   });
 });
 

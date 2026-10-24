@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { GoogleLogin } from "@/components/auth/GoogleLogin";
 import Link from "next/link";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { signUp } from "@/server/actions/auth";
@@ -40,6 +42,9 @@ export default function SignUpPage() {
           },
         ]}
       />
+      <Suspense fallback={null}>
+        <GoogleLogin label="Sign up with Google" />
+      </Suspense>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/login" className="font-medium text-foreground underline">

@@ -5,6 +5,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { googleLoginEnabled } from "@/lib/auth/providers";
 import { appDb, currentUser } from "@/lib/auth";
 import {
   forgotPasswordSchema,
@@ -178,4 +179,23 @@ export async function finishSetup(
     organizationName: parsed.data.organizationName,
   });
   redirect("/today");
+}
+
+/** "Log in with Google": off to Google, back through /auth/callback. */
+export async function logInWithGoogle(): Promise<void> {
+  const origin = emailLinkOrigin({
+    appUrl: process.env.APP_URL,
+    host: (await headers()).get("host"),
+  });
+  if (!origin || !(await googleLoginEnabled())) redirect("/login");
+  const supabase = await createSupabase();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/callback?next=/today` },
+  });
+  if (error || !data.url) {
+    reportError("Google login failed to start", error ?? new Error("no url"));
+    redirect("/login");
+  }
+  redirect(data.url);
 }

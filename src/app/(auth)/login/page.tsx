@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { GoogleLogin } from "@/components/auth/GoogleLogin";
 import Link from "next/link";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { logIn } from "@/server/actions/auth";
@@ -32,6 +34,9 @@ export default function LoginPage() {
           },
         ]}
       />
+      <Suspense fallback={null}>
+        <GoogleLogin label="Log in with Google" />
+      </Suspense>
       <p className="mt-4 text-center text-sm">
         <Link
           href="/forgot-password"

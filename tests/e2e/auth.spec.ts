@@ -127,3 +127,20 @@ test("a reset page left open after the session ended explains why", async ({
     page.getByText("That link has expired or was already used."),
   ).toBeVisible();
 });
+
+// The local Supabase stack has no Google provider, so no Google button.
+test("Log in with Google shows only when Google login is turned on", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await expect(
+    page.getByRole("button", { name: "Log in", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Log in with Google" }),
+  ).toHaveCount(0);
+  await page.goto("/signup");
+  await expect(
+    page.getByRole("button", { name: "Sign up with Google" }),
+  ).toHaveCount(0);
+});

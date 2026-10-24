@@ -54,3 +54,5 @@ Reports for accountants can use the technical terms, with the plain term shown o
 ## Tone
 
 Short, specific, friendly. "Sent 42 invoices. 3 tenants have no email; send by WhatsApp instead?" rather than "Operation completed with warnings."
+
+When something fails and the user can't fix it themselves, show the support contact (WhatsApp +91 98111 29108, support@leasedesk.com) with `SupportContact`, never a hand-typed address; it lives in `src/lib/support.ts` (D-029). The error pages and Settings → Help show it.

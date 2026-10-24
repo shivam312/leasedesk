@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { SupportContact } from "@/components/support/SupportContact";
 import { Button } from "@/components/ui/button";
 import { reportError } from "@/lib/monitoring/client";
 
@@ -27,10 +28,9 @@ export default function AppError({
       <h1 className="text-2xl font-semibold tracking-tight">
         Something went wrong
       </h1>
-      {/* No support contact yet (D-029): give a next step that works. */}
       <p role="alert" className="text-sm text-muted-foreground">
         This page didn&apos;t load. Your data is safe. Try again. If it keeps
-        happening, go to Today and open it again from the menu.
+        happening, message us and tell us what you were doing.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => retry()} className="h-11 md:h-9">
@@ -40,6 +40,7 @@ export default function AppError({
           <Link href="/today">Go to Today</Link>
         </Button>
       </div>
+      <SupportContact message="Hi, a LeaseDesk page didn't load." />
     </div>
   );
 }

@@ -30,6 +30,11 @@ const SECTIONS = [
     title: "Team",
     description: "See who can use your account, and invite people.",
   },
+  {
+    href: "/settings/help",
+    title: "Help",
+    description: "WhatsApp or email us when you're stuck.",
+  },
 ] as const;
 
 export default function SettingsPage() {
@@ -37,7 +42,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        description="Your business details, billing rules, Tally ledgers, team and account."
+        description="Your business details, billing rules, Tally ledgers, team, help and account."
       />
       <Suspense>
         <div className="mb-6 empty:hidden">

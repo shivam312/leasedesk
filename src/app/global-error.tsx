@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { SupportContact } from "@/components/support/SupportContact";
 import { reportError } from "@/lib/monitoring/client";
 import "./globals.css";
 
@@ -25,11 +26,9 @@ export default function GlobalError({
           <h1 className="text-2xl font-semibold tracking-tight">
             Something went wrong
           </h1>
-          {/* No support contact yet (D-029): point to someone the user knows. */}
           <p role="alert" className="text-sm text-muted-foreground">
             The app didn&apos;t load. Your data is safe. Wait a minute and try
-            again. If it still doesn&apos;t load, ask the person who set up
-            LeaseDesk for you to check it.
+            again. If it still doesn&apos;t load, message us.
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -47,6 +46,7 @@ export default function GlobalError({
               Go to Today
             </a>
           </div>
+          <SupportContact message="Hi, LeaseDesk isn't loading." />
         </div>
       </body>
     </html>

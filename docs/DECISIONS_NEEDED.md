@@ -38,7 +38,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-026 | Which month an invoice or credit note counts in on the GST summary | ca | no | open |
 | D-027 | How payments, TDS and reversals go into Tally | ca | no | open |
 | D-028 | Bringing in what tenants already owe when a landlord starts | product | M10 | applied |
-| D-029 | How users reach LeaseDesk support | product | no | answered |
+| D-029 | How users reach LeaseDesk support | product | no | applied |
 | D-030 | Codex review of M8: unresolved items | product | no | open |
 | D-031 | Codex review of M5A: unresolved items | product | no | open |
 | D-032 | Run the test suites on GitHub Actions (CI)? | spend | no | open |
@@ -419,20 +419,6 @@ Things only a person can do. Tick them when done.
 - Also to confirm (M9, 2026-10-24): the file now creates the ledgers it posts to before the vouchers: each tenant under **Sundry Debtors** (bill-by-bill, with GSTIN and state), the TDS ledger under **Current Assets**, and the bank ledger under **Bank Accounts**. Some accountants keep TDS receivable under Loans & Advances (Asset) instead; say so and it becomes a setting. Income, GST and round-off ledgers aren't created, since they need GST settings in Tally. Each tenant's Tally name is saved the first time it's exported, so renaming the tenant later doesn't start a second ledger.
 - Answer:
 
-### D-029: How users reach LeaseDesk support
-- Status: answered
-- Type: product
-- Blocking: no
-- Context: The error pages say "contact support" or "tell us what you were doing", but the app has no support email or WhatsApp number anywhere, so a pilot landlord who hits an error has no way to reach you from the screen (UX review M8).
-- Options:
-  - A) A support email (e.g. support@yourdomain.in), as a mailto link on the error pages and in Settings
-  - B) A WhatsApp number, as a wa.me link (most owners are on their phones)
-  - C) Both: WhatsApp for owners, email for accountants
-- Recommendation: B for the pilot, because owners already report problems on WhatsApp and it needs no new account; add email when there are paying customers.
-- Audit note (2026-10-24): needed before any landlord outside the team uses the app; not a code gap until answered.
-- Done meanwhile: the error pages no longer promise a support contact; they say to try again, then go to Today (a page error) or ask the person who set up LeaseDesk (the whole app failed) (UX review M8, 2026-10-24). Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
-- Answer: WhatsApp +91 98111 29108, email support@leasedesk.com; show on error pages and in Settings → Help
-
 ### D-030: Codex review of M8: unresolved items
 - Status: open
 - Type: product
@@ -517,6 +503,21 @@ Things only a person can do. Tick them when done.
 ## Applied
 
 (Applied entries move here, newest first.)
+
+### D-029: How users reach LeaseDesk support
+- Status: applied
+- Type: product
+- Blocking: no
+- Context: The error pages say "contact support" or "tell us what you were doing", but the app has no support email or WhatsApp number anywhere, so a pilot landlord who hits an error has no way to reach you from the screen (UX review M8).
+- Options:
+  - A) A support email (e.g. support@yourdomain.in), as a mailto link on the error pages and in Settings
+  - B) A WhatsApp number, as a wa.me link (most owners are on their phones)
+  - C) Both: WhatsApp for owners, email for accountants
+- Recommendation: B for the pilot, because owners already report problems on WhatsApp and it needs no new account; add email when there are paying customers.
+- Audit note (2026-10-24): needed before any landlord outside the team uses the app; not a code gap until answered.
+- Done meanwhile: the error pages no longer promise a support contact; they say to try again, then go to Today (a page error) or ask the person who set up LeaseDesk (the whole app failed) (UX review M8, 2026-10-24). Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
+- Answer: WhatsApp +91 98111 29108, email support@leasedesk.com; show on error pages and in Settings → Help
+- Applied (2026-10-24): contact in `src/lib/support.ts`, shown by `SupportContact` on both error pages and the new Settings → Help; UX_PRINCIPLES and D54 updated.
 
 ### D-028: Bringing in what tenants already owe when a landlord starts
 - Status: applied

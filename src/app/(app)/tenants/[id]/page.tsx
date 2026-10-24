@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RecordActivity } from "@/components/activity/ActivitySection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -285,6 +286,8 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
         canUpload={editable}
         empty="No documents yet: the tenant's ID proof, insurance or other papers go here. TDS certificates are on the TDS tracker."
       />
+
+      <RecordActivity ids={[t.id, ...contacts.map((c) => c.id)]} />
 
       <section aria-labelledby="contacts-heading" className="max-w-2xl">
         <h2 id="contacts-heading" className="mb-2 text-lg font-semibold">

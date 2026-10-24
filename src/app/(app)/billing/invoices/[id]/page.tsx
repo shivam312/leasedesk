@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RecordActivity } from "@/components/activity/ActivitySection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -397,6 +398,7 @@ async function Invoice({ params }: { params: Promise<{ id: string }> }) {
             )}
           </section>
         )}
+        <RecordActivity ids={[invoice.id]} />
       </div>
     </>
   );

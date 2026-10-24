@@ -76,6 +76,9 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
   await expect(
     page.getByText("Paid", { exact: true }).filter({ visible: true }).first(),
   ).toBeVisible();
+  // Who did what, from the activity log.
+  await page.getByText(/^Activity \(\d+\)$/).click();
+  await expect(page.getByText("Invoice sent", { exact: true })).toBeVisible();
 
   // The tenant's ledger for this financial year, and its statement PDF.
   await page.goto("/tenants");

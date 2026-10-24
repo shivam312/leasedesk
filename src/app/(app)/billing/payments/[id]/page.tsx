@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RecordActivity } from "@/components/activity/ActivitySection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -171,6 +172,7 @@ async function Payment({
           action={reversePaymentAction}
         />
       )}
+      <RecordActivity ids={[p.id]} />
     </div>
   );
 }

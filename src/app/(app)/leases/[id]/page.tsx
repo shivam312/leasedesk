@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RecordActivity } from "@/components/activity/ActivitySection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -233,6 +234,8 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
             : "No documents yet."
         }
       />
+
+      <RecordActivity ids={[lease.id]} />
 
       <section aria-labelledby="schedule-heading" className="max-w-2xl">
         <h2 id="schedule-heading" className="mb-2 text-lg font-semibold">

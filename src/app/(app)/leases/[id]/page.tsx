@@ -338,7 +338,8 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           >
             Download the deposit settlement statement (PDF)
           </a>
-          : unpaid dues after TDS, less the deposit held, and the refund due.
+          : unpaid dues after TDS, less any payment credit and the deposit held,
+          and the refund due.
         </p>
         {canBill && (
           <details>

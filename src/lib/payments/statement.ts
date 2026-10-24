@@ -135,23 +135,41 @@ export function statementReport(tenantName: string, year: LedgerYear): Report {
 /**
  * The deposit settlement statement at a tenant's exit: the lease's unpaid
  * invoices (each at what the tenant is asked to pay, after the TDS they may
- * keep back), the deposit held, and what's left to refund or still owed. It
- * records nothing (using a deposit for dues waits on D-034).
+ * keep back), less any payment credit the tenant already holds (an earlier
+ * overpayment not yet applied), then the deposit held, and what's left to
+ * refund or still owed. It records nothing (using a deposit for dues waits
+ * on D-034).
  */
 export function settlementReport(input: {
   tenantName: string;
   property: string;
   asOf: PlainDate;
   heldPaise: Paise;
+  /** The tenant's payment credit not yet applied to invoices (paymentsWithCredit). */
+  creditPaise?: Paise;
   unpaid: readonly {
     number: string;
     dueDate: PlainDate;
     outstandingPaise: Paise;
     toPayPaise: Paise;
   }[];
-}): { report: Report; settlement: ReturnType<typeof depositSettlement> } {
+}): {
+  report: Report;
+  settlement: ReturnType<typeof depositSettlement> & {
+    /** The part of the dues the tenant's credit settles, before the deposit. */
+    creditUsedPaise: Paise;
+  };
+} {
   const duesPaise = sumPaise(input.unpaid.map((u) => u.toPayPaise));
-  const settlement = depositSettlement(input.heldPaise, duesPaise);
+  const creditPaise = Math.max(0, input.creditPaise ?? 0);
+  // Credit the tenant already paid settles the dues first; the deposit
+  // covers only what's left, so the refund isn't understated.
+  const creditUsedPaise = Math.min(creditPaise, duesPaise);
+  const netDuesPaise = duesPaise - creditUsedPaise;
+  const settlement = {
+    creditUsedPaise,
+    ...depositSettlement(input.heldPaise, netDuesPaise),
+  };
   const report: Report = {
     slug: `deposit-settlement-${input.asOf}`,
     title: `Deposit settlement: ${input.tenantName}`,
@@ -190,6 +208,16 @@ export function settlementReport(input: {
           { key: "amount", label: "Amount", kind: "money" },
         ],
         rows: [
+          ...(creditPaise > 0
+            ? [
+                { what: "Dues after TDS", amount: duesPaise },
+                {
+                  what: "Less: credit from earlier payments, not yet applied",
+                  amount: creditUsedPaise,
+                },
+                { what: "Dues after credit", amount: netDuesPaise },
+              ]
+            : []),
           { what: "Security deposit held", amount: input.heldPaise },
           { what: "Less: dues", amount: settlement.adjustPaise },
           { what: "Deposit to refund", amount: settlement.refundPaise },
@@ -205,8 +233,13 @@ export function settlementReport(input: {
       },
     ],
     notes: [
-      "Dues are what the tenant is asked to pay, after the TDS they may still keep back; their TDS certificates cover the rest.",
-      "This statement doesn't record anything. Record the refund in the lease's deposit, and settle the dues on the invoices. Ask your accountant whether GST applies on any deposit you keep.",
+      "Dues are what the tenant is asked to pay, after the TDS they may still keep back; their TDS certificates cover the rest. Charges not invoiced yet (this month's draft, or anything billed in arrears after the lease ends) aren't included.",
+      ...(creditPaise > 0
+        ? [
+            'The tenant has payment credit not yet applied to invoices. Use "Apply credit" on the tenant\'s page so it settles the dues before the deposit is refunded.',
+          ]
+        : []),
+      "This statement doesn't record anything. Record the refund in the lease's deposit, and settle the dues on the invoices. Ask your accountant whether GST applies on any part of the deposit used for dues or kept (D-035).",
     ],
   };
   return { report, settlement };

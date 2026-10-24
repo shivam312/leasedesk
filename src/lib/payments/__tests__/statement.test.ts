@@ -114,6 +114,7 @@ describe("settlementReport", () => {
       ],
     });
     expect(settlement).toEqual({
+      creditUsedPaise: 0,
       adjustPaise: 1_26_360_00,
       refundPaise: 1_73_640_00,
       stillOwedPaise: 0,
@@ -123,5 +124,65 @@ describe("settlementReport", () => {
       "Less: dues",
       "Deposit to refund",
     ]);
+  });
+
+  it("settles the dues from payment credit the tenant already holds before touching the deposit", () => {
+    // Held ₹3,00,000. One invoice asks ₹1,26,360, and the tenant overpaid
+    // earlier by ₹1,26,360 that isn't applied yet: the credit settles the
+    // dues, so the whole ₹3,00,000 is refunded.
+    const { report, settlement } = settlementReport({
+      tenantName: "Acme",
+      property: "Unit 301, E2E Tower",
+      asOf: "2026-11-30",
+      heldPaise: 3_00_000_00,
+      creditPaise: 1_26_360_00,
+      unpaid: [
+        {
+          number: "ET/26-27/0001",
+          dueDate: "2026-11-08",
+          outstandingPaise: 1_38_060_00,
+          toPayPaise: 1_26_360_00,
+        },
+      ],
+    });
+    expect(settlement).toEqual({
+      creditUsedPaise: 1_26_360_00,
+      adjustPaise: 0,
+      refundPaise: 3_00_000_00,
+      stillOwedPaise: 0,
+    });
+    const rows = report.sections[1]!.rows;
+    expect(rows.map((r) => [r.what, r.amount])).toEqual([
+      ["Dues after TDS", 1_26_360_00],
+      ["Less: credit from earlier payments, not yet applied", 1_26_360_00],
+      ["Dues after credit", 0],
+      ["Security deposit held", 3_00_000_00],
+      ["Less: dues", 0],
+      ["Deposit to refund", 3_00_000_00],
+    ]);
+    // Credit larger than the dues: only the dues' worth is used here.
+    // Held ₹1,00,000, dues ₹50,000, credit ₹80,000: refund ₹1,00,000.
+    expect(
+      settlementReport({
+        tenantName: "Acme",
+        property: "Unit 301, E2E Tower",
+        asOf: "2026-11-30",
+        heldPaise: 1_00_000_00,
+        creditPaise: 80_000_00,
+        unpaid: [
+          {
+            number: "ET/26-27/0002",
+            dueDate: "2026-11-08",
+            outstandingPaise: 50_000_00,
+            toPayPaise: 50_000_00,
+          },
+        ],
+      }).settlement,
+    ).toEqual({
+      creditUsedPaise: 50_000_00,
+      adjustPaise: 0,
+      refundPaise: 1_00_000_00,
+      stillOwedPaise: 0,
+    });
   });
 });

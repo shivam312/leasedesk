@@ -1,14 +1,20 @@
 // The deposit settlement statement for a lease, as a PDF: unpaid dues after
-// TDS, less the deposit held, and what's left to refund or still owed.
+// TDS, less payment credit the tenant already holds, less the deposit held,
+// and what's left to refund or still owed.
 
 import { notFound } from "next/navigation";
 import { appDb, requireMember } from "@/lib/auth";
 import { runScoped } from "@/lib/db/scoped";
+import { sumPaise } from "@/lib/billing/money";
 import { renderReportPdf } from "@/lib/exports/pdf";
 import { getLease } from "@/lib/leases/queries";
 import { reportError } from "@/lib/monitoring";
 import { depositLedger } from "@/lib/payments/deposits";
-import { paymentSettings, unpaidInvoices } from "@/lib/payments/payments";
+import {
+  paymentSettings,
+  paymentsWithCredit,
+  unpaidInvoices,
+} from "@/lib/payments/payments";
 import { settlementReport } from "@/lib/payments/statement";
 import { amountToAsk } from "@/lib/reminders/schedule";
 import { todayInIndia } from "@/lib/today";
@@ -25,11 +31,17 @@ export async function GET(
     const saved = await getLease(s, id);
     if (!saved) return null;
     const tenantId = saved.lease.tenantId;
-    const [deposit, open] = await Promise.all([
+    const [deposit, open, credits] = await Promise.all([
       depositLedger(s, id),
       unpaidInvoices(s, tenantId, await paymentSettings(s, tenantId)),
+      paymentsWithCredit(s, tenantId),
     ]);
-    return { saved, deposit, open: open.filter((o) => o.leaseId === id) };
+    return {
+      saved,
+      deposit,
+      open: open.filter((o) => o.leaseId === id),
+      creditPaise: sumPaise(credits.map((c) => c.creditPaise)),
+    };
   });
   if (!data) notFound();
   const { report } = settlementReport({
@@ -37,6 +49,7 @@ export async function GET(
     property: `${data.saved.units.map((u) => u.code).join(", ")}, ${data.saved.buildingName}`,
     asOf: today,
     heldPaise: data.deposit.heldPaise,
+    creditPaise: data.creditPaise,
     unpaid: data.open.map((o) => ({
       number: o.number,
       dueDate: o.dueDate,

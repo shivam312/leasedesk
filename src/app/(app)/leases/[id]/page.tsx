@@ -344,6 +344,10 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
               Record a deposit entry
             </summary>
             <div className="pt-3">
+              <p className="mb-3 text-sm text-muted-foreground">
+                An entry can&apos;t be edited or deleted afterwards. Check the
+                amount and date first.
+              </p>
               <SimpleForm
                 action={recordDepositEntryAction.bind(null, lease.id)}
                 fields={[

@@ -46,6 +46,12 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
   await (await opened).close();
   // The security deposit, received, as a ledger on the lease.
   await page.getByText("Record a deposit entry", { exact: true }).click();
+  // Deposit entries are money: never edited or deleted, and the form says so.
+  await expect(
+    page.getByText(
+      "An entry can't be edited or deleted afterwards. Check the amount and date first.",
+    ),
+  ).toBeVisible();
   await page.getByLabel("Date received or paid out").fill(today);
   await page.getByLabel("Amount (₹)").fill("3,00,000");
   await page

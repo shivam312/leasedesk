@@ -21,6 +21,7 @@ import {
   type LeaseFormInput,
   type LeaseFormStep,
 } from "@/lib/leases/draft";
+import { upcomingRows } from "@/lib/leases/review";
 import {
   BLANK_CHARGE,
   BLANK_RULE,
@@ -799,17 +800,46 @@ export function LeaseForm({
 }
 
 /** The full schedule: a table from 768px, cards on phones. */
+type ScheduleRow = {
+  month: string;
+  rent: number;
+  other: number;
+  total: number;
+  rentIncreased: boolean;
+};
+
+function ScheduleCards({ rows }: { rows: ScheduleRow[] }) {
+  return (
+    <ul className="flex flex-col gap-2">
+      {rows.map((r) => (
+        <li key={r.month} className="rounded-md border p-3 text-sm">
+          <div className="flex justify-between font-medium">
+            <span>{formatMonth(r.month)}</span>
+            <span className="tabular-nums">{formatINR(r.total)}</span>
+          </div>
+          <div className="text-muted-foreground">
+            Rent {formatINR(r.rent)} · Other {formatINR(r.other)}
+          </div>
+          {r.rentIncreased && <Badge>Rent increase</Badge>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The rent schedule: a table from 768px, cards on phones. With `fromMonth`
+ * (the lease page), a phone shows the next 12 months, then "Show all N
+ * months"; without it (the form's review step), every month.
+ */
 export function ScheduleTable({
   rows,
+  fromMonth,
 }: {
-  rows: {
-    month: string;
-    rent: number;
-    other: number;
-    total: number;
-    rentIncreased: boolean;
-  }[];
+  rows: ScheduleRow[];
+  fromMonth?: string;
 }) {
+  const first = fromMonth ? upcomingRows(rows, fromMonth) : rows;
   return (
     <>
       <table className="hidden w-full text-sm md:table">
@@ -841,20 +871,29 @@ export function ScheduleTable({
           ))}
         </tbody>
       </table>
-      <ul className="flex flex-col gap-2 md:hidden">
-        {rows.map((r) => (
-          <li key={r.month} className="rounded-md border p-3 text-sm">
-            <div className="flex justify-between font-medium">
-              <span>{formatMonth(r.month)}</span>
-              <span className="tabular-nums">{formatINR(r.total)}</span>
-            </div>
-            <div className="text-muted-foreground">
-              Rent {formatINR(r.rent)} · Other {formatINR(r.other)}
-            </div>
-            {r.rentIncreased && <Badge>Rent increase</Badge>}
-          </li>
-        ))}
-      </ul>
+      <div className="flex flex-col gap-2 md:hidden">
+        {first.length < rows.length ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              The next {first.length} months.
+            </p>
+            <ScheduleCards rows={first} />
+            <details className="group">
+              <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium group-open:mb-2">
+                <span className="group-open:hidden">
+                  Show all {rows.length} months
+                </span>
+                <span className="hidden group-open:inline">
+                  All {rows.length} months
+                </span>
+              </summary>
+              <ScheduleCards rows={rows} />
+            </details>
+          </>
+        ) : (
+          <ScheduleCards rows={rows} />
+        )}
+      </div>
     </>
   );
 }

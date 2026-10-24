@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, Card } from "@/components/ui/field";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
+import { monthOf } from "@/lib/billing/dates";
 import { runScoped } from "@/lib/db/scoped";
 import { formatArea, formatDate, formatINR } from "@/lib/format";
 import { bpText } from "@/lib/leases/prefill";
@@ -17,6 +18,7 @@ import { getLease } from "@/lib/leases/queries";
 import { chargeSummary, reviewRows } from "@/lib/leases/review";
 import { billingSettings } from "@/lib/settings/billing";
 import { loadSettings } from "@/lib/settings/store";
+import { todayInIndia } from "@/lib/today";
 import { terminateLease } from "@/server/actions/leases";
 
 const monthsText = (n: number) => `${n} ${n === 1 ? "month" : "months"}`;
@@ -221,7 +223,7 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
         <p className="mb-2 text-sm text-muted-foreground">
           Before GST, in the month each amount is billed.
         </p>
-        <ScheduleTable rows={rows} />
+        <ScheduleTable rows={rows} fromMonth={monthOf(todayInIndia())} />
       </section>
     </div>
   );

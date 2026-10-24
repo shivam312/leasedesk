@@ -89,3 +89,21 @@ export function chargeSummary(charge: Charge): {
     how: charge.basis === "fixed" ? null : base.explanation.steps.join(" · "),
   };
 }
+
+/** How many months the lease page shows on a phone before "Show all". */
+export const PHONE_SCHEDULE_MONTHS = 12;
+
+/**
+ * The rows a phone shows first: the next 12 months from `month` (this month
+ * included). A lease that hasn't started shows its first 12; one that has
+ * ended, its last 12.
+ */
+export function upcomingRows<T extends { month: YearMonth }>(
+  rows: readonly T[],
+  month: YearMonth,
+  count = PHONE_SCHEDULE_MONTHS,
+): T[] {
+  const from = rows.findIndex((r) => r.month >= month);
+  const start = from === -1 ? Math.max(0, rows.length - count) : from;
+  return rows.slice(start, start + count);
+}

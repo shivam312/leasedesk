@@ -23,6 +23,14 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
   await addTenant(page);
   const today = todayInIndia();
   await addLease(page, today);
+  // A phone shows the next 12 months of the schedule, then "Show all".
+  if (test.info().project.name === "phone") {
+    const all = page.getByText(/^Show all \d+ months$/);
+    await expect(all).toBeVisible();
+    await expect(page.getByText("The next 12 months.")).toBeVisible();
+    await all.click();
+    await expect(page.getByText(/^All \d+ months$/)).toBeVisible();
+  }
 
   const month = formatMonth(today);
   await makeAndSendOneInvoice(page, month);

@@ -51,14 +51,14 @@ export async function recordDepositEntry(
     .for("update");
   if (!lease) throw new DepositError("That lease couldn't be found.");
   const { entries } = await depositLedger(s, input.leaseId);
-  const problem = depositProblem(entries, input.kind, input.amountPaise);
+  // Nothing goes out beyond what was held on that date.
+  const problem = depositProblem(
+    entries,
+    input.kind,
+    input.amountPaise,
+    input.date,
+  );
   if (problem) throw new DepositError(problem);
-  // Nothing goes out dated before the deposit came in.
-  const firstIn = entries.find((e) => e.kind === "received")?.date;
-  if (input.kind !== "received" && firstIn && input.date < firstIn)
-    throw new DepositError(
-      "That's before the deposit was received. Check the date.",
-    );
   return insertLogged(s, depositEntries, {
     leaseId: input.leaseId,
     tenantId: lease.tenantId,

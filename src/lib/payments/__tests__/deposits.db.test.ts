@@ -53,7 +53,7 @@ describe.skipIf(skipDbTests)("the deposit ledger", () => {
         "Only ₹2,80,000 of the deposit is held.",
       );
       await expect(add("refunded", 100, "2026-11-01")).rejects.toThrow(
-        "That's before the deposit was received.",
+        "Nothing was held on 01-11-2026. Check the date.",
       );
       await add("refunded", 2_80_000_00);
       expect(await held()).toBe(0);

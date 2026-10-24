@@ -45,6 +45,7 @@ This is the founder's inbox: the only place questions are asked. Claude adds ent
 | D-033 | Which unkept v1 promises wait until after the pilot? | product | no | closed (stale) |
 | D-034 | Using a security deposit for a tenant's unpaid rent | product | no | open |
 | D-035 | GST on a security deposit the landlord keeps | ca | no | open |
+| D-036 | Codex review of M10: unresolved items | product | no | open |
 
 ## Human tasks
 
@@ -487,6 +488,24 @@ Things only a person can do. Tick them when done.
   - B) Raise a GST invoice for the amount kept, at the building's GST rate
 - Recommendation: A until a CA confirms, because a wrong GST invoice is harder to undo than a missing one.
 - Done meanwhile: built A; `docs/BILLING_RULES.md` deposit lines marked **[CA]**.
+- Answer:
+
+### D-036: Codex review of M10: unresolved items
+- Status: open
+- Type: product
+- Blocking: no
+- Context: Codex (the independent reviewer) failed M10 (pilot onboarding and trust) after two review rounds (`.pipeline/reviews/M10-codex-review-2.md`), on two items. Neither is about invoice amounts: Codex hand-checked the opening balance and settlement credit examples, the payment allocation order (opening balance first on a same-day tie), the export's permission check and the load-test timings, and found them right. Both items were fixed in the two commits after Codex's second round, so Codex hasn't seen the fixes.
+  - **Item 1: the setup checklist ticked "Opening balances" after only one tenant's balance** (`src/lib/setup/checklist.ts`).
+    - Codex says: the step asks what each tenant owes, but it counted as done as soon as any one tenant had an opening balance, so a landlord could finish setup with the other tenants' balances still missing. Make it depend on every tenant, or on an explicit "nobody owes anything".
+    - Claude says: agreed, and fixed in commit 90d7979. The step is now done only when every tenant has an opening balance (the database allows one per tenant, so counting them is exact) or someone clicks the confirmation. Once some balances are typed in, the button says "The rest owe nothing" instead of "Nobody owes anything". Tests cover none, some and all tenants; they pass.
+  - **Item 2: "Export all data" left out the organization and its businesses** (`src/lib/exports/all-data.ts`).
+    - Codex says: the zip had buildings, tenants, leases, invoices and payments but not the organization or the billing businesses, so the supplier GSTIN, bank details and billing settings were missing, and those are needed to rebuild the billing setup.
+    - Claude says: agreed, and fixed in commit b165fea. The zip now has an "organization" sheet (the organization's own row, with its settings) and a "businesses" sheet (each billing business with its GSTIN and bank details). The database export test checks both, and the export page's wording and D57 say so.
+- Options:
+  - A) Accept both fixes and finish M10; Codex checks them in its next routine review
+  - B) Run one more Codex round on M10 before moving on
+- Recommendation: A, because both fixes are small, do exactly what Codex asked, are covered by tests that pass (38 setup and export tests, run 2026-10-24), and change no invoice or payment amounts.
+- Done meanwhile: both fixes with tests (commits 90d7979 and b165fea). You can close this entry with "A".
 - Answer:
 
 ## Applied

@@ -17,7 +17,8 @@ export type ActivityAction =
   | "invite"
   | "accept"
   | "remove"
-  | "cancel_invite";
+  | "cancel_invite"
+  | "setup_done";
 
 export interface ActivityEntry {
   entityType: string;

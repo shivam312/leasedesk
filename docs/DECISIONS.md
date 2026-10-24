@@ -437,3 +437,9 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Decision:** "Remind all" on Today and the one-tap WhatsApp link include a tenant's opening balance (D-028) when it is their oldest overdue item; the automatic reminder schedule (`reminders.beforeDueDays`, `reminders.afterDueDays`) chases sent invoices only. A database check (`reminders_opening_by_hand`) holds it.
 **Why:** An opening balance is due on its as-on date, usually before the landlord started, so an automatic "N days after the due date" email would go to every such tenant on the first day, from a system they have never heard of, about dues the landlord may still be discussing. A person choosing to remind is the safe default; it can become a setting if pilots ask.
 **Consequences:** Reminders point at an invoice or an opening balance (`drizzle/0034`). Once a tenant has been reminded about an opening balance, it can be changed but not removed.
+
+## D56. The setup checklist reads the data, and keeps hand-ticked steps in the activity log (2026-10-24)
+
+**Decision:** Today shows owners a six-step "Set up LeaseDesk" checklist (`src/lib/setup/`) until every step is done. Business and GSTIN, buildings and units, and tenants and leases tick themselves from the data. "Check one rent schedule", "Opening balances" and "Invite your team" tick from the data where they can (an opening balance, a second person); otherwise an owner marks them done ("It's right", "Nobody owes anything", "Just me for now"), which is an `activity_log` row (`entity_type` "setup", `action` "setup_done", `after.step`).
+**Why:** No new table or column for a one-time list; the activity log already records who did what, and a marked step can't be lost by editing settings.
+**Consequences:** Once complete the checklist never shows again, even if data is later removed (the data steps would untick, so it would come back; that is intended, as setup is then incomplete).

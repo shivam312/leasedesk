@@ -5,6 +5,9 @@ import { Suspense } from "react";
 import { WhatsappReminderLink } from "@/components/reminders/WhatsappReminderLink";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { DailyRunNotice } from "@/components/today/DailyRunNotice";
+import { SetupChecklist } from "@/components/setup/SetupChecklist";
+import { setupChecklist } from "@/lib/setup/checklist";
+import { setupFacts } from "@/lib/setup/queries";
 import { DateActions } from "@/components/today/DateActions";
 import { RemindAllForm } from "@/components/today/RemindAllForm";
 import {
@@ -98,6 +101,9 @@ async function Today() {
       }
     return {
       anyLeases: await hasLeases(s),
+      setup: can(member.role, "manage_settings")
+        ? setupChecklist(await setupFacts(s))
+        : null,
       items,
       totals,
       unpaid: unpaidTotals(input.open, today),
@@ -113,6 +119,9 @@ async function Today() {
   return (
     <div className="flex flex-col gap-8">
       <DailyRunNotice />
+      {data.setup && !data.setup.complete && (
+        <SetupChecklist list={data.setup} />
+      )}
       <section aria-label="This month" className="grid gap-3 md:grid-cols-3">
         <Card>
           <p className="text-sm text-muted-foreground">

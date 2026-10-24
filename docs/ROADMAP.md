@@ -238,6 +238,8 @@ Housekeeping:
 
 - [x] Close D-033 as stale (all eight features are built) and update the decisions summary table
 
+Reviewed by the billing and UX reviewers on 2026-10-24. Fixed: a wrong opening balance can be corrected once the payment applied to it is reversed (it stayed locked for good, though the message said to reverse the payment; `drizzle/0036`), and it can't be removed once any payment touched it; "Opening balance" in a bank line no longer picks a tenant in matching; the setup checklist's business step is done by any business, so a landlord not registered for GST can finish it; "Remind all"'s "Email N reminders" is the filled button and takes focus; plus smaller wording fixes ("Yes, remove them", "Yes, the schedule is right", "Send N selected invoices", Floor optional, TDS chips keep the search). The rest is in `docs/BACKLOG.md` (settlement credit vs "Apply credit", renewal chains on the statement, opening balances in Tally, deposit held over the agreed amount, and the UX should-fixes). Decision sweep: Open questions was empty and no TODOs were added; the TDS quarter for an opening balance is added to D-003 (**[CA]** in `docs/BILLING_RULES.md`), and a payment dated before the as-on date may be applied to it. No new settings. Checks: typecheck, lint, 1,134 unit and database tests, and the 15 affected browser tests pass.
+
 ## Later (v2, in order)
 
 Online payment links, tenant portal, full Tally / Zoho Books sync, metered utilities, renewals pipeline, WhatsApp Business API, AI lease extraction, maintenance tickets, analytics, custom roles. See `docs/PRODUCT_PLAN.md`.

@@ -109,6 +109,7 @@ Things only a person can do. Tick them when done.
   - C) Something else (describe the rounding, quarter and default rates)
 - Recommendation: A, pending your CA. Note for your CA on the quarter: under section 194-I, TDS is deducted when rent is credited or paid, whichever is earlier, so the invoice date (option B, setting `tds.quarterBasis` = `invoice_date`) may match Form 16A more often.
 - Done meanwhile: A built as fixed behaviour, not yet as settings: rupee rounding (`expectedTds` in `src/lib/billing/tds.ts`), quarter of the payment date (`tdsQuarter`), and TDS on/off and rate per charge type on the tenant (`TenantTds`, defaults in `tenantTdsDefaults`). Settings `tds.rounding` (paisa or rupee) and `tds.quarterBasis` (payment or invoice date, which covers option B) are built too, defaults as A; per-type rates are already tenant inputs (`tds.rateBp`, `tds.appliesTo`).
+- Added 2026-10-24 (billing review M10): TDS kept back from a payment against a tenant's opening balance (D-028) has no invoice date. With `tds.quarterBasis` = `invoice_date` it is filed under the quarter of the opening balance's "as on" date, which can be a closed quarter of the previous financial year; with the default (payment date) it goes under the payment's quarter. Please confirm the as-on date is the right stand-in, or say which quarter it should be.
 - Answer:
 
 ### D-004: GST rounding and round-off line

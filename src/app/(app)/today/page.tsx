@@ -33,10 +33,10 @@ import { attentionInput, hasLeases, monthTotals } from "@/lib/alerts/queries";
 import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { monthOf } from "@/lib/billing/dates";
-import { runScoped } from "@/lib/db/scoped";
+import { runScoped, type Scoped } from "@/lib/db/scoped";
 import { formatDate, formatINR, formatMonth } from "@/lib/format";
 import { sendAllConsequence } from "@/lib/invoices/forms";
-import { draftTenantsWithoutEmail } from "@/lib/invoices/send";
+import { draftTenantsWithoutEmail, recipientsFor } from "@/lib/invoices/send";
 import {
   whatsappReminder,
   type WhatsappReminder,
@@ -107,7 +107,7 @@ async function Today() {
       items,
       totals,
       unpaid: unpaidTotals(input.open, today),
-      lateTenants: overdueByTenant(input.open, today).length,
+      lateTenants: await splitByEmail(s, overdueByTenant(input.open, today)),
       whatsapp,
       noEmail,
     };
@@ -164,8 +164,12 @@ async function Today() {
         <h2 className="font-medium">
           Needs attention{items.length > 0 ? ` (${items.length})` : ""}
         </h2>
-        {canBill && data.lateTenants > 0 && (
-          <RemindAllForm count={data.lateTenants} action={remindAllAction} />
+        {canBill && data.lateTenants.withEmail > 0 && (
+          <RemindAllForm
+            count={data.lateTenants.withEmail}
+            noEmail={data.lateTenants.noEmail}
+            action={remindAllAction}
+          />
         )}
         <NoticeArea>
           {items.length === 0 ? (
@@ -221,6 +225,19 @@ function TodayLoading() {
       </div>
     </div>
   );
+}
+
+/** Overdue tenants Remind all can email, and the names of those it can't. */
+async function splitByEmail(
+  s: Scoped,
+  late: readonly { tenantId: string; tenantName: string }[],
+) {
+  let withEmail = 0;
+  const noEmail: string[] = [];
+  for (const t of late)
+    if ((await recipientsFor(s, t.tenantId)).length > 0) withEmail++;
+    else noEmail.push(t.tenantName);
+  return { withEmail, noEmail };
 }
 
 function NothingToDo({ anyLeases }: { anyLeases: boolean }) {

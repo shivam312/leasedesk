@@ -5,17 +5,28 @@ import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/field";
 import type { FormState } from "@/lib/auth/forms";
 
-/** "Remind all N": asks once, then emails every overdue tenant with an address. */
+/**
+ * "Remind all N": asks once, then emails every overdue tenant with an
+ * address. N counts only those with an email; the question names the rest.
+ */
 export function RemindAllForm({
   count,
+  noEmail,
   action,
 }: {
+  /** Overdue tenants with an email address. */
   count: number;
+  /** Overdue tenants without one. */
+  noEmail: readonly string[];
   action: (state: FormState, form: FormData) => Promise<FormState>;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [asking, setAsking] = useState(false);
-  const tenants = `${count} overdue ${count === 1 ? "tenant" : "tenants"}`;
+  const total = count + noEmail.length;
+  const tenants =
+    noEmail.length > 0
+      ? `${count} of ${total} overdue tenants`
+      : `${count} overdue ${count === 1 ? "tenant" : "tenants"}`;
   return (
     <form
       action={(form) => {
@@ -34,9 +45,11 @@ export function RemindAllForm({
             Email a payment reminder to {tenants} now? Each gets one email for
             their oldest late invoice, asking for the amount after TDS. Anyone
             reminded today is skipped.
+            {noEmail.length > 0 &&
+              ` No email address for ${noEmail.join(", ")}: remind ${noEmail.length === 1 ? "them" : "each"} on WhatsApp instead.`}
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" className="h-11 md:h-9">
+            <Button type="submit" variant="outline" className="h-11 md:h-9">
               Email {count === 1 ? "the reminder" : `${count} reminders`}
             </Button>
             <Button

@@ -30,7 +30,9 @@ type DatedEntry = { kind: DepositEntryKind; amount: Paise; date: PlainDate };
  * held on its date: the entries are replayed in date order with the new one
  * in place (a receipt before an outflow on the same day), and the balance
  * must never go below zero, so a backdated refund can't exceed what was held
- * then, nor leave a later outflow short.
+ * then, nor leave a later outflow short. An existing entry that was already
+ * short on its own (recorded before this check) isn't held against the new
+ * one; only what the new entry makes worse is refused.
  */
 export function depositProblem(
   entries: readonly DatedEntry[],
@@ -52,13 +54,23 @@ export function depositProblem(
         Number(b.kind === "received") - Number(a.kind === "received") ||
         a.order - b.order,
     );
+  // The balance each existing entry already left, without the new one.
+  const before = new Map<number, Paise>();
+  let base = 0;
+  for (const e of all) {
+    if (e.order === entries.length) continue;
+    before.set(e.order, base);
+    base += e.kind === "received" ? e.amount : -e.amount;
+  }
   let balance = 0;
   for (const [i, e] of all.entries()) {
     if (e.kind === "received") {
       balance += e.amount;
       continue;
     }
-    if (e.amount <= balance) {
+    const wasShort =
+      e.order !== entries.length && before.get(e.order)! < e.amount;
+    if (e.amount <= balance || wasShort) {
       balance -= e.amount;
       continue;
     }

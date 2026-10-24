@@ -67,6 +67,23 @@ describe("depositProblem", () => {
     );
   });
 
+  it("doesn't refuse a new entry for a shortfall that was already there", () => {
+    // Recorded before the date check existed: ₹2,50,000 refunded 15-01 when
+    // only ₹1,00,000 was held (the other ₹2,00,000 came 01-03). ₹50,000 is
+    // held now; a refund of up to that today is fine, more isn't.
+    const dirty = [
+      e("received", 1_00_000_00, "2026-01-01"),
+      e("received", 2_00_000_00, "2026-03-01"),
+      e("refunded", 2_50_000_00, "2026-01-15"),
+    ];
+    expect(depositProblem(dirty, "refunded", 50_000_00, "2026-10-01")).toBe(
+      null,
+    );
+    expect(depositProblem(dirty, "refunded", 50_000_01, "2026-10-01")).toBe(
+      "Only ₹50,000 of the deposit is held.",
+    );
+  });
+
   it("needs a positive whole amount", () => {
     expect(depositProblem(held, "received", 0, "2026-06-01")).toBe(
       "Enter an amount above ₹0.",

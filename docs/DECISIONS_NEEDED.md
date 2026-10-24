@@ -444,7 +444,7 @@ Things only a person can do. Tick them when done.
 - Recommendation: B for the pilot, because owners already report problems on WhatsApp and it needs no new account; add email when there are paying customers.
 - Audit note (2026-10-24): needed before any landlord outside the team uses the app; not a code gap until answered.
 - Done meanwhile: the error pages no longer promise a support contact; they say to try again, then go to Today (a page error) or ask the person who set up LeaseDesk (the whole app failed) (UX review M8, 2026-10-24). Once answered, the address goes in one constant used by `src/app/global-error.tsx` and `src/app/(app)/error.tsx`.
-- Answer: WhatsApp +91 XXXXXXXXXX, email support@<domain>; show on error pages and in Settings → Help
+- Answer: WhatsApp +91 98111 29108, email support@leasedesk.com; show on error pages and in Settings → Help
 
 ### D-030: Codex review of M8: unresolved items
 - Status: open

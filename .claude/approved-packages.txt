@@ -72,3 +72,4 @@ tsx
 dotenv
 dotenv-cli
 cross-env
+fflate

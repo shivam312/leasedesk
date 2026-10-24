@@ -4,7 +4,7 @@ Goal: a pilot landlord's real monthly billing runs through the app and matches t
 
 Each task is one commit. Tasks tagged `(human)` need a person and are listed in `docs/DECISIONS_NEEDED.md` under Human tasks; the pipeline skips them. Tasks tagged `(blocked: D-xxx)` wait for that decision. See `PIPELINE.md`.
 
-**Current milestone:** M9 (audit findings). M8's pipeline tasks are done; its `(human)` tasks (and those in M4 and M5) stay open alongside M9. M9 comes from the 2026-10-24 audit (`docs/audit/SUMMARY.md`); its three opening-balance tasks wait on D-028.
+**Current milestone:** M9 (audit findings). M8's pipeline tasks are done; its `(human)` tasks (and those in M4 and M5) stay open alongside M9. M9 comes from the 2026-10-24 audit (`docs/audit/SUMMARY.md`). Every M9 task is built except the three opening-balance tasks, which wait on D-028; new questions from M9 are D-034 (using a deposit for unpaid rent) and D-035 (GST on a kept deposit) [2026-10-24].
 
 ## M0. Project setup (week 3)
 

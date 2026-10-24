@@ -57,6 +57,7 @@ supabase stop       # when you're done
 
 - `pnpm db:seed:demo` resets and loads "Sharma Estates" (2 buildings, 45 tenants, three months of sent invoices and payments, this month sent on its 1st with some payments in) and prints the login `demo@sharma-estates.example` with a new password, the payment to record by hand, and the bank statement to import (`.local-demo/hdfc-statement.csv`). Local database only. The 10-minute landlord demo on it is `docs/DEMO_SCRIPT.md`; run the demo on a production build (`pnpm build && EMAIL_DRIVER=console pnpm start`), not `pnpm dev`.
 - `pnpm walkthrough` reseeds the demo and clicks through a month on the dev server (it starts `pnpm dev` if needed), saving numbered screenshots in `docs/walkthrough/screens/`, videos in `docs/walkthrough/videos/` (not in git), and `docs/walkthrough/index.html` with a caption per screenshot. The same script runs inside `pnpm test:e2e` as a test of the amounts on screen (D43, D44).
+- `pnpm db:seed:load` resets and loads "Load Test Estates" (3 GSTINs, 120 tenants, 36 months of invoices and payments; about 6 minutes), then times each screen's data; `pnpm db:seed:load --time-only` times it again. Local database only. The timings are in `docs/milestones/M10.md`.
 
 ### Email and background jobs
 
@@ -67,6 +68,8 @@ supabase stop       # when you're done
 
 - Reports (`/reports`) open in the app and download as Excel or PDF, with nothing to set up. The Tally export (Reports → Tally export) needs no Tally installation to make the file; ledger names are on Settings → Tally.
 - To load buildings, units, tenants and leases from a spreadsheet, use Leases → Import from Excel and start from its templates. Import files are limited to 2 MB. A building page also takes units pasted from Excel.
+- What tenants already owed before LeaseDesk goes in as one opening balance per tenant: on the tenant page, or the "Opening balance (₹)" and "Balance as on" columns of the tenants and leases import. Deposits already held go in with "Record ₹X already held" on the lease page or the import's "Deposit held (₹)" column.
+- Settings → Export all data (owners only) downloads one zip: an Excel file per table, values as stored (paise, basis points, ids), with every stored invoice PDF and document (D57).
 - Documents (the signed agreement, addenda, ID proof) are uploaded on the lease and tenant pages, straight to Supabase Storage, up to 25 MB; TDS certificates (Billing → TDS certificates) up to 3 MB (D52).
 
 ### Error reporting and password reset

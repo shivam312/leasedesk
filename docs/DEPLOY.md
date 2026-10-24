@@ -55,7 +55,7 @@ The Storage bucket `documents` (lease agreements, TDS certificates) and its acce
 2. In Vercel, deploy the `main` branch to Preview (staging). Wait for the build.
 3. **Inngest sync:** in Inngest, sync the app at `<APP_URL>/api/inngest` (the Vercel integration does this on each deploy). Check that the three functions appear: `monthly-billing-run` (06:00), `daily-digest` (08:00) and `daily-payment-reminders` (09:00), all India time.
 4. Smoke test on staging: sign up, add a GSTIN, a building, a unit, a tenant with your own email and a lease; on Billing make this month's invoices and send one; check the email and PDF arrive; record a payment; download the Tally file. In Settings → Business, Email must say it sends from your `EMAIL_FROM`, not "Test mode" or "Not set up".
-5. The next morning, check Today shows no "The daily run hasn't happened since …" warning and that Inngest shows the 06:00 run.
+5. The next morning, check Today shows no "Automatic billing hasn't run since …" warning and that Inngest shows the 06:00 run.
 6. Repeat 1–4 for production (migrations, then promote the deployment). Point your domain at Vercel.
 
 ## 5. Each release, and rolling back
@@ -82,7 +82,7 @@ Off-site copy: once a week, `pg_dump` production with the direct connection stri
 
 ## 7. When something goes wrong
 
-- **"The daily run hasn't happened since …" on Today:** Inngest isn't calling the app. Check the app is synced in Inngest (section 4, step 3) and `INNGEST_SIGNING_KEY` is set; press "Run now" to catch up for that organization meanwhile.
+- **"Automatic billing hasn't run since …" on Today:** Inngest isn't calling the app. Check the app is synced in Inngest (section 4, step 3) and `INNGEST_SIGNING_KEY` is set; press "Run now" to catch up for that organization meanwhile.
 - **"Email isn't set up yet":** `RESEND_API_KEY` or `EMAIL_FROM` is missing in that Vercel environment. Add it and redeploy.
 - **Errors in Sentry:** reports carry ids, not names or amounts (D41). Look the id up in the app.
 

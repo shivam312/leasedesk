@@ -301,6 +301,11 @@ export function CreditNoteForm({
               {pending ? "Issuing…" : "Check the credit note"}
             </Button>
           </div>
+          {nothingYet && (
+            <p className="text-sm text-muted-foreground">
+              Enter an amount to take off, or tap &quot;All of it&quot;.
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             GST on this invoice can be reduced by a credit note until{" "}
             {deadlineLabel}.

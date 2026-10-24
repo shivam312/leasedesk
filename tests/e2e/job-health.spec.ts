@@ -17,25 +17,25 @@ async function ageAccount(email: string) {
   }
 }
 
-test("Today warns when the daily run is late, and Run now catches up", async ({
+test("Today warns when automatic billing is late, and Run now catches up", async ({
   page,
 }) => {
   const { email } = await signUpNewOwner(page);
   await expect(
-    page.getByText(/The daily run hasn't happened since/),
+    page.getByText(/Automatic billing hasn't run since/),
   ).toHaveCount(0);
   await ageAccount(email);
   await page.reload();
   await expect(
-    page.getByText(/^The daily run hasn't happened since \d{2}-\d{2}-\d{4}$/),
+    page.getByText(/^Automatic billing hasn't run since \d{2}-\d{2}-\d{4}$/),
   ).toBeVisible();
   await page.getByRole("button", { name: "Run now" }).click();
   // Recorded: the warning goes, and stays gone.
   await expect(
-    page.getByText(/The daily run hasn't happened since/),
+    page.getByText(/Automatic billing hasn't run since/),
   ).toHaveCount(0);
   await page.reload();
   await expect(
-    page.getByText(/The daily run hasn't happened since/),
+    page.getByText(/Automatic billing hasn't run since/),
   ).toHaveCount(0);
 });

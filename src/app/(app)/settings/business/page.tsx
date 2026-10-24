@@ -70,9 +70,9 @@ async function Business() {
               </div>
               <p className="text-sm">{EMAIL_NOT_SET_UP}</p>
               <p className="text-sm text-muted-foreground">
-                Whoever runs your LeaseDesk server adds the email account
-                (RESEND_API_KEY and EMAIL_FROM). Reminders and the daily summary
-                wait for it too.
+                Ask whoever set up LeaseDesk for you to connect the email
+                account (the steps are in the deploy guide). Reminders and the
+                daily summary wait for it too.
               </p>
             </>
           ) : email === "resend" ? (
@@ -86,8 +86,8 @@ async function Business() {
                 <Badge tone="warn">Test mode</Badge>
               </div>
               <p className="text-sm">
-                Emails are saved on this computer (in .local-outbox), not sent
-                to tenants. This is for trying LeaseDesk out.
+                Emails are saved on this computer, not sent to tenants. This is
+                for trying LeaseDesk out.
               </p>
             </>
           )}

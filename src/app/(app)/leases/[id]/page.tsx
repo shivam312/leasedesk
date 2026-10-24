@@ -149,9 +149,11 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
         <div>
           <dt className="text-muted-foreground">Security deposit</dt>
           <dd className="font-medium">
-            {lease.depositAmount > 0 ? formatINR(lease.depositAmount) : "None"}
+            {lease.depositAmount > 0
+              ? `${formatINR(lease.depositAmount)}${deposit.entries.length > 0 ? " agreed" : ""}`
+              : "No deposit agreed"}
             {deposit.entries.length > 0 &&
-              ` agreed · ${formatINR(deposit.heldPaise)} held`}
+              ` · ${formatINR(deposit.heldPaise)} held`}
           </dd>
         </div>
       </dl>

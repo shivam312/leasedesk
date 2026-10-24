@@ -315,20 +315,19 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
               <li key={c.id}>
                 <Card className="flex flex-col gap-1">
                   <p className="flex flex-wrap items-center gap-2 font-medium">
-                    {editable ? (
-                      <Link
-                        href={`/tenants/${t.id}/contacts/${c.id}`}
-                        className="inline-flex min-h-11 items-center hover:underline md:min-h-0"
-                        aria-label={`Edit ${c.name}`}
-                      >
-                        {c.name}
-                      </Link>
-                    ) : (
-                      c.name
-                    )}
+                    {c.name}
                     <Badge>{CONTACT_ROLE_LABELS[c.role]}</Badge>
                     {receivesInvoices(c, contacts) && (
                       <Badge tone="good">Receives invoices</Badge>
+                    )}
+                    {editable && (
+                      <Link
+                        href={`/tenants/${t.id}/contacts/${c.id}`}
+                        className="ml-auto inline-flex min-h-11 items-center text-sm font-normal underline md:min-h-0"
+                        aria-label={`Edit ${c.name}`}
+                      >
+                        Edit
+                      </Link>
                     )}
                   </p>
                   <p className="text-sm text-muted-foreground">

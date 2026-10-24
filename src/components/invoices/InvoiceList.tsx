@@ -84,13 +84,16 @@ export function InvoiceList({
     });
   const pick = (i: InvoiceRow) =>
     selectable(i) ? (
-      <input
-        type="checkbox"
-        className="size-5 md:size-4"
-        aria-label={`Select ${i.tenantName}`}
-        checked={picked.has(i.id)}
-        onChange={() => toggle(i.id)}
-      />
+      // A 44px tap target on phones around the 20px box.
+      <label className="flex size-11 items-center justify-center md:size-auto">
+        <input
+          type="checkbox"
+          className="size-5 md:size-4"
+          aria-label={`Select ${i.tenantName}`}
+          checked={picked.has(i.id)}
+          onChange={() => toggle(i.id)}
+        />
+      </label>
     ) : null;
 
   return (

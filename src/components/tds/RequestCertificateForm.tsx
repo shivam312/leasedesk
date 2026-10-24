@@ -7,6 +7,7 @@ import type { FormState } from "@/lib/auth/forms";
 /** "Request from tenant": one tap emails the tenant for this quarter's certificate. */
 export function RequestCertificateForm({
   tenantId,
+  tenantName,
   financialYear,
   quarter,
   amount,
@@ -14,6 +15,7 @@ export function RequestCertificateForm({
   action,
 }: {
   tenantId: string;
+  tenantName: string;
   financialYear: string;
   quarter: number;
   amount: number;
@@ -31,10 +33,14 @@ export function RequestCertificateForm({
       <button
         type="submit"
         disabled={pending}
+        aria-label={`Request the Q${quarter} certificate from ${tenantName}`}
         className="inline-flex min-h-11 items-center text-left text-sm underline md:min-h-0"
       >
         {pending ? "Asking…" : "Request from tenant"}
       </button>
+      <span className="text-xs text-muted-foreground">
+        Emails the tenant&apos;s accounts contact.
+      </span>
       {askedOn && (
         <span className="text-xs text-muted-foreground">
           Asked on {askedOn}

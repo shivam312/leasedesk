@@ -57,7 +57,7 @@ export async function runDailyNow(
       reportError("Run now failed", error, { organizationId: id });
       return {
         message:
-          "The daily run stopped with an error. Try again in a few minutes; if it keeps happening, contact support.",
+          "Automatic billing stopped with an error. Try again in a few minutes; if it keeps happening, contact support.",
       };
     }
     revalidatePath("/today");

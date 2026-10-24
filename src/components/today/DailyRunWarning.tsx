@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, FormMessage } from "@/components/ui/field";
 import type { FormState } from "@/lib/auth/forms";
 
-/** "The daily run hasn't happened since …", with "Run now" for those who bill. */
+/** "Automatic billing hasn't run since …", with "Run now" for those who bill. */
 export function DailyRunWarning({
   sinceLabel,
   canRun,
@@ -22,11 +22,11 @@ export function DailyRunWarning({
       className="flex max-w-3xl flex-col gap-2 border-amber-300"
     >
       <p className="font-medium">
-        The daily run hasn&apos;t happened since {sinceLabel}
+        Automatic billing hasn&apos;t run since {sinceLabel}
       </p>
       <p className="text-sm text-muted-foreground">
-        It makes each month&apos;s invoices on your run day and sends payment
-        reminders. Until it runs again, nothing happens on its own.
+        Each month&apos;s invoices and the payment reminders are made
+        automatically. Until it runs again, nothing happens on its own.
       </p>
       {canRun ? (
         <form action={formAction}>

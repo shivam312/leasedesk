@@ -53,12 +53,14 @@ export default function TdsPage({ searchParams }: PageProps<"/billing/tds">) {
 function Cell({
   c,
   tenantId,
+  tenantName,
   fy,
   canUpload,
   askedOn,
 }: {
   c: QuarterCell;
   tenantId: string;
+  tenantName: string;
   fy: string;
   canUpload: boolean;
   askedOn: Date | undefined;
@@ -107,6 +109,7 @@ function Cell({
       {c.status !== "received" && c.overdue && canUpload && (
         <RequestCertificateForm
           tenantId={tenantId}
+          tenantName={tenantName}
           financialYear={fy}
           quarter={c.quarter}
           amount={c.amount}
@@ -290,6 +293,7 @@ async function Tracker({
                       <Cell
                         c={c}
                         tenantId={r.tenantId}
+                        tenantName={r.tenantName}
                         fy={fy}
                         canUpload={canUpload}
                         askedOn={asked.get(`${r.tenantId}|${c.quarter}`)}
@@ -322,6 +326,7 @@ async function Tracker({
                           <Cell
                             c={c}
                             tenantId={r.tenantId}
+                            tenantName={r.tenantName}
                             fy={fy}
                             canUpload={canUpload}
                             askedOn={asked.get(`${r.tenantId}|${c.quarter}`)}

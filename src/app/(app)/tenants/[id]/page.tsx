@@ -3,6 +3,7 @@ import { RecordActivity } from "@/components/activity/ActivitySection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { ConfirmActionForm } from "@/components/forms/ConfirmActionForm";
 import { SimpleForm } from "@/components/forms/SimpleForm";
 import { ApplyCreditForm } from "@/components/payments/ApplyCreditForm";
 import { LEASE_STATUS } from "@/components/leases/status";
@@ -280,7 +281,7 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
               <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium md:min-h-0">
                 {opening ? "Change opening balance" : "Add opening balance"}
               </summary>
-              <div className="flex flex-col gap-3 pt-3">
+              <div className="flex flex-col gap-6 pt-3">
                 <SimpleForm
                   action={saveOpeningBalanceAction.bind(null, t.id)}
                   fields={[
@@ -311,11 +312,11 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
                   secondary
                 />
                 {opening && (
-                  <ApplyCreditForm
-                    tenantId={t.id}
+                  <ConfirmActionForm
+                    action={removeOpeningBalanceAction.bind(null, t.id)}
                     label="Remove opening balance"
-                    pendingLabel="Removing…"
-                    action={removeOpeningBalanceAction}
+                    question={`Remove the opening balance of ${formatINR(opening.amount)}? ${t.companyName} will no longer owe it on Today, in reminders or on the ledger.`}
+                    confirmLabel="Remove"
                   />
                 )}
               </div>

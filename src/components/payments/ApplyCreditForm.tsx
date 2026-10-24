@@ -5,20 +5,15 @@ import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/field";
 import type { FormState } from "@/lib/auth/forms";
 
-/**
- * "Apply ₹X credit": use a tenant's extra payments on unpaid invoices. Also
- * any other one-button action on a tenant ("Remove opening balance").
- */
+/** "Apply ₹X credit": use a tenant's extra payments on unpaid invoices. */
 export function ApplyCreditForm({
   tenantId,
   label,
   action,
-  pendingLabel = "Applying…",
 }: {
   tenantId: string;
   label: string;
   action: (state: FormState, form: FormData) => Promise<FormState>;
-  pendingLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   return (
@@ -33,7 +28,7 @@ export function ApplyCreditForm({
             disabled={pending}
             className="h-11 md:h-9"
           >
-            {pending ? pendingLabel : label}
+            {pending ? "Applying…" : label}
           </Button>
         </div>
       )}

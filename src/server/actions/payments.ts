@@ -236,25 +236,21 @@ export async function saveOpeningBalanceAction(
 
 /** "Remove opening balance": only while no payment is applied to it. */
 export async function removeOpeningBalanceAction(
+  tenantId: string,
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
-  return guardedForm(
-    "manage_billing",
-    z.object({ tenantId: z.uuid() }),
-    form,
-    async (member, { tenantId }) => {
-      try {
-        await runScoped(appDb, member, (s) =>
-          removeOpeningBalance(s, tenantId),
-        );
-      } catch (error) {
-        if (error instanceof PaymentError) return { message: error.message };
-        throw error;
-      }
-      revalidatePath(`/tenants/${tenantId}`);
-      revalidatePath("/today");
-      return { tone: "success", message: "Opening balance removed." };
-    },
-  );
+  return guardedForm("manage_billing", z.object({}), form, async (member) => {
+    if (!z.uuid().safeParse(tenantId).success)
+      return { message: "That tenant couldn't be found." };
+    try {
+      await runScoped(appDb, member, (s) => removeOpeningBalance(s, tenantId));
+    } catch (error) {
+      if (error instanceof PaymentError) return { message: error.message };
+      throw error;
+    }
+    revalidatePath(`/tenants/${tenantId}`);
+    revalidatePath("/today");
+    return { tone: "success", message: "Opening balance removed." };
+  });
 }

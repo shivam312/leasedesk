@@ -252,9 +252,10 @@ export function PaymentForm({
                     <span>
                       {i.number}{" "}
                       <span className="text-muted-foreground">
-                        dated {formatDate(i.invoiceDate)}, due{" "}
-                        {formatDate(i.dueDate)}: {formatINR(i.outstandingPaise)}{" "}
-                        left
+                        {i.openingBalance
+                          ? `owed as on ${formatDate(i.dueDate)}`
+                          : `dated ${formatDate(i.invoiceDate)}, due ${formatDate(i.dueDate)}`}
+                        : {formatINR(i.outstandingPaise)} left
                       </span>
                     </span>
                     <span className="tabular-nums">
@@ -348,7 +349,7 @@ export function PaymentForm({
               </span>
             </p>
             <p className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Applied to invoices</span>
+              <span className="text-muted-foreground">Applied</span>
               <span className="tabular-nums">{formatINR(applied)}</span>
             </p>
             {credit > 0 && (

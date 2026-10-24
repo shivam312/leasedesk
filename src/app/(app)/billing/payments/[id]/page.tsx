@@ -119,10 +119,10 @@ async function Payment({
 
       <section className="max-w-2xl" aria-labelledby="applied-heading">
         <h2 id="applied-heading" className="mb-2 font-medium">
-          {reversal ? "Taken back off invoices" : "Applied to invoices"}
+          {reversal ? "Taken back from" : "Applied to"}
         </h2>
         {allocations.length === 0 ? (
-          <p className="text-sm">Not applied to any invoice.</p>
+          <p className="text-sm">Not applied to anything yet.</p>
         ) : (
           <ul className="flex flex-col text-sm">
             {allocations.map((a) => {
@@ -146,7 +146,8 @@ async function Payment({
                   >
                     {a.number}{" "}
                     <span className="text-muted-foreground">
-                      dated {formatDate(a.invoiceDate)}
+                      {a.openingBalanceId ? "owed as on" : "dated"}{" "}
+                      {formatDate(a.invoiceDate)}
                     </span>
                   </Link>
                   <span className="tabular-nums">

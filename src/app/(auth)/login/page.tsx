@@ -3,13 +3,17 @@ import { Suspense } from "react";
 import { GoogleLogin } from "@/components/auth/GoogleLogin";
 import Link from "next/link";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { FormMessage } from "@/components/ui/field";
 import { logIn } from "@/server/actions/auth";
 
 export const metadata: Metadata = { title: "Log in" };
 
-export default function LoginPage() {
+export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <>
+      <Suspense>
+        <GoogleFailedNote searchParams={searchParams} />
+      </Suspense>
       <h1 className="mb-1 text-2xl font-semibold tracking-tight">Log in</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         Log in to see what needs doing today.
@@ -55,5 +59,18 @@ export default function LoginPage() {
         </Link>
       </p>
     </>
+  );
+}
+
+/** Google sent the person back without a session (/auth/callback). */
+async function GoogleFailedNote({
+  searchParams,
+}: Pick<PageProps<"/login">, "searchParams">) {
+  const { google } = await searchParams;
+  if (google !== "failed") return null;
+  return (
+    <div className="mb-4">
+      <FormMessage message="Google login didn't work. Try again, or log in with your email and password." />
+    </div>
   );
 }

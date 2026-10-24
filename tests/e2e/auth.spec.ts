@@ -27,6 +27,16 @@ test("sign up, log out, log back in", async ({ page }) => {
   await expect(page).toHaveURL("/today");
 });
 
+test("a failed Google login says so on the login page", async ({ page }) => {
+  await page.goto("/login?google=failed");
+  await expect(
+    page.getByText(
+      "Google login didn't work. Try again, or log in with your email and password.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeVisible();
+});
+
 test("sign-up explains what's wrong in plain words", async ({ page }) => {
   await page.goto("/signup");
   await page.getByLabel("Email").fill("not-an-email");

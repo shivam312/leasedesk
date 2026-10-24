@@ -201,7 +201,7 @@ The rest (v1 promises not yet kept, and smaller fixes):
 - [x] TDS gets its own entry under Billing with a back link to Billing; rent roll gets a phone card layout with the unit as anchor
 - [x] SAC moves to a quiet detail line on screen (stays on the PDF); "Round off", "Billed area" and "Charged as" get plain-language help text
 - [x] The invoice page says when the QR has no amount (over ₹1,00,000) or is left off (paid, part-paid), and `docs/DEMO_SCRIPT.md` says the same
-- [ ] Delete `vitest.config.mts` (Vitest loads `vitest.config.ts`, which has the unit and database projects) and tidy `PIPELINE OLD.md`, `INSTALL_CODEX.md`, `INSTALL_PROMPT.md` into `docs/archive/`
+- [x] Delete `vitest.config.mts` (Vitest loads `vitest.config.ts`, which has the unit and database projects) and tidy `PIPELINE OLD.md`, `INSTALL_CODEX.md`, `INSTALL_PROMPT.md` into `docs/archive/`
 
 ## Later (v2, in order)
 

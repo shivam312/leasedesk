@@ -49,6 +49,15 @@ const empty = {
 };
 
 describe("dateShows", () => {
+  it("shows a lease end in discussion only in its last reminder window", () => {
+    // Expiry 31-01-2027, reminders at 180, 90 and 30 days: in discussion,
+    // it's hidden until 01-01-2027 (30 days before), then shows again.
+    const d = date({ id: "x", status: "in_discussion" });
+    expect(dateShows(d, "2026-10-23")).toBe(false);
+    expect(dateShows(d, "2026-12-31")).toBe(false);
+    expect(dateShows(d, "2027-01-01")).toBe(true);
+  });
+
   it("shows a date from its longest reminder up to the day itself", () => {
     // Escalation on 22-11-2026 with reminders at 30 and 7 days: shows from
     // 23-10-2026 (30 days before) to 22-11-2026.

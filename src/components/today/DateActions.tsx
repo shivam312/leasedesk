@@ -36,13 +36,14 @@ function DateButton({
   );
 }
 
-/** "Mark done" and "Remind me later" on a lease date in the Today list. */
+/** "Mark done", "Remind me later" and, on a lease end, "In discussion", in the Today list. */
 export function DateActions({
   dateId,
   what,
   markDone,
   snooze,
   snoozeDays,
+  discuss,
 }: {
   dateId: string;
   /** e.g. "Rent increase for Acme", for screen readers. */
@@ -50,6 +51,8 @@ export function DateActions({
   markDone: Action;
   snooze: Action;
   snoozeDays: number;
+  /** "In discussion", on a lease end only. */
+  discuss?: Action;
 }) {
   return (
     <div role="group" aria-label={what} className="flex flex-wrap gap-2">
@@ -65,6 +68,14 @@ export function DateActions({
         pendingLabel="Saving…"
         action={snooze}
       />
+      {discuss && (
+        <DateButton
+          dateId={dateId}
+          label="In discussion"
+          pendingLabel="Saving…"
+          action={discuss}
+        />
+      )}
     </div>
   );
 }

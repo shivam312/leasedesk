@@ -1,0 +1,1 @@
+ALTER TYPE "public"."critical_date_status" ADD VALUE 'in_discussion';

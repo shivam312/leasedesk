@@ -289,6 +289,9 @@ export const criticalDateStatus = pgEnum("critical_date_status", [
   "open",
   "done",
   "snoozed",
+  // A lease end the landlord and tenant are talking about: Today shows it
+  // again only in its last reminder window (src/lib/alerts/attention.ts).
+  "in_discussion",
 ]);
 
 export const criticalDates = pgTable(

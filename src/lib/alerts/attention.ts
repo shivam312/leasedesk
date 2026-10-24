@@ -39,7 +39,7 @@ export type CriticalDateRow = {
   type: CriticalDateType;
   date: PlainDate;
   remindDays: readonly number[];
-  status: "open" | "done" | "snoozed";
+  status: "open" | "done" | "snoozed" | "in_discussion";
   snoozedUntil: PlainDate | null;
   label: string | null;
   assignedTo: string | null;
@@ -118,8 +118,8 @@ export function daysFrom(from: PlainDate, to: PlainDate): number {
 /**
  * Whether a lease date is on the list today: not done, not snoozed past
  * today, not passed, and within its longest reminder (e.g. an expiry with
- * reminders at 180, 90 and 30 days shows from 180 days before). A date with
- * no reminder days never shows.
+ * reminders at 180, 90 and 30 days shows from 180 days before), or its
+ * shortest once it's in discussion. A date with no reminder days never shows.
  */
 export function dateShows(d: CriticalDateRow, today: PlainDate): boolean {
   if (d.status === "done") return false;
@@ -131,7 +131,11 @@ export function dateShows(d: CriticalDateRow, today: PlainDate): boolean {
     return false;
   if (compareDates(d.date, today) < 0) return false;
   if (d.remindDays.length === 0) return false;
-  const lead = Math.max(...d.remindDays);
+  // In discussion: only the last (shortest) reminder brings it back.
+  const lead =
+    d.status === "in_discussion"
+      ? Math.min(...d.remindDays)
+      : Math.max(...d.remindDays);
   return compareDates(d.date, addDays(today, lead)) <= 0;
 }
 

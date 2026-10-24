@@ -107,6 +107,15 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await expect(
     visible(page, new RegExp(`^Emailed a reminder to ${lateCount} tenants\\.`)),
   ).toBeVisible();
+  // A lease end being talked about leaves Today until its last reminder.
+  const ending = page
+    .getByRole("listitem")
+    .filter({
+      has: page.getByRole("heading", { name: /^Lease ends in \d+ days$/ }),
+    })
+    .filter({ hasText: SPOTLIGHT.expiringSoon });
+  await ending.getByRole("button", { name: "In discussion" }).click();
+  await expect(ending).toHaveCount(0);
   // The demo's spotlight tenants haven't sent a certificate that's past its
   // due date, so Today counts them and links to the tracker's missing list.
   expect(demo.certificatesMissing).toBeGreaterThan(0);

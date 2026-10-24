@@ -3,8 +3,8 @@
 
 import { and, eq, ne } from "drizzle-orm";
 import { addDays, type PlainDate } from "@/lib/billing/dates";
-import { updateLogged } from "@/lib/db/activity-log";
-import { criticalDates } from "@/lib/db/schema";
+import { insertLogged, updateLogged } from "@/lib/db/activity-log";
+import { criticalDates, leases } from "@/lib/db/schema";
 import type { Scoped } from "@/lib/db/scoped";
 import type { Settings } from "@/lib/settings/schema";
 import { SNOOZE_DAYS } from "./attention";
@@ -36,6 +36,48 @@ export async function snoozeDate(
     snoozedUntil: until,
   });
   return saved ? until : null;
+}
+
+/**
+ * "In discussion" on a lease end: Today stops showing it until its last
+ * reminder window. Only for a lease's end date. Null if not allowed.
+ */
+export async function markInDiscussion(
+  s: Scoped,
+  id: string,
+): Promise<{ date: PlainDate; showsFrom: PlainDate } | null> {
+  const [row] = await s.tx
+    .select()
+    .from(criticalDates)
+    .where(s.where(criticalDates, eq(criticalDates.id, id)));
+  if (!row || row.type !== "expiry" || row.status === "done") return null;
+  const saved = await updateLogged(s, criticalDates, id, {
+    status: "in_discussion",
+    snoozedUntil: null,
+  });
+  if (!saved) return null;
+  const last = row.remindDays.length ? Math.min(...row.remindDays) : 0;
+  return { date: row.date, showsFrom: addDays(row.date, -last) };
+}
+
+/** A date of the landlord's own on a lease (a rent review, an insurance renewal). */
+export async function addCustomDate(
+  s: Scoped,
+  leaseId: string,
+  input: { label: string; date: PlainDate; remindDays: number[] },
+) {
+  const [lease] = await s.tx
+    .select({ id: leases.id })
+    .from(leases)
+    .where(s.where(leases, eq(leases.id, leaseId)));
+  if (!lease) return null;
+  return insertLogged(s, criticalDates, {
+    leaseId,
+    type: "custom",
+    label: input.label,
+    date: input.date,
+    remindDays: input.remindDays,
+  });
 }
 
 /** The setting that holds each generated lease date's reminder days. */

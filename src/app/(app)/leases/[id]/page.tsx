@@ -23,6 +23,8 @@ import { billingSettings } from "@/lib/settings/billing";
 import { loadSettings } from "@/lib/settings/store";
 import { todayInIndia } from "@/lib/today";
 import { terminateLease } from "@/server/actions/leases";
+import { addCustomDateAction } from "@/server/actions/alerts";
+import { SimpleForm } from "@/components/forms/SimpleForm";
 
 const monthsText = (n: number) => `${n} ${n === 1 ? "month" : "months"}`;
 
@@ -203,9 +205,42 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
               <li key={d.id} className="flex flex-wrap items-center gap-2">
                 {d.label ?? DATE_NAMES[d.type]}: {formatDate(d.date)}
                 {d.status === "done" && <Badge>Done</Badge>}
+                {d.status === "in_discussion" && (
+                  <Badge tone="warn">In discussion</Badge>
+                )}
               </li>
             ))}
           </ul>
+        )}
+        {editable && (
+          <details className="mt-3">
+            <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium md:min-h-0">
+              Add a date
+            </summary>
+            <div className="pt-3">
+              <SimpleForm
+                action={addCustomDateAction.bind(null, lease.id)}
+                fields={[
+                  {
+                    name: "label",
+                    label: "What the date is",
+                    required: true,
+                    hint: "Like “Rent review” or “Insurance renewal”.",
+                  },
+                  { name: "date", label: "Date", type: "date", required: true },
+                  {
+                    name: "remind",
+                    label: "Remind me, days before",
+                    inputMode: "numeric",
+                    hint: "Shown on Today this many days before. Blank means 30 and 7.",
+                  },
+                ]}
+                submitLabel="Add date"
+                pendingLabel="Adding…"
+                secondary
+              />
+            </div>
+          </details>
         )}
       </section>
 

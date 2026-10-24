@@ -38,7 +38,7 @@ Every table has `id` (uuid), `organization_id` (uuid, except `organizations`), `
 
 **custom_escalations**: lease_id, charge_id (must be a charge of the same lease), effective_date (unique per charge), new_amount (nullable), percent_bp (nullable); exactly one of the two is set.
 
-**critical_dates**: lease_id, type (`expiry`, `lock_in_end`, `escalation`, `renewal_option`, `notice_deadline`, `custom`), date, remind_days (int array, e.g. {180, 90, 30}), assigned_to (auth user; no foreign key into the auth schema), status (`open`, `done`, `snoozed`), snoozed_until (set exactly when snoozed), label (required for `custom`).
+**critical_dates**: lease_id, type (`expiry`, `lock_in_end`, `escalation`, `renewal_option`, `notice_deadline`, `custom`), date, remind_days (int array, e.g. {180, 90, 30}), assigned_to (auth user; no foreign key into the auth schema), status (`open`, `done`, `snoozed`, `in_discussion`: a lease end being talked about, shown on Today again only in its last reminder window; `drizzle/0030`), snoozed_until (set exactly when snoozed), label (required for `custom`).
 
 ## Billing
 

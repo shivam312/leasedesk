@@ -18,7 +18,7 @@ export type TerminationInput = {
   criticalDates: {
     id: string;
     date: PlainDate;
-    status: "open" | "done" | "snoozed";
+    status: "open" | "done" | "snoozed" | "in_discussion";
   }[];
   exitDate: PlainDate;
   /** Today's date, passed in so this stays pure. */

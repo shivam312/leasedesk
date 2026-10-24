@@ -3,13 +3,14 @@
 import { startTransition, useActionState, useId } from "react";
 import { Button } from "@/components/ui/button";
 import { errorProps, Field, FormMessage } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/lib/auth/forms";
 
 export interface FormField {
   name: string;
   label: string;
-  type?: "text" | "email" | "number" | "textarea" | "select";
+  type?: "text" | "email" | "number" | "textarea" | "select" | "date";
   options?: { value: string; label: string }[];
   defaultValue?: string;
   hint?: string;
@@ -74,6 +75,8 @@ export function SimpleForm({
               </option>
             ))}
           </Select>
+        ) : f.type === "date" ? (
+          <DateInput {...common} />
         ) : (
           <Input
             {...common}

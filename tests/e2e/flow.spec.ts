@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { formatMonth } from "../../src/lib/format";
+import { addDays } from "../../src/lib/billing/dates";
+import { formatDate, formatMonth } from "../../src/lib/format";
 import { statementYears } from "../../src/lib/payments/statement";
 import { todayInIndia } from "../../src/lib/today";
 import {
@@ -43,6 +44,22 @@ test("lease → make invoices → send → record payment", async ({ page }) => 
     })
     .click();
   await (await opened).close();
+  // A date of the landlord's own, shown on Today within its reminder.
+  const review = addDays(today, 10);
+  await page.getByText("Add a date", { exact: true }).click();
+  await page.getByLabel("What the date is").fill("Rent review");
+  await page.getByLabel("Date", { exact: true }).fill(review);
+  await page.getByLabel("Remind me, days before (optional)").fill("30");
+  await page.getByRole("button", { name: "Add date" }).click();
+  await expect(
+    page.getByText(`Added Rent review on ${formatDate(review)}.`),
+  ).toBeVisible();
+  const leaseUrl = page.url();
+  await page.goto("/today");
+  await expect(
+    page.getByRole("heading", { name: "Rent review in 10 days" }),
+  ).toBeVisible();
+  await page.goto(leaseUrl);
   // A phone shows the next 12 months of the schedule, then "Show all".
   if (test.info().project.name === "phone") {
     const all = page.getByText(/^Show all \d+ months$/);

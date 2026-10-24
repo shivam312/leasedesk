@@ -39,7 +39,11 @@ import {
   type WhatsappReminder,
 } from "@/lib/reminders/manual";
 import { todayInIndia } from "@/lib/today";
-import { markDateDoneAction, snoozeDateAction } from "@/server/actions/alerts";
+import {
+  markDateDoneAction,
+  markInDiscussionAction,
+  snoozeDateAction,
+} from "@/server/actions/alerts";
 import { runBillingNow, sendAllInvoices } from "@/server/actions/billing";
 import { remindAllAction } from "@/server/actions/reminders";
 
@@ -476,6 +480,9 @@ function Item({
                 markDone={markDateDoneAction}
                 snooze={snoozeDateAction}
                 snoozeDays={SNOOZE_DAYS}
+                discuss={
+                  d.type === "expiry" ? markInDiscussionAction : undefined
+                }
               />
             )}
           </div>

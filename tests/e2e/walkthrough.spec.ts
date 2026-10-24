@@ -101,9 +101,12 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   // "Remind all": one email to each overdue tenant, asked once first.
   const lateCount = Object.keys(SPOTLIGHT.unpaid).length;
   await page.getByRole("button", { name: `Remind all ${lateCount}` }).click();
-  await page
-    .getByRole("button", { name: `Email ${lateCount} reminders` })
-    .click();
+  // The "yes" button is the one that takes focus.
+  const emailAll = page.getByRole("button", {
+    name: `Email ${lateCount} reminders`,
+  });
+  await expect(emailAll).toBeFocused();
+  await emailAll.click();
   await expect(
     visible(page, new RegExp(`^Emailed a reminder to ${lateCount} tenants\\.`)),
   ).toBeVisible();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/field";
 import type { FormState } from "@/lib/auth/forms";
@@ -22,6 +22,10 @@ export function RemindAllForm({
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [asking, setAsking] = useState(false);
+  const confirmButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (asking) confirmButton.current?.focus();
+  }, [asking]);
   const total = count + noEmail.length;
   const tenants =
     noEmail.length > 0
@@ -49,7 +53,7 @@ export function RemindAllForm({
               ` No email address for ${noEmail.join(", ")}: remind ${noEmail.length === 1 ? "them" : "each"} on WhatsApp instead.`}
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="outline" className="h-11 md:h-9">
+            <Button ref={confirmButton} type="submit" className="h-11 md:h-9">
               Email {count === 1 ? "the reminder" : `${count} reminders`}
             </Button>
             <Button

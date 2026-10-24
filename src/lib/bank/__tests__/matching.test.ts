@@ -249,6 +249,38 @@ describe("matchLine", () => {
     });
   });
 
+  it("doesn't take the words \"Opening balance\" as naming a tenant", () => {
+    // Every opening balance is "numbered" Opening balance, so the phrase
+    // can't tell tenants apart. Globex's opening balance is ₹1,25,000,
+    // exactly the credit, but with no name the amount alone (35) is under
+    // the 40 cut-off: no suggestion, where the phrase used to add 50.
+    const withOpening: MatchTenant = {
+      ...globex,
+      invoices: [
+        inv("g-ob", "Opening balance", "2026-09-30", {
+          outstandingPaise: 12_500_000,
+          expectedTdsPaise: 0,
+          openingBalance: true,
+        }),
+      ],
+    };
+    expect(
+      matchLine({
+        line: line("NEFT/839201/OPENING BALANCE", 12_500_000),
+        tenants: [acme, withOpening, initech],
+        settings,
+      }),
+    ).toBeNull();
+    // With the name it is still found, opening balance and all.
+    const named = matchLine({
+      line: line("NEFT/GLOBEX FOODS/OPENING BALANCE", 12_500_000),
+      tenants: [acme, withOpening, initech],
+      settings,
+    });
+    expect(named?.tenantId).toBe("globex");
+    expect(named?.reasons.join(" ")).not.toMatch(/Invoice Opening balance/);
+  });
+
   it("is null for money that matches nobody", () => {
     expect(
       matchLine({ line: line("INTEREST CREDIT", 12_345), tenants, settings }),

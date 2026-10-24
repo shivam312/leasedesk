@@ -160,8 +160,12 @@ function scoreTenant(
 
   const inReference = (i: OpenInvoice) =>
     numberIn(line.reference ?? "", i.number);
+  // An opening balance's "number" is the same words for every tenant, so
+  // it can't say whose money it is (billing review M10).
   const numbered = open.filter(
-    (i) => inReference(i) || numberIn(line.description, i.number),
+    (i) =>
+      !i.openingBalance &&
+      (inReference(i) || numberIn(line.description, i.number)),
   );
   let fit: ReturnType<typeof amountFit> = null;
   let invoices: OpenInvoice[] = [];

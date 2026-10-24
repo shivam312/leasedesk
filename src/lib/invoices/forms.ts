@@ -184,3 +184,13 @@ export function emailAgainMessage(result: EmailResult): {
 }
 
 export const invoiceIdSchema = z.object({ invoiceId: z.uuid() });
+
+/** "Send selected": the month and the chosen drafts' ids, comma-separated. */
+export const selectedInvoicesSchema = runMonthSchema.extend({
+  invoiceIds: z
+    .string()
+    .transform((v) => v.split(",").filter(Boolean))
+    .pipe(
+      z.array(z.uuid()).min(1, "Choose at least one invoice to send.").max(500),
+    ),
+});

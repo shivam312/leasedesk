@@ -22,7 +22,11 @@ import { invoicesForMonth, leasesWithoutInvoice } from "@/lib/invoices/run";
 import { draftTenantsWithoutEmail } from "@/lib/invoices/send";
 import { todayInIndia } from "@/lib/today";
 import { cn } from "@/lib/utils";
-import { runBillingNow, sendAllInvoices } from "@/server/actions/billing";
+import {
+  runBillingNow,
+  sendAllInvoices,
+  sendSelectedInvoices,
+} from "@/server/actions/billing";
 
 export const metadata: Metadata = { title: "Billing" };
 
@@ -146,7 +150,20 @@ async function MonthInvoices({ month }: { month: string }) {
           <h2 className="font-medium">
             {label} invoices ({rows.length})
           </h2>
-          <InvoiceList invoices={rows} today={todayInIndia()} />
+          <InvoiceList
+            invoices={rows}
+            today={todayInIndia()}
+            send={
+              canBill && drafts.length > 1 && !early
+                ? {
+                    month,
+                    monthLabel: label,
+                    consequence: sendAllConsequence(noEmail),
+                    action: sendSelectedInvoices,
+                  }
+                : undefined
+            }
+          />
         </section>
       )}
     </div>

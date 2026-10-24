@@ -6,6 +6,7 @@ import {
   runSummary,
   sendAllConsequence,
   tooEarlyToSend,
+  selectedInvoicesSchema,
   sendSummary,
 } from "../forms";
 
@@ -191,5 +192,28 @@ describe("tooEarlyToSend", () => {
     );
     expect(tooEarlyToSend("2026-11-01", "2026-11-01")).toBeNull();
     expect(tooEarlyToSend("2026-11-01", "2026-12-03")).toBeNull();
+  });
+});
+
+describe("selectedInvoicesSchema", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  it("reads the chosen drafts' ids", () => {
+    expect(
+      selectedInvoicesSchema.parse({
+        month: "2026-11",
+        invoiceIds: `${id},${id}`,
+      }),
+    ).toEqual({ month: "2026-11", invoiceIds: [id, id] });
+  });
+
+  it("needs at least one, and only ids", () => {
+    expect(
+      selectedInvoicesSchema.safeParse({ month: "2026-11", invoiceIds: "" })
+        .success,
+    ).toBe(false);
+    expect(
+      selectedInvoicesSchema.safeParse({ month: "2026-11", invoiceIds: "x" })
+        .success,
+    ).toBe(false);
   });
 });

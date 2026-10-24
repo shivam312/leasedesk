@@ -142,6 +142,38 @@ export function SendAllForm({
   );
 }
 
+/** "Send 3 selected": number and email only the chosen drafts. */
+export function SendSelectedForm({
+  month,
+  monthLabel,
+  ids,
+  total,
+  consequence,
+  action,
+}: {
+  month: string;
+  monthLabel: string;
+  ids: string[];
+  total: string;
+  consequence: string;
+  action: Action;
+}) {
+  const word = ids.length === 1 ? "invoice" : "invoices";
+  return (
+    <ConfirmForm
+      fields={{ month, invoiceIds: ids.join(",") }}
+      label={`Send ${ids.length} selected`}
+      question={`Send ${ids.length} selected ${monthLabel} ${word} for ${total} in all?`}
+      consequence={consequence}
+      confirmLabel={`Send ${ids.length} ${word}`}
+      pendingLabel="Sending…"
+      cancelLabel="Go back"
+      primary={false}
+      action={action}
+    />
+  );
+}
+
 /** Send one invoice from its page. */
 export function SendInvoiceForm({
   invoiceId,

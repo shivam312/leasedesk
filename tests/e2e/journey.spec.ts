@@ -110,15 +110,33 @@ test("new landlord → import → billing run → send → payment → reports",
     page.getByText(/^Imported 2 tenants and 2 leases\./),
   ).toBeVisible();
 
-  // 3. The billing run makes both invoices, and Send all sends them.
+  // 3. The billing run makes both invoices; one goes by Send selected, the other by Send all.
   await page.goto("/billing");
   await page.getByRole("button", { name: `Make ${month} invoices` }).click();
   await expect(
     page.getByText(`Made 2 invoices for ${month}.`, { exact: false }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Send 2 invoices" }).click();
-  await expect(page.getByText(`Send 2 ${month} invoices for`)).toBeVisible();
-  await page.getByRole("button", { name: "Send 2 invoices" }).click();
+  // Search, tick Gamma's and send just that one first.
+  await page.getByLabel("Search invoices").fill("gamma");
+  await expect(visible(page, "Beta Foods LLP")).toHaveCount(0);
+  await page
+    .getByRole("checkbox", { name: "Select Gamma Studio" })
+    .filter({ visible: true })
+    .check();
+  await page.getByRole("button", { name: "Send 1 selected" }).click();
+  await expect(
+    page.getByText(`Send 1 selected ${month} invoice for`),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Send 1 invoice" }).click();
+  // Gamma's is sent (the list still shows only Gamma).
+  await expect(
+    page.getByText(/^(Sent|Overdue)$/).filter({ visible: true }),
+  ).toHaveCount(1);
+  // Then the rest with Send all.
+  await page.getByRole("button", { name: "Send 1 invoice" }).click();
+  await expect(page.getByText(`Send 1 ${month} invoice for`)).toBeVisible();
+  await page.getByRole("button", { name: "Send 1 invoice" }).click();
+  await page.getByLabel("Search invoices").fill("");
   // "Overdue" once this month's due date has passed.
   await expect(
     page.getByText(/^(Sent|Overdue)$/).filter({ visible: true }),

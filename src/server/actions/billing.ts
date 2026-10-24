@@ -11,6 +11,7 @@ import {
   emailAgainMessage,
   invoiceIdSchema,
   runMonthSchema,
+  selectedInvoicesSchema,
   runSummary,
   sendSummary,
   type SendAllResult,
@@ -120,6 +121,34 @@ export async function sendAllInvoices(
         draftsForMonth(s, month),
       );
       const result: SendAllResult = { sent: [], alreadySent: 0, problems: [] };
+      for (const d of drafts) await sendOne(member, d.id, d.tenantName, result);
+      revalidatePath("/billing");
+      revalidatePath("/today");
+      return sendSummary(result);
+    },
+  );
+}
+
+/** "Send selected": number and email the chosen drafts of the month. */
+export async function sendSelectedInvoices(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  return guardedForm(
+    "manage_billing",
+    selectedInvoicesSchema,
+    form,
+    async (member, { month, invoiceIds }) => {
+      if (emailMode() === "not_set_up") return { message: EMAIL_NOT_SET_UP };
+      const chosen = new Set(invoiceIds);
+      const drafts = (
+        await runScoped(appDb, member, (s) => draftsForMonth(s, month))
+      ).filter((d) => chosen.has(d.id));
+      const result: SendAllResult = {
+        sent: [],
+        alreadySent: invoiceIds.length - drafts.length,
+        problems: [],
+      };
       for (const d of drafts) await sendOne(member, d.id, d.tenantName, result);
       revalidatePath("/billing");
       revalidatePath("/today");

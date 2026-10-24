@@ -266,7 +266,7 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
               collected like an invoice but never sent as one.
               {opening.note ? ` Note: ${opening.note}.` : ""}
               {opening.locked
-                ? " A payment has been applied to it, so it can't be changed."
+                ? " A payment has been applied to it, so it can't be changed. If it was wrong, reverse that payment first."
                 : ""}
             </p>
           ) : (
@@ -311,7 +311,7 @@ async function Tenant({ params }: { params: Promise<{ id: string }> }) {
                   pendingLabel="Saving…"
                   secondary
                 />
-                {opening && (
+                {opening?.removable && (
                   <ConfirmActionForm
                     action={removeOpeningBalanceAction.bind(null, t.id)}
                     label="Remove opening balance"

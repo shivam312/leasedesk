@@ -203,6 +203,61 @@ describe.skipIf(skipDbTests)("opening balances", () => {
     });
   });
 
+  it("can be corrected once the payment applied to it is reversed, but not removed", async () => {
+    await inRollback(async (tx) => {
+      const { a, ctx, opening } = await setUp(tx);
+      // ₹2,00,000 typed instead of ₹20,000; a ₹20,000 payment lands on it.
+      await runScoped(asDb(tx), ctx, async (s) => {
+        const { payment } = await recordPayment(
+          s,
+          {
+            tenantId: a.tenant.id,
+            receivedDate: "2026-11-10",
+            amountReceivedPaise: 2_000_000,
+            tdsPaise: 0,
+            mode: "neft",
+            reference: null,
+            note: null,
+            allocations: "auto",
+          },
+          "2026-11-10",
+        );
+        expect((await openingBalanceFor(s, a.tenant.id))?.locked).toBe(true);
+        await reversePayment(s, payment.id, "2026-11-11", "Wrong balance");
+        // Nothing is applied to it any more (+₹20,000 − ₹20,000), so the
+        // amount can be put right, as the locked message promises.
+        expect((await openingBalanceFor(s, a.tenant.id))?.locked).toBe(false);
+        await setOpeningBalance(
+          s,
+          {
+            tenantId: a.tenant.id,
+            asOnDate: "2026-09-30",
+            amountPaise: 2_000_000,
+            note: null,
+          },
+          "2026-11-11",
+        );
+        expect((await openingBalanceFor(s, a.tenant.id))?.amount).toBe(
+          2_000_000,
+        );
+        // The payment and its reversal still point at it, so it stays.
+        await expect(
+          removeOpeningBalance(s, a.tenant.id),
+        ).rejects.toBeInstanceOf(PaymentError);
+      });
+      // The database agrees: changing it is allowed, removing it isn't.
+      await tx
+        .update(schema.openingBalances)
+        .set({ note: "Corrected" })
+        .where(eq(schema.openingBalances.id, opening.id));
+      await expect(
+        tx
+          .delete(schema.openingBalances)
+          .where(eq(schema.openingBalances.id, opening.id)),
+      ).rejects.toThrow();
+    });
+  });
+
   it("is refused by the database once a payment touches it, whatever the app does", async () => {
     await inRollback(async (tx) => {
       const { a, ctx, opening } = await setUp(tx);

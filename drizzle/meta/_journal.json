@@ -253,6 +253,13 @@
       "when": 1792827810290,
       "tag": "0035_tds_record_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792828794302,
+      "tag": "0036_opening_balance_unlock_after_reversal",
+      "breakpoints": true
     }
   ]
 }

@@ -1,10 +1,11 @@
 // A tenant's opening balance (D-028: A; BILLING_RULES section 11): what they
 // already owed when the landlord started on LeaseDesk. One per tenant,
-// typed on the tenant page or imported. It can be changed or removed only
-// until a payment is applied to it (the database refuses it too,
-// drizzle/0033); after that a mistake is corrected with a payment reversal.
+// typed on the tenant page or imported. It can't be changed while a payment
+// is applied to it: reverse that payment, and then it can be put right
+// (drizzle/0036). It can be removed only if no payment ever touched it (the
+// database refuses both too).
 
-import { and, eq } from "drizzle-orm";
+import { eq, sum } from "drizzle-orm";
 import { compareDates, type PlainDate } from "@/lib/billing/dates";
 import {
   deleteLogged,
@@ -17,6 +18,7 @@ import {
   reminders,
   tenants,
 } from "@/lib/db/schema";
+import { paiseSum } from "@/lib/db/rows";
 import type { Scoped } from "@/lib/db/scoped";
 import { formatDate } from "@/lib/format";
 import { lockTenantMoney, openingBalanceOf, PaymentError } from "./payments";
@@ -28,19 +30,32 @@ export type OpeningBalanceInput = {
   note: string | null;
 };
 
-/** Whether a payment has ever been applied to this opening balance. */
-async function isTouched(s: Scoped, id: string) {
+/**
+ * What payments have applied to this opening balance, net of reversals, and
+ * whether any ever touched it.
+ */
+async function applied(s: Scoped, id: string) {
   const [row] = await s.tx
+    .select({
+      net: sum(paymentAllocations.amountSettled).mapWith(paiseSum),
+    })
+    .from(paymentAllocations)
+    .where(
+      s.where(paymentAllocations, eq(paymentAllocations.openingBalanceId, id)),
+    );
+  const [any] = await s.tx
     .select({ id: paymentAllocations.id })
     .from(paymentAllocations)
     .where(
-      s.where(
-        paymentAllocations,
-        and(eq(paymentAllocations.openingBalanceId, id)),
-      ),
+      s.where(paymentAllocations, eq(paymentAllocations.openingBalanceId, id)),
     )
     .limit(1);
-  return Boolean(row);
+  return { netPaise: row?.net ?? 0, ever: Boolean(any) };
+}
+
+/** Locked while money is applied to it; a reversal unlocks it. */
+async function isLocked(s: Scoped, id: string) {
+  return (await applied(s, id)).netPaise !== 0;
 }
 
 const LOCKED =
@@ -76,7 +91,7 @@ export async function setOpeningBalance(
       ...values,
       createdBy: s.userId,
     });
-  if (await isTouched(s, existing.id)) throw new PaymentError(LOCKED);
+  if (await isLocked(s, existing.id)) throw new PaymentError(LOCKED);
   return (
     (await updateLogged(s, openingBalances, existing.id, values)) ?? existing
   );
@@ -87,7 +102,12 @@ export async function removeOpeningBalance(s: Scoped, tenantId: string) {
   await lockTenantMoney(s, tenantId);
   const existing = await openingBalanceOf(s, tenantId);
   if (!existing) return;
-  if (await isTouched(s, existing.id)) throw new PaymentError(LOCKED);
+  const { netPaise, ever } = await applied(s, existing.id);
+  if (netPaise !== 0) throw new PaymentError(LOCKED);
+  if (ever)
+    throw new PaymentError(
+      "A payment was once applied to this opening balance, so it stays on record. Change the amount instead if it was wrong.",
+    );
   const [reminded] = await s.tx
     .select({ id: reminders.id })
     .from(reminders)
@@ -103,5 +123,7 @@ export async function removeOpeningBalance(s: Scoped, tenantId: string) {
 /** A tenant's opening balance and whether it can still be changed. */
 export async function openingBalanceFor(s: Scoped, tenantId: string) {
   const row = await openingBalanceOf(s, tenantId);
-  return row ? { ...row, locked: await isTouched(s, row.id) } : null;
+  if (!row) return null;
+  const { netPaise, ever } = await applied(s, row.id);
+  return { ...row, locked: netPaise !== 0, removable: !ever };
 }

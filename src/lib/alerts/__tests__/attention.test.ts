@@ -118,6 +118,37 @@ describe("overdueByTenant", () => {
     ]);
   });
 
+  it("picks the opening balance as the oldest when an invoice is due the same day", () => {
+    // Acme: invoice "inv" ₹1,18,000 due 01-10 and an opening balance "ob"
+    // ₹2,00,000 as on 01-10, the invoice listed first. Payments clear the
+    // opening balance first on a tie (docs/BILLING_RULES.md, opening
+    // balance), so the reminder is about it: ₹3,18,000 asked in all, oldest
+    // the opening balance's own ₹2,00,000, 22 days overdue (01-10 to 23-10).
+    const items = overdueByTenant(
+      [
+        inv({ id: "inv", dueDate: "2026-10-01" }),
+        inv({
+          id: "ob",
+          dueDate: "2026-10-01",
+          outstandingPaise: 200_000_00,
+          openingBalance: true,
+        }),
+      ],
+      today,
+    );
+    expect(items).toEqual([
+      expect.objectContaining({
+        amountPaise: 318_000_00,
+        invoiceCount: 2,
+        oldestInvoiceId: "ob",
+        oldestIsOpeningBalance: true,
+        oldestDueDate: "2026-10-01",
+        oldestAmountPaise: 200_000_00,
+        daysOverdue: 22,
+      }),
+    ]);
+  });
+
   it("leaves out invoices due today or later, and ones with only TDS left", () => {
     expect(
       overdueByTenant(

@@ -180,7 +180,13 @@ export function overdueByTenant(
     }
     item.amountPaise = sumPaise([item.amountPaise, ask]);
     item.invoiceCount += 1;
-    if (compareDates(inv.dueDate, item.oldestDueDate) < 0) {
+    // On the same due date the opening balance is the oldest, as payments
+    // clear it first (docs/BILLING_RULES.md, opening balance).
+    const cmp = compareDates(inv.dueDate, item.oldestDueDate);
+    if (
+      cmp < 0 ||
+      (cmp === 0 && inv.openingBalance && !item.oldestIsOpeningBalance)
+    ) {
       item.oldestInvoiceId = inv.id;
       item.oldestIsOpeningBalance = inv.openingBalance ?? false;
       item.oldestDueDate = inv.dueDate;

@@ -40,7 +40,9 @@ test("an owner imports a bank statement; the columns are remembered", async ({
     "Statement, 01-11-2026 to 05-11-2026",
   );
   await expect(
-    page.getByText("Imported 3 payments received.", { exact: false }),
+    page.getByText("Read 3 payments into your account from the statement.", {
+      exact: false,
+    }),
   ).toBeVisible();
   await expect(page.getByText("Not matched yet").first()).toBeVisible();
 

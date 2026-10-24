@@ -74,7 +74,7 @@ function Cell({
     );
   const upload = `/billing/tds/upload?tenant=${tenantId}&fy=${fy}&q=${c.quarter}`;
   return (
-    <span className="flex flex-col items-start gap-1">
+    <span className="flex flex-col items-end gap-1 text-right">
       <span className="tabular-nums">{formatINR(c.amount)}</span>
       {c.status === "received" ? (
         <Badge tone="good">Received</Badge>

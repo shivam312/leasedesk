@@ -222,6 +222,9 @@ export function EmailAgainForm({
         >
           {pending ? "Emailing…" : "Email again"}
         </Button>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Sends it now to the tenant&apos;s invoice contacts on their page.
+        </p>
       </div>
       <FormMessage message={state.message} tone={state.tone} />
     </form>

@@ -68,7 +68,11 @@ export function ReversePaymentForm({
         The payment stays on record, marked reversed. Then record the correct
         one.
       </p>
-      <Field label="Why" htmlFor={id} error={state.fieldErrors?.reason}>
+      <Field
+        label="Reason for reversing"
+        htmlFor={id}
+        error={state.fieldErrors?.reason}
+      >
         <Input
           id={id}
           name="reason"

@@ -61,12 +61,12 @@ async function Import({ params }: { params: Promise<{ id: string }> }) {
               ? `Statement, ${formatDate(imp.periodStart)} to ${formatDate(imp.periodEnd)}`
               : "Statement"
           }
-          description={`${data.bankName} ending ${data.accountLast4}, from ${imp.fileName}.`}
+          description={`${data.bankName} account ending ${data.accountLast4}, from ${imp.fileName}.`}
         />
       </div>
       <p className="max-w-2xl text-sm">
-        Imported {imp.lineCount} {imp.lineCount === 1 ? "payment" : "payments"}{" "}
-        received.
+        Read {imp.lineCount} {imp.lineCount === 1 ? "payment" : "payments"} into
+        your account from the statement.
         {skipped.length > 0 && ` Left out: ${skipped.join(", ")}.`}
       </p>
       {lines.some(

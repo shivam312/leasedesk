@@ -62,7 +62,7 @@ async function Payment({
         <PageHeader
           title={
             reversal
-              ? `Reversal of ${formatINR(-p.amountReceived)}`
+              ? `Payment reversed: ${formatINR(-p.amountReceived)}`
               : `Payment of ${formatINR(p.amountReceived)}`
           }
           description={`From ${tenantName}, ${reversal ? "reversed on" : "received on"} ${formatDate(p.receivedDate)}.`}

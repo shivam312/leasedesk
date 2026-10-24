@@ -33,7 +33,9 @@ test("an owner records an advance payment, then reverses it", async ({
   await expect(page.getByText("Recorded ₹1,08,000 received.")).toBeVisible();
 
   await page.getByRole("button", { name: "Reverse this payment" }).click();
-  await page.getByLabel("Why").fill("Entered against the wrong tenant");
+  await page
+    .getByLabel("Reason for reversing")
+    .fill("Entered against the wrong tenant");
   await page.getByRole("button", { name: "Yes, reverse it" }).click();
   await expect(page.getByText("Reversed", { exact: true })).toBeVisible();
   await expect(

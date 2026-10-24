@@ -89,7 +89,9 @@ async function setUp(page: Page) {
     .getByRole("button", { name: "Import 3 payments received" })
     .click();
   await expect(
-    page.getByText("Imported 3 payments received.", { exact: false }),
+    page.getByText("Read 3 payments into your account from the statement.", {
+      exact: false,
+    }),
   ).toBeVisible();
 }
 

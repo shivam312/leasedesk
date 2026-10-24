@@ -24,6 +24,12 @@ export const metadata: Metadata = { title: "Billing rules" };
 export default function BillingRulesPage() {
   return (
     <>
+      <Link
+        href="/settings"
+        className="mb-2 inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline md:min-h-0"
+      >
+        ← Settings
+      </Link>
       <PageHeader
         title="Billing rules"
         description="How rent, GST and TDS are worked out. The defaults suit most landlords; change one only if your invoices differ."

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { asc } from "drizzle-orm";
 import { Suspense } from "react";
@@ -16,6 +17,12 @@ export const metadata: Metadata = { title: "Team" };
 export default function TeamPage() {
   return (
     <>
+      <Link
+        href="/settings"
+        className="mb-2 inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline md:min-h-0"
+      >
+        ← Settings
+      </Link>
       <PageHeader
         title="Team"
         description="See who can use your account, and invite people."

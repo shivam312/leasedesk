@@ -18,7 +18,9 @@ test("sign up, log out, log back in", async ({ page }) => {
   await page.getByLabel("Password").fill("wrong-password");
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(
-    page.getByText("That email and password don't match. Try again."),
+    page.getByText(
+      /^That email and password don't match\. Try again, or choose “Forgot your password\?”/,
+    ),
   ).toBeVisible();
   await expect(page.getByLabel("Email")).toHaveValue(email);
 

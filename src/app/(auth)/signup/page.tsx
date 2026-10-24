@@ -47,7 +47,10 @@ export default function SignUpPage() {
       </Suspense>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-foreground underline">
+        <Link
+          href="/login"
+          className="inline-flex min-h-11 items-center font-medium text-foreground underline md:min-h-0"
+        >
           Log in
         </Link>
       </p>

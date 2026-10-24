@@ -232,7 +232,7 @@ Small fixes (from docs/BACKLOG.md; delete the rows that move here):
 - [x] "Remind all N" counts only tenants with an email address and the confirmation names who has none
 - [x] Wording and phone-layout fixes on leases, tenants and buildings
 - [x] Wording and phone-layout fixes on billing, payments, bank matching and TDS
-- [ ] Wording fixes on log in, sign up, password reset and Settings
+- [x] Wording fixes on log in, sign up, password reset and Settings
 
 Housekeeping:
 

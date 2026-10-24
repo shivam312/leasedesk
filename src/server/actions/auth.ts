@@ -72,7 +72,7 @@ export async function logIn(
       message:
         error.code === "email_not_confirmed"
           ? "Confirm your email first. We sent you a link when you signed up."
-          : "That email and password don't match. Try again.",
+          : "That email and password don't match. Try again, or choose “Forgot your password?” below to set a new one.",
       values: { email },
     };
   }

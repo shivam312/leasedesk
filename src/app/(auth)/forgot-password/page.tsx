@@ -12,9 +12,6 @@ export default function ForgotPasswordPage({
 }: PageProps<"/forgot-password">) {
   return (
     <>
-      <Suspense>
-        <ExpiredNote searchParams={searchParams} />
-      </Suspense>
       <h1 className="mb-1 text-2xl font-semibold tracking-tight">
         Forgot your password?
       </h1>
@@ -22,6 +19,9 @@ export default function ForgotPasswordPage({
         Enter the email you log in with. We&apos;ll email you a link to choose a
         new password.
       </p>
+      <Suspense>
+        <ExpiredNote searchParams={searchParams} />
+      </Suspense>
       <AuthForm
         autoFocus
         action={requestPasswordReset}

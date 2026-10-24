@@ -20,6 +20,12 @@ export const metadata: Metadata = { title: "Business details" };
 export default function BusinessPage() {
   return (
     <>
+      <Link
+        href="/settings"
+        className="mb-2 inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline md:min-h-0"
+      >
+        ← Settings
+      </Link>
       <PageHeader
         title="Business details"
         description="Your business name, and the GSTINs and bank accounts printed on invoices."

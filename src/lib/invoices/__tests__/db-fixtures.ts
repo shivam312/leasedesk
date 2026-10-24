@@ -13,8 +13,8 @@ import { runBilling } from "../run";
  * made by runBilling: rent 1,300 sq ft × ₹90 = ₹1,17,000, CGST and SGST 9%
  * = ₹10,530 each, total ₹1,38,060.
  */
-export async function madeDraft(tx: TestTx) {
-  const a = await seedOrg(tx, "A");
+export async function madeDraft(tx: TestTx, name = "A") {
+  const a = await seedOrg(tx, name);
   await tx
     .update(schema.billingEntities)
     .set({ gstin: "27AAPFU0939F1ZV" })

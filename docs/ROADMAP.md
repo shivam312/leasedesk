@@ -177,7 +177,7 @@ Pilot blockers (what a real landlord's first month would hit):
 - [x] Job health: record each daily run; Today and Settings warn "The daily run hasn't happened since …" with "Run now" when it is more than a day late
 - [x] `docs/DEPLOY.md` runbook: first deploy and rollback, migrations against the cloud database (`ALLOW_REMOTE_DB`), Vercel environment variables, Inngest sync, Storage bucket policies, backup restore drill
 - [x] CI: `.github/workflows/ci.yml` running typecheck, lint, unit and database tests (Supabase CLI) and the browser tests; runs once the repository is on GitHub (D-032)
-- [ ] Organization isolation on job paths: audit every `runAsSystem` and bare `db` call (`monthly-billing.ts`, `reminders/run.ts`, `digest-run.ts`, `demo/seed.ts`, `scoped.ts`) and add tests that two organizations' jobs never cross
+- [x] Organization isolation on job paths: audit every `runAsSystem` and bare `db` call (`monthly-billing.ts`, `reminders/run.ts`, `digest-run.ts`, `demo/seed.ts`, `scoped.ts`) and add tests that two organizations' jobs never cross
 - [ ] Invoice list: search by tenant or building, status chips, row selection and "Send selected"; phone cards show the invoice number (was backlog rows)
 - [ ] "Remind all" on Today: one action sends the reminder email to every overdue tenant with an address and lists who has none (was backlog rows)
 - [ ] Tenant statement PDF from the ledger, financial-year filter, "Record payment" on the ledger

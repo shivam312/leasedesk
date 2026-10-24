@@ -83,7 +83,7 @@ export function demoPassword(): string {
  * the activity log are append-only (their triggers refuse deletes, D4), so
  * this turns triggers off for its own transaction; only ever against the
  * local database (it refuses any other, with no override), and only rows of
- * the organization named "Sharma Estates".
+ * the organization named "Sharma Estates" that the demo login belongs to.
  */
 export async function removeDemo(db: Transactional) {
   if (!isLocalDatabaseUrl(databaseUrl()))
@@ -91,10 +91,21 @@ export async function removeDemo(db: Transactional) {
       "The demo seed deletes and rebuilds an organization, so it only runs against the local database.",
     );
   await db.transaction(async (tx) => {
+    // Only an organization of that name the demo login belongs to: another
+    // landlord's "Sharma Estates" on the same database is left alone.
     const orgs = await tx
-      .select({ id: schema.organizations.id })
+      .selectDistinct({ id: schema.organizations.id })
       .from(schema.organizations)
-      .where(eq(schema.organizations.name, DEMO_ORG_NAME));
+      .innerJoin(
+        schema.memberships,
+        eq(schema.memberships.organizationId, schema.organizations.id),
+      )
+      .where(
+        and(
+          eq(schema.organizations.name, DEMO_ORG_NAME),
+          eq(schema.memberships.email, DEMO_EMAIL),
+        ),
+      );
     const ids = orgs.map((o) => o.id);
     if (ids.length > 0) {
       await tx.execute(sql`set local session_replication_role = replica`);

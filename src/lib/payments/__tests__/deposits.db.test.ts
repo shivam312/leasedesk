@@ -13,6 +13,7 @@ import {
   depositLedger,
   recordDepositEntry,
   recordDepositHeld,
+  canRecordHeld,
 } from "../deposits";
 import * as schema from "@/lib/db/schema";
 
@@ -43,6 +44,21 @@ describe.skipIf(skipDbTests)("the deposit ledger", () => {
           recordDepositHeld(s, a.lease.id, today),
         ),
       ).rejects.toBeInstanceOf(DepositError);
+      // A renewal's deposit is on the earlier version: not offered.
+      expect(
+        canRecordHeld({
+          status: "active",
+          replacesLeaseId: a.lease.id,
+          depositAmount: 1,
+        }),
+      ).toBe(false);
+      expect(
+        canRecordHeld({
+          status: "renewed",
+          replacesLeaseId: null,
+          depositAmount: 1,
+        }),
+      ).toBe(false);
     }));
 
   it("holds what was received, and lets out only what's held, in date order", () =>

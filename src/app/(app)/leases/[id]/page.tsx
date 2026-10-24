@@ -16,7 +16,7 @@ import { monthOf } from "@/lib/billing/dates";
 import { runScoped } from "@/lib/db/scoped";
 import { documentsFor } from "@/lib/files/documents";
 import { DEPOSIT_KIND_WORDS, DEPOSIT_KINDS } from "@/lib/payments/deposit-form";
-import { depositLedger } from "@/lib/payments/deposits";
+import { canRecordHeld, depositLedger } from "@/lib/payments/deposits";
 import {
   recordDepositEntryAction,
   recordDepositHeldAction,
@@ -295,7 +295,7 @@ async function Lease({ params }: { params: Promise<{ id: string }> }) {
           {deposit.entries.length === 0 &&
             "Record the deposit when it's received, so it's here at the tenant's exit."}
         </p>
-        {canBill && deposit.entries.length === 0 && lease.depositAmount > 0 && (
+        {canBill && deposit.entries.length === 0 && canRecordHeld(lease) && (
           <Card className="mb-3 flex flex-col gap-2">
             <p className="text-sm">
               Already holding this deposit from before LeaseDesk? Record it as

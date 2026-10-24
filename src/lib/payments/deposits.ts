@@ -72,26 +72,49 @@ export async function recordDepositEntry(
   });
 }
 
+/** Whether a lease can record its deposit as already held (recordDepositHeld). */
+export function canRecordHeld(lease: {
+  status: string;
+  replacesLeaseId: string | null;
+  depositAmount: number;
+}) {
+  // A renewal's deposit is the earlier version's, already on its ledger.
+  return (
+    lease.depositAmount > 0 &&
+    lease.replacesLeaseId === null &&
+    ["active", "in_notice", "expired"].includes(lease.status)
+  );
+}
+
 /**
  * For a lease that started before the deposit ledger: the deposit the lease
  * agrees, received on the lease start (or today, for a lease that hasn't
- * started). Only while the lease has no deposit entries.
+ * started). Only while the lease has no deposit entries, and not for a
+ * renewal (its deposit is on the earlier version).
  */
 export async function recordDepositHeld(
   s: Scoped,
   leaseId: string,
   today: PlainDate,
 ) {
+  // Lock the lease first, so two taps can't both find no entries.
   const [lease] = await s.tx
     .select({
       startDate: leases.startDate,
       depositAmount: leases.depositAmount,
+      status: leases.status,
+      replacesLeaseId: leases.replacesLeaseId,
     })
     .from(leases)
-    .where(s.where(leases, eq(leases.id, leaseId)));
+    .where(s.where(leases, eq(leases.id, leaseId)))
+    .for("update");
   if (!lease) throw new DepositError("That lease couldn't be found.");
   if (lease.depositAmount <= 0)
     throw new DepositError("The lease agrees no deposit.");
+  if (!canRecordHeld(lease))
+    throw new DepositError(
+      "This lease continues an earlier one (or has ended early), so its deposit is on that lease's record. Use “Record a deposit entry” if something changed.",
+    );
   const { entries } = await depositLedger(s, leaseId);
   if (entries.length > 0)
     throw new DepositError(

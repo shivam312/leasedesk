@@ -127,6 +127,13 @@ test("walkthrough: a month at Sharma Estates", async ({ browser }, info) => {
   await page.getByRole("link", { name: "See missing certificates" }).click();
   await expect(page).toHaveURL(/\/billing\/tds\?fy=\d{4}-\d{2}&missing=1$/);
   await expect(visible(page, /Certificates missing for/)).toBeVisible();
+  // One tap asks the tenant for it, and says when.
+  await page
+    .getByRole("button", { name: "Request from tenant" })
+    .filter({ visible: true })
+    .first()
+    .click();
+  await expect(visible(page, /^Asked .+@/)).toBeVisible();
 
   // The same Today, and the lease list, on a phone.
   const phone = await browser.newContext({

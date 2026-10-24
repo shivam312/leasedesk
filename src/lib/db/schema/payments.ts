@@ -188,3 +188,29 @@ export const tdsRecords = pgTable(
     ),
   ],
 ).enableRLS();
+
+// "Request from tenant" on a missing TDS certificate (M9): one row each time
+// someone emailed the tenant for a quarter's certificate, so the tracker
+// says when they were last asked. Owners and accounts write; never changed.
+export const certificateRequests = pgTable(
+  "certificate_requests",
+  {
+    id: id(),
+    organizationId: uuid().notNull(),
+    tenantId: uuid().notNull(),
+    financialYear: text().notNull(),
+    quarter: integer().notNull(),
+    sentTo: text().array().notNull(),
+    // "sent", "failed" or "no_email".
+    status: text().notNull(),
+    requestedBy: uuid(),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.organizationId, t.financialYear),
+    foreignKey({
+      columns: [t.organizationId, t.tenantId],
+      foreignColumns: [tenants.organizationId, tenants.id],
+    }).onDelete("restrict"),
+  ],
+).enableRLS();

@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { RequestCertificateForm } from "@/components/tds/RequestCertificateForm";
+import { lastRequests } from "@/lib/tds/requests";
+import { requestCertificateAction } from "@/server/actions/tds";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -50,11 +53,13 @@ function Cell({
   tenantId,
   fy,
   canUpload,
+  askedOn,
 }: {
   c: QuarterCell;
   tenantId: string;
   fy: string;
   canUpload: boolean;
+  askedOn: Date | undefined;
 }) {
   if (c.status === "none")
     return (
@@ -97,6 +102,16 @@ function Cell({
           Upload certificate
         </Link>
       )}
+      {c.status !== "received" && c.overdue && canUpload && (
+        <RequestCertificateForm
+          tenantId={tenantId}
+          financialYear={fy}
+          quarter={c.quarter}
+          amount={c.amount}
+          askedOn={askedOn ? formatDate(todayInIndia(askedOn)) : null}
+          action={requestCertificateAction}
+        />
+      )}
     </span>
   );
 }
@@ -114,7 +129,9 @@ async function Tracker({
   const fy =
     typeof param === "string" && years.includes(param) ? param : years[0]!;
   const member = await requireMember();
-  const records = await runScoped(appDb, member, (s) => trackerRecords(s, fy));
+  const [records, asked] = await runScoped(appDb, member, (s) =>
+    Promise.all([trackerRecords(s, fy), lastRequests(s, fy)]),
+  );
   const { rows: all, totals } = tdsTracker({
     financialYear: fy,
     today,
@@ -213,6 +230,7 @@ async function Tracker({
                         tenantId={r.tenantId}
                         fy={fy}
                         canUpload={canUpload}
+                        askedOn={asked.get(`${r.tenantId}|${c.quarter}`)}
                       />
                     </td>
                   ))}
@@ -244,6 +262,7 @@ async function Tracker({
                             tenantId={r.tenantId}
                             fy={fy}
                             canUpload={canUpload}
+                            askedOn={asked.get(`${r.tenantId}|${c.quarter}`)}
                           />
                         </dd>
                       </div>

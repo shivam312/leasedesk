@@ -13,6 +13,10 @@ import { runScoped } from "@/lib/db/scoped";
 import { supabaseStore } from "@/lib/files/supabase";
 import { attachCertificate, CertificateError } from "@/lib/tds/certificates";
 import { reportError } from "@/lib/monitoring";
+import { EMAIL_NOT_SET_UP, emailDriver, emailMode } from "@/lib/email";
+import { requestCertificate } from "@/lib/tds/requests";
+import { todayInIndia } from "@/lib/today";
+import { guardedForm } from "./guard";
 
 const schema = z.object({
   tenantId: z.uuid(),
@@ -73,4 +77,53 @@ export async function uploadCertificateAction(
     message: `Saved. Q${quarter} TDS for this tenant now shows as received.`,
     tone: "success",
   };
+}
+
+const requestSchema = z.object({
+  tenantId: z.uuid(),
+  financialYear: z.string().regex(/^\d{4}-\d{2}$/),
+  quarter: z.coerce.number().int().min(1).max(4),
+  amount: z.coerce.number().int().min(0),
+});
+
+/** "Request from tenant": email the tenant for one quarter's certificate. */
+export async function requestCertificateAction(
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  return guardedForm(
+    "manage_billing",
+    requestSchema,
+    form,
+    async (member, d) => {
+      if (emailMode() === "not_set_up") return { message: EMAIL_NOT_SET_UP };
+      const r = await requestCertificate(
+        appDb,
+        member,
+        {
+          tenantId: d.tenantId,
+          financialYear: d.financialYear,
+          quarter: d.quarter as 1 | 2 | 3 | 4,
+          amountPaise: d.amount,
+        },
+        todayInIndia(),
+        emailDriver(),
+      );
+      revalidatePath("/billing/tds");
+      if (!r) return { message: "That tenant couldn't be found." };
+      switch (r.kind) {
+        case "sent":
+          return { tone: "success", message: `Asked ${r.to.join(", ")}.` };
+        case "already_today":
+          return { message: "Already asked today." };
+        case "no_email":
+          return {
+            message:
+              "They have no email address. Add one on the tenant's page, or ask them on WhatsApp.",
+          };
+        case "failed":
+          return { message: `Couldn't send: ${r.message}` };
+      }
+    },
+  );
 }

@@ -10,6 +10,13 @@ test("an owner changes a billing rule; advanced rules sit under More options", a
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Billing rules",
   );
+  // The reminder emails and their dates, before anything is turned on.
+  await expect(
+    page.getByRole("heading", { name: "What payment reminders send" }),
+  ).toBeVisible();
+  await expect(page.getByText(/· 3 days before the due date$/)).toBeVisible();
+  await page.getByText(/^See the email: Overdue: invoice/).click();
+  await expect(page.getByText(/Our records show that invoice/)).toBeVisible();
 
   // Building defaults come before the form, so opening one never drops
   // unsaved organization rules.

@@ -7,8 +7,18 @@ import type { Email } from "@/lib/email";
 import { formatDate, formatINR } from "@/lib/format";
 import type { InvoiceDocument } from "@/lib/invoices/document";
 
+/** What the reminder needs from the sent invoice (a sample for the settings preview). */
+export type ReminderDocument = Pick<
+  InvoiceDocument,
+  "number" | "invoiceDate" | "property"
+> & {
+  recipient: { name: string };
+  supplier: { name: string };
+  payment: { rows: [string, string][] } | null;
+};
+
 export function reminderEmail(
-  doc: InvoiceDocument,
+  doc: ReminderDocument,
   input: {
     to: string[];
     kind: "before" | "after";

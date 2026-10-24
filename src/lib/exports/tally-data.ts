@@ -19,8 +19,15 @@ import type { Scoped } from "@/lib/db/scoped";
 import { formatDate } from "@/lib/format";
 import { todayInIndia } from "@/lib/today";
 import { parseStoredSettings, type Settings } from "@/lib/settings/schema";
-import { loadSettings } from "@/lib/settings/store";
-import { tallyVouchers, type TallyLedgers, type TallyVoucher } from "./tally";
+import { loadSettings, saveSettings } from "@/lib/settings/store";
+import { GST_STATES } from "@/lib/india/identifiers";
+import {
+  ledgerMasters,
+  tallyVouchers,
+  type TallyLedgerMaster,
+  type TallyLedgers,
+  type TallyVoucher,
+} from "./tally";
 
 const MODES: Record<string, string> = {
   neft: "NEFT",
@@ -54,22 +61,66 @@ export function tallyLedgers(settings: Settings): TallyLedgers {
   };
 }
 
+export type PartyLedger = {
+  name: string;
+  /** Saved as the tenant's `tally.partyLedger`; otherwise its company name today. */
+  saved: boolean;
+  gstin: string | null;
+  state: string | null;
+  settings: unknown;
+};
+
 /** Each tenant's party ledger: its `tally.partyLedger`, or its company name. */
-export async function partyLedgers(s: Scoped): Promise<Map<string, string>> {
+export async function partyLedgers(
+  s: Scoped,
+): Promise<Map<string, PartyLedger>> {
   const rows = await s.tx
     .select({
       id: tenants.id,
       name: tenants.companyName,
+      gstin: tenants.gstin,
+      stateCode: tenants.stateCode,
       settings: tenants.settings,
     })
     .from(tenants)
     .where(s.where(tenants));
   return new Map(
-    rows.map((t) => [
-      t.id,
-      parseStoredSettings("tenant", t.settings)["tally.partyLedger"] || t.name,
-    ]),
+    rows.map((t) => {
+      const saved = parseStoredSettings("tenant", t.settings)[
+        "tally.partyLedger"
+      ];
+      return [
+        t.id,
+        {
+          name: saved || t.name,
+          saved: !!saved,
+          gstin: t.gstin,
+          state: GST_STATES[t.stateCode] ?? null,
+          settings: t.settings,
+        },
+      ];
+    }),
   );
+}
+
+/**
+ * Save the party ledger name of each tenant in a Tally file that didn't have
+ * one yet, as its `tally.partyLedger` (logged). A tenant renamed later keeps
+ * posting to the same Tally ledger instead of starting a new one.
+ */
+export async function saveFirstPartyNames(
+  s: Scoped,
+  unsaved: readonly { tenantId: string; name: string; settings: unknown }[],
+) {
+  for (const t of unsaved)
+    await saveSettings(
+      s,
+      { scope: "tenant", id: t.tenantId },
+      {
+        ...parseStoredSettings("tenant", t.settings),
+        "tally.partyLedger": t.name,
+      },
+    );
 }
 
 /**
@@ -80,13 +131,21 @@ export async function tallyExportData(
   s: Scoped,
   from: PlainDate,
   to: PlainDate,
-): Promise<{ vouchers: TallyVoucher[]; documentIds: string[] }> {
+): Promise<{
+  vouchers: TallyVoucher[];
+  documentIds: string[];
+  masters: TallyLedgerMaster[];
+  /** Tenants in the file whose Tally name isn't saved yet. */
+  unsavedParties: { tenantId: string; name: string; settings: unknown }[];
+}> {
   const ledgers = tallyLedgers(await loadSettings(s));
   const parties = await partyLedgers(s);
+  const inFile = new Set<string>();
   const party = (tenantId: string) => {
-    const name = parties.get(tenantId);
-    if (!name) throw new Error(`Tenant ${tenantId} has no party ledger`);
-    return name;
+    const p = parties.get(tenantId);
+    if (!p) throw new Error(`Tenant ${tenantId} has no party ledger`);
+    inFile.add(tenantId);
+    return p.name;
   };
   const [invoiceRows, noteRows, paymentRows] = await Promise.all([
     s.tx
@@ -234,6 +293,12 @@ export async function tallyExportData(
     },
     ledgers,
   );
+  const byName = new Map(
+    [...inFile].map((id) => {
+      const p = parties.get(id)!;
+      return [p.name, { gstin: p.gstin, state: p.state }];
+    }),
+  );
   return {
     vouchers,
     documentIds: [
@@ -242,6 +307,11 @@ export async function tallyExportData(
       ...paymentIds,
       ...applications.map((c) => c.id),
     ],
+    masters: ledgerMasters(vouchers, ledgers, byName),
+    unsavedParties: [...inFile]
+      .map((tenantId) => ({ tenantId, ...parties.get(tenantId)! }))
+      .filter((p) => !p.saved)
+      .map(({ tenantId, name, settings }) => ({ tenantId, name, settings })),
   };
 }
 

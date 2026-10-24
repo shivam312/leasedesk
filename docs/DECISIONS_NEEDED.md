@@ -414,6 +414,7 @@ Things only a person can do. Tick them when done.
   - C) Something else your accountant prefers (describe it)
 - Recommendation: A, because a Journal is how most accountants undo a receipt in Tally, and it keeps the original receipt untouched, like our payments.
 - Done meanwhile: built A (`src/lib/exports/tally.ts`). The format still needs checking against a real TallyPrime export (the human task to save one in `tests/fixtures/tally/`).
+- Also to confirm (M9, 2026-10-24): the file now creates the ledgers it posts to before the vouchers: each tenant under **Sundry Debtors** (bill-by-bill, with GSTIN and state), the TDS ledger under **Current Assets**, and the bank ledger under **Bank Accounts**. Some accountants keep TDS receivable under Loans & Advances (Asset) instead; say so and it becomes a setting. Income, GST and round-off ledgers aren't created, since they need GST settings in Tally. Each tenant's Tally name is saved the first time it's exported, so renaming the tenant later doesn't start a second ledger.
 - Answer:
 
 ### D-028: Bringing in what tenants already owe when a landlord starts

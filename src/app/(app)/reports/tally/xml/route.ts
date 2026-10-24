@@ -5,7 +5,11 @@ import { appDb, requireMember } from "@/lib/auth";
 import { can } from "@/lib/auth/roles";
 import { runScoped } from "@/lib/db/scoped";
 import { tallyXml } from "@/lib/exports/tally";
-import { recordTallyExport, tallyExportData } from "@/lib/exports/tally-data";
+import {
+  recordTallyExport,
+  saveFirstPartyNames,
+  tallyExportData,
+} from "@/lib/exports/tally-data";
 import { reportParams } from "@/lib/reports/registry";
 import { todayInIndia } from "@/lib/today";
 import { reportError } from "@/lib/monitoring";
@@ -22,9 +26,12 @@ export async function GET(req: Request) {
   let xml: string;
   try {
     xml = await runScoped(appDb, member, async (s) => {
-      const { vouchers, documentIds } = await tallyExportData(s, from, to);
+      const { vouchers, documentIds, masters, unsavedParties } =
+        await tallyExportData(s, from, to);
       await recordTallyExport(s, from, to, documentIds, vouchers.length);
-      return tallyXml(vouchers);
+      // Each tenant's Tally name stays what this first file called it.
+      await saveFirstPartyNames(s, unsavedParties);
+      return tallyXml(vouchers, masters);
     });
   } catch (error) {
     reportError("Tally export failed", error, { from, to });

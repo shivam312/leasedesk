@@ -6,6 +6,7 @@ import {
   salesVoucher,
   tallyAmount,
   tallyVouchers,
+  ledgerMasters,
   tallyXml,
   UnbalancedVoucherError,
   type TallyInvoice,
@@ -179,6 +180,68 @@ describe("receiptVoucher", () => {
       { name: "OT/26-27/0007", type: "Agst Ref", amount: 12_980_000 },
       { name: "", type: "On Account", amount: 20_000 },
     ]);
+  });
+});
+
+describe("ledgerMasters", () => {
+  const vouchers = tallyVouchers(
+    {
+      invoices: [invoice],
+      creditNotes: [],
+      payments: [
+        {
+          id: "p",
+          kind: "payment",
+          date: "2026-10-05",
+          party: "Acme Software Pvt Ltd",
+          reference: "UTR1",
+          narration: "",
+          amountReceived: 11_980_000,
+          tdsDeducted: 1_000_000,
+          allocations: [{ invoiceNumber: "OT/26-27/0007", amount: 12_980_000 }],
+        },
+      ],
+    },
+    L,
+  );
+  const parties = new Map([
+    [
+      "Acme Software Pvt Ltd",
+      { gstin: "27AAPFU0939F1ZV", state: "Maharashtra" },
+    ],
+  ]);
+
+  it("creates each party once, then the TDS and bank ledgers the vouchers use", () => {
+    expect(ledgerMasters(vouchers, L, parties)).toEqual([
+      {
+        name: "Acme Software Pvt Ltd",
+        parent: "Sundry Debtors",
+        billWise: true,
+        gstin: "27AAPFU0939F1ZV",
+        state: "Maharashtra",
+      },
+      { name: "TDS Receivable", parent: "Current Assets", billWise: false },
+      { name: "HDFC Current A/c", parent: "Bank Accounts", billWise: false },
+    ]);
+  });
+
+  it("leaves out the bank and TDS ledgers when only invoices are exported", () => {
+    const sales = vouchers.filter((v) => v.type === "Sales");
+    expect(ledgerMasters(sales, L, parties).map((m) => m.name)).toEqual([
+      "Acme Software Pvt Ltd",
+    ]);
+  });
+
+  it("writes the masters ahead of the vouchers", () => {
+    const xml = tallyXml(vouchers, ledgerMasters(vouchers, L, parties));
+    const ledger = xml.indexOf(
+      '<LEDGER NAME="Acme Software Pvt Ltd" ACTION="Create">',
+    );
+    expect(ledger).toBeGreaterThan(0);
+    expect(ledger).toBeLessThan(xml.indexOf("<VOUCHER "));
+    expect(xml).toContain(
+      "<PARENT>Sundry Debtors</PARENT><ISBILLWISEON>Yes</ISBILLWISEON><PARTYGSTIN>27AAPFU0939F1ZV</PARTYGSTIN><LEDSTATENAME>Maharashtra</LEDSTATENAME>",
+    );
   });
 });
 

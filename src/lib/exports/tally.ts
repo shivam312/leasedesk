@@ -354,12 +354,93 @@ function voucherXml(v: TallyVoucher): string {
   ].join("");
 }
 
-/** The whole file, ready to import in TallyPrime (Import → Transactions). */
-export function tallyXml(vouchers: readonly TallyVoucher[]): string {
+/** A ledger the vouchers post to, created in Tally ahead of them. */
+export type TallyLedgerMaster = {
+  name: string;
+  /** Tally's group, e.g. "Sundry Debtors". */
+  parent: string;
+  /** Bill-by-bill tracking, for tenants' ledgers. */
+  billWise: boolean;
+  gstin?: string | null;
+  /** The state's name as Tally spells it, e.g. "Maharashtra". */
+  state?: string | null;
+};
+
+/** The groups LeaseDesk creates ledgers under. [CA] */
+export const TALLY_GROUPS = {
+  party: "Sundry Debtors",
+  bank: "Bank Accounts",
+  tds: "Current Assets",
+} as const;
+
+/**
+ * The ledgers to create before the vouchers, so TallyPrime accepts the file
+ * without the accountant making each one first: every tenant's party ledger
+ * (bill-wise, with GSTIN and state), and the TDS receivable and bank ledgers,
+ * each once and only if a voucher uses it. Income, GST and round-off ledgers
+ * need GST and tax settings in Tally, so the accountant keeps those.
+ */
+export function ledgerMasters(
+  vouchers: readonly TallyVoucher[],
+  ledgers: Pick<TallyLedgers, "tds" | "bank">,
+  parties: ReadonlyMap<string, { gstin: string | null; state: string | null }>,
+): TallyLedgerMaster[] {
+  const used = new Set(vouchers.flatMap((v) => v.entries.map((e) => e.ledger)));
+  const partyNames = [
+    ...new Set(
+      vouchers.flatMap((v) =>
+        v.entries.filter((e) => e.isParty).map((e) => e.ledger),
+      ),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+  const masters: TallyLedgerMaster[] = partyNames.map((name) => ({
+    name,
+    parent: TALLY_GROUPS.party,
+    billWise: true,
+    gstin: parties.get(name)?.gstin ?? null,
+    state: parties.get(name)?.state ?? null,
+  }));
+  if (used.has(ledgers.tds))
+    masters.push({
+      name: ledgers.tds,
+      parent: TALLY_GROUPS.tds,
+      billWise: false,
+    });
+  if (used.has(ledgers.bank))
+    masters.push({
+      name: ledgers.bank,
+      parent: TALLY_GROUPS.bank,
+      billWise: false,
+    });
+  return masters;
+}
+
+function ledgerXml(m: TallyLedgerMaster): string {
+  const name = escapeXml(m.name);
+  return [
+    `<TALLYMESSAGE xmlns:UDF="TallyUDF"><LEDGER NAME="${name}" ACTION="Create">`,
+    `<NAME.LIST><NAME>${name}</NAME></NAME.LIST>`,
+    `<PARENT>${escapeXml(m.parent)}</PARENT>`,
+    `<ISBILLWISEON>${m.billWise ? "Yes" : "No"}</ISBILLWISEON>`,
+    m.gstin ? `<PARTYGSTIN>${escapeXml(m.gstin)}</PARTYGSTIN>` : "",
+    m.state ? `<LEDSTATENAME>${escapeXml(m.state)}</LEDSTATENAME>` : "",
+    `</LEDGER></TALLYMESSAGE>`,
+  ].join("");
+}
+
+/**
+ * The whole file, ready to import in TallyPrime (Import → Transactions): the
+ * ledger masters first, then the vouchers that post to them.
+ */
+export function tallyXml(
+  vouchers: readonly TallyVoucher[],
+  masters: readonly TallyLedgerMaster[] = [],
+): string {
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
     `<ENVELOPE><HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER><BODY><IMPORTDATA>`,
     `<REQUESTDESC><REPORTNAME>Vouchers</REPORTNAME></REQUESTDESC><REQUESTDATA>`,
+    ...masters.map(ledgerXml),
     ...vouchers.map(voucherXml),
     `</REQUESTDATA></IMPORTDATA></BODY></ENVELOPE>`,
     ``,

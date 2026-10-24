@@ -17,6 +17,7 @@ import { tallyXml } from "../tally";
 import {
   earlierTallyExports,
   recordTallyExport,
+  saveFirstPartyNames,
   tallyExportData,
 } from "../tally-data";
 
@@ -133,5 +134,36 @@ describe.skipIf(skipDbTests)("Tally export data", () => {
         .from(schema.exports)
         .where(eq(schema.exports.organizationId, a.org.id));
       expect(all).toHaveLength(1);
+    }));
+
+  it("writes the party ledger ahead of the sale, and keeps the first exported name after a rename", () =>
+    inRollback(async (tx) => {
+      const { a, ctx, invoice } = await madeDraft(tx);
+      const first = await runScoped(asDb(tx), ctx, async (s) => {
+        await issueInvoice(s, invoice.id, new Date("2026-11-01T04:30:00Z"));
+        const data = await tallyExportData(s, "2026-11-01", "2026-11-30");
+        await saveFirstPartyNames(s, data.unsavedParties);
+        return data;
+      });
+      const name = a.tenant.companyName;
+      expect(first.unsavedParties.map((p) => p.name)).toEqual([name]);
+      expect(first.masters[0]).toMatchObject({
+        name,
+        parent: "Sundry Debtors",
+        billWise: true,
+      });
+      const xml = tallyXml(first.vouchers, first.masters);
+      expect(xml.indexOf("<LEDGER ")).toBeLessThan(xml.indexOf("<VOUCHER "));
+
+      // Renamed in LeaseDesk: the next file still posts to the first name.
+      await tx
+        .update(schema.tenants)
+        .set({ companyName: "Acme Renamed Pvt Ltd" })
+        .where(eq(schema.tenants.id, a.tenant.id));
+      const again = await runScoped(asDb(tx), ctx, (s) =>
+        tallyExportData(s, "2026-11-01", "2026-11-30"),
+      );
+      expect(again.unsavedParties).toEqual([]);
+      expect(again.vouchers[0]!.party).toBe(name);
     }));
 });

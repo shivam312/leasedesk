@@ -395,3 +395,9 @@ One entry per decision. Newest at the bottom. Format: date, decision, why, conse
 **Decision:** `emailMode()` in `src/lib/email/index.ts` is `resend` with `RESEND_API_KEY`, `console` outside production or with `EMAIL_DRIVER=console`, and otherwise `not_set_up`. Then "Send all", "Send" and "Email again" refuse with "Email isn't set up yet…" and invoices stay drafts; reminders, digests and credit-note emails record the same failure; Settings → Business shows the state.
 **Why:** On a deployed server without a key, invoices looked sent while going to a local folder (audit, Claude 2.2).
 **Consequences:** The e2e server and the demo (`pnpm start`) set `EMAIL_DRIVER=console`. A credit note still issues without email (its PDF is on the invoice page), since correcting GST shouldn't wait on email.
+
+## D49. The Tally file creates its party, TDS and bank ledgers, and fixes each tenant's Tally name at first export (2026-10-24)
+
+**Decision:** `tallyXml` writes `LEDGER` masters ahead of the vouchers (`ledgerMasters` in `src/lib/exports/tally.ts`): tenants under Sundry Debtors, TDS under Current Assets, bank under Bank Accounts, each only if a voucher uses it. Downloading the file saves each tenant's party ledger name as its `tally.partyLedger` setting if it had none (`saveFirstPartyNames`, logged).
+**Why:** TallyPrime refuses vouchers that post to ledgers it doesn't have, so the accountant had to make every tenant's ledger by hand first; and a tenant renamed in LeaseDesk would otherwise start a second ledger in Tally (audit, Claude 2.3 / 6.4).
+**Consequences:** The groups are [CA] (D-027). Changing a tenant's `tally.partyLedger` by hand still moves future postings, on purpose. The Excel version of the export doesn't save names, as it isn't imported into Tally.

@@ -172,7 +172,7 @@ Pilot blockers (what a real landlord's first month would hit):
 - [ ] (blocked: D-028) Opening balance per tenant: schema and ledger row, shown first on the tenant ledger and in Unpaid and ageing and Today, never numbered or sent as an invoice
 - [ ] (blocked: D-028) Opening balance entry: typed on the tenant page and an "Opening balance (₹)" column with "as on" date in the tenants and leases import
 - [ ] (blocked: D-028) Opening balances settle like invoices: payment allocation, bank matching and reminders include them
-- [ ] Tally export writes the party ledger masters (and the TDS Receivable and bank ledgers it posts to) ahead of the vouchers, and saves each tenant's Tally name at first export so a rename doesn't split postings
+- [x] Tally export writes the party ledger masters (and the TDS Receivable and bank ledgers it posts to) ahead of the vouchers, and saves each tenant's Tally name at first export so a rename doesn't split postings
 - [ ] Tally export page gets a business (GSTIN) filter, one file per Tally company (was backlog row)
 - [ ] Job health: record each daily run; Today and Settings warn "The daily run hasn't happened since …" with "Run now" when it is more than a day late
 - [ ] `docs/DEPLOY.md` runbook: first deploy and rollback, migrations against the cloud database (`ALLOW_REMOTE_DB`), Vercel environment variables, Inngest sync, Storage bucket policies, backup restore drill

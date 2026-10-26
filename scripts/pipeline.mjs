@@ -3,8 +3,9 @@
 //
 // Runs the roadmap milestone by milestone, each stage in a fresh Claude Code session:
 //   answers -> build (repeats until done) -> checks (+ fix loop) -> Claude review & decision sweep
-//   -> checks -> Codex independent review (+ Claude fix loop, up to --codex-rounds)
-//   -> checks -> wrap-up -> Codex sign-off -> git tag -> next milestone
+//   -> checks -> independent review (+ Claude fix loop, up to --codex-rounds)
+//   -> checks -> wrap-up -> independent sign-off -> git tag -> next milestone
+//   The independent reviewer is a fresh read-only Claude Fable session by default (--reviewer codex for Codex).
 //
 // Usage (from the project root, in a normal terminal):
 //   node scripts/pipeline.mjs                     run from the first unfinished milestone to the end
@@ -13,10 +14,12 @@
 //   node scripts/pipeline.mjs --dry-run           show what would run
 //   node scripts/pipeline.mjs --fix-model sonnet  use a faster model for fix and review stages
 //   node scripts/pipeline.mjs --overnight         ONE command: finish the build, audit everything, debate the gaps,
-//                                                 build the audit milestone. Opus builds, Fable is the boss, Codex reviews.
-//   node scripts/pipeline.mjs --audit             Codex + Claude audit every milestone, debate, write the audit milestone
-//   node scripts/pipeline.mjs --no-codex          skip the Codex review stages
-//   node scripts/pipeline.mjs --codex-model gpt-5 pick the Codex model
+//                                                 build the audit milestone. Opus builds and fixes, Fable reviews and judges.
+//   node scripts/pipeline.mjs --audit             the reviewer + Claude audit every milestone, debate, write the audit milestone
+//   node scripts/pipeline.mjs --reviewer codex    use OpenAI Codex as the independent reviewer instead of Claude Fable
+//   node scripts/pipeline.mjs --reviewer-model m  pick the Claude reviewer model (default fable)
+//   node scripts/pipeline.mjs --no-codex          skip the independent review stages
+//   node scripts/pipeline.mjs --codex-model gpt-5 pick the Codex model (with --reviewer codex)
 //
 // Stop it gracefully: create the file .pipeline/STOP (it stops after the current stage).
 // Progress: .pipeline/status.md   Full logs: .pipeline/logs/
@@ -47,12 +50,17 @@ const cfg = {
   codexBin: process.env.CODEX_BIN || "codex",
   codexModel: args["codex-model"] || null,
   codexRounds: num(args["codex-rounds"], 2),
+  // Codex reasoning effort (low, medium, high, xhigh); audits and reviews default to high.
+  codexEffort: args["codex-effort"] || "high",
   noCodex: Boolean(args["no-codex"]),
   requireCodex: Boolean(args["require-codex"]),
+  // Who does the independent reviews and audits: "claude" (a fresh read-only Claude session) or "codex".
+  reviewer: String(args.reviewer || "claude").toLowerCase(),
+  reviewerModel: args["reviewer-model"] || "fable",
   buildModel: args["build-model"] || (args.overnight ? "opus" : null),
-  fixModel: args["fix-model"] || (args.overnight ? "opus" : null),
+  fixModel: args["fix-model"] || "opus",
   // The boss model reviews, merges, judges debates and writes the reports.
-  bossModel: args["boss-model"] || args["review-model"] || (args.overnight ? "fable" : null),
+  bossModel: args["boss-model"] || args["review-model"] || "fable",
   buildTurns: num(args["build-turns"], 60),
   buildRounds: num(args["build-rounds"], 3),
   fixAttempts: num(args["fix-attempts"], 3),
@@ -68,7 +76,19 @@ const cfg = {
   overnight: Boolean(args["overnight"]),
 };
 cfg.reviewModel = cfg.bossModel;
+if (!["claude", "codex"].includes(cfg.reviewer)) {
+  console.error(`--reviewer must be claude or codex, not "${cfg.reviewer}".`);
+  process.exit(1);
+}
+// Display name and file-name prefix for the independent reviewer's reports.
+const REVIEWER = cfg.reviewer === "codex" ? "Codex" : `Claude ${cfg.reviewerModel}`;
+const RSLUG = cfg.reviewer === "codex" ? "codex" : cfg.reviewerModel.replace(/[^a-z0-9.-]/gi, "-");
 const AUDIT_DIR = "docs/audit";
+// Shared by the audit prompts; declared here because main() runs before the prompt functions below.
+const STRICT = [
+  "Be strict. You are the last line of defence before a real landlord's money runs through this. Default to doubt: a task is not done until you have read the code path end to end (screen, server action, data layer, database) and seen a test that would fail if it broke. Don't trust milestone reports, commit messages, comments or ticked boxes; check them.",
+  "Treat as must_fix: any wrong rupee or paise amount, rounding or date edge case (month ends, 29 February, financial-year boundaries, mid-month starts and escalations); any query or server action not scoped to the organization, or missing a role check; any path that edits or deletes a sent invoice or recorded payment; any change missing from activity_log; GST or TDS behaviour not in docs/BILLING_RULES.md; float money; tests that are skipped, weakened or assert nothing meaningful.",
+].join("\n");
 
 // ---------- main ----------
 
@@ -84,8 +104,8 @@ function main() {
   const state = readState();
 
   if (cfg.overnight) {
-    if (!codexEnabled()) finish("failed", "Overnight mode needs the Codex CLI: npm i -g @openai/codex, then codex login.");
-    log(`- Models: build=${cfg.buildModel}, fix=${cfg.fixModel}, boss=${cfg.bossModel}, codex=${cfg.codexModel || "default"}`);
+    if (!codexEnabled()) finish("failed", "Overnight mode needs the independent reviewer: drop --no-codex (with --reviewer codex: npm i -g @openai/codex, then codex login).");
+    log(`- Models: build=${cfg.buildModel}, fix=${cfg.fixModel}, boss=${cfg.bossModel}, reviewer=${cfg.reviewer === "codex" ? `codex ${cfg.codexModel || "default"}` : cfg.reviewerModel}`);
     log("\n# Overnight: 1/4 finish the build\n");
     buildMilestones(state);
     log("\n# Overnight: 2/4 audit and 3/4 debate\n");
@@ -145,10 +165,10 @@ function buildMilestones(state) {
       if (!checksWithFixes(m, "after review")) finish("failed", `Checks failing for ${m.id} after review fixes.`);
     }
 
-    // 4. Independent review by Codex, with Claude fixing what it finds.
+    // 4. Independent review, with Claude fixing what it finds.
     if (codexEnabled()) {
       const verdict = codexReviewLoop(m, state.milestones[m.id].startSha);
-      if (verdict === "failed") finish("failed", `Codex review stage for ${m.id} failed. See .pipeline/logs/.`);
+      if (verdict === "failed") finish("failed", `${REVIEWER} review stage for ${m.id} failed. See .pipeline/logs/.`);
     }
 
     // 5. Wrap up.
@@ -156,7 +176,7 @@ function buildMilestones(state) {
     if (!w.ok) finish("failed", `Wrap-up for ${m.id} failed: ${short(w.result, 300)}`);
     commitLeftovers(m);
 
-    // 6. Codex sign-off: an independent verdict on the finished milestone, saved for the founder.
+    // 6. Sign-off: an independent verdict on the finished milestone, saved for the founder.
     if (codexEnabled()) codexSignOff(m, state.milestones[m.id].startSha);
     tagMilestone(m);
 
@@ -253,10 +273,15 @@ function applyAnswers(state) {
 // ---------- Audit mode ----------
 
 function runAudit() {
-  if (!codexEnabled()) finish("failed", "Audit mode needs the Codex CLI (two independent reviewers). Install it, or run with --no-codex to get a Claude-only audit of lower value.");
+  if (!codexEnabled()) finish("failed", "Audit mode needs the independent reviewer; drop --no-codex (with --reviewer codex, install and log in to the Codex CLI).");
   fs.mkdirSync(AUDIT_DIR, { recursive: true });
   if (needsDatabase({ id: "M2", tasks: [] }) && !databaseReady()) finish("stopped", "The audit needs the local database running.");
   log("\n# Audit: every milestone, then a gap analysis\n");
+
+  const previous = archivePreviousAudit();
+  // The audit milestone gets the next free number, so earlier audit milestones (M9, ...) are never overwritten.
+  const auditId = `M${Math.max(0, ...readRoadmap().map((m) => Math.floor(mNum(m.id)))) + 1}`;
+  log(`- New audit milestone will be ${auditId}${previous ? `; previous audit archived in ${previous}` : ""}`);
 
   const milestones = readRoadmap().filter((m) => {
     const n = mNum(m.id);
@@ -268,18 +293,26 @@ function runAudit() {
   // 1. Milestone by milestone.
   for (const m of milestones) {
     log(`\n## Audit ${m.id}. ${m.title}\n`);
-    const r = runCodex(`audit-${m.id}`, m, auditMilestonePrompt(m));
-    if (!r.ok) finish("failed", `Codex audit of ${m.id} failed.`);
-    const mdFile = path.join(AUDIT_DIR, `${m.id}-codex-audit.md`);
-    fs.writeFileSync(mdFile, reportToMarkdown(`Audit of ${m.id}: ${m.title}`, r.report));
+    const r = runCodex(`audit-${m.id}`, m, auditMilestonePrompt(m, null, previous));
+    if (!r.ok) finish("failed", `${REVIEWER} audit of ${m.id} failed.`);
+    const mdFile = path.join(AUDIT_DIR, `${m.id}-${RSLUG}-audit.md`);
+    writeAuditFile(mdFile, reportToMarkdown(`Audit of ${m.id}: ${m.title}`, r.report));
     if (r.report.must_fix.length) {
-      log(`- Codex found ${r.report.must_fix.length} must-fix item(s) in ${m.id}; asking Claude to fix.`);
-      const f = runClaude(`audit-fix-${m.id}`, m, codexFixPrompt(m, mdFile), cfg.fixModel);
-      if (!f.ok) finish("failed", `Audit fixes for ${m.id} failed.`);
-      if (!checksWithFixes(m, `after audit fixes for ${m.id}`)) finish("failed", `Checks failing after audit fixes for ${m.id}.`);
-      const r2 = runCodex(`audit-${m.id}-recheck`, m, auditMilestonePrompt(m, mdFile));
-      if (r2.ok) fs.writeFileSync(path.join(AUDIT_DIR, `${m.id}-codex-recheck.md`), reportToMarkdown(`Re-check of ${m.id}`, r2.report));
-      if (r2.ok && r2.report.must_fix.length) log(`- ⚠ ${m.id} still has ${r2.report.must_fix.length} must-fix item(s) after fixes; they go into the audit milestone.`);
+      // Fix, then the reviewer re-checks, up to --codex-rounds times.
+      let report = mdFile;
+      let left = r.report.must_fix.length;
+      for (let round = 1; round <= cfg.codexRounds && left; round++) {
+        log(`- ${REVIEWER} found ${left} must-fix item(s) in ${m.id}; asking Claude to fix (round ${round}/${cfg.codexRounds}).`);
+        const f = runClaude(`audit-fix-${m.id}-${round}`, m, codexFixPrompt(m, report), cfg.fixModel);
+        if (!f.ok) finish("failed", `Audit fixes for ${m.id} failed.`);
+        if (!checksWithFixes(m, `after audit fixes for ${m.id}`)) finish("failed", `Checks failing after audit fixes for ${m.id}.`);
+        const r2 = runCodex(`audit-${m.id}-recheck-${round}`, m, auditMilestonePrompt(m, report, previous));
+        if (!r2.ok) break;
+        report = path.join(AUDIT_DIR, round === 1 ? `${m.id}-${RSLUG}-recheck.md` : `${m.id}-${RSLUG}-recheck-${round}.md`);
+        writeAuditFile(report, reportToMarkdown(`Re-check of ${m.id} (round ${round})`, r2.report));
+        left = r2.report.must_fix.length;
+      }
+      if (left) log(`- ⚠ ${m.id} still has ${left} must-fix item(s) after ${cfg.codexRounds} round(s); they go into the audit milestone.`);
     } else if (r.report.should_fix.length) {
       const f = runClaude(`audit-triage-${m.id}`, m, codexTriagePrompt(m, mdFile), cfg.fixModel);
       if (f.ok) checksWithFixes(m, `after audit triage for ${m.id}`);
@@ -290,24 +323,24 @@ function runAudit() {
   // 2. Two independent gap analyses (neither sees the other's).
   const all = { id: "ALL", title: "whole product" };
   log("\n## Gap analysis\n");
-  const g = runCodex("gaps", all, gapPromptCodex());
-  if (!g.ok) finish("failed", "Codex gap analysis failed.");
-  fs.writeFileSync(path.join(AUDIT_DIR, "codex-gaps.md"), reportToMarkdown("Gap analysis (Codex)", g.report));
-  const c = runClaude("gaps", all, gapPromptClaude(), cfg.fixModel);
+  const g = runCodex("gaps", all, gapPromptCodex(previous));
+  if (!g.ok) finish("failed", `${REVIEWER} gap analysis failed.`);
+  writeAuditFile(path.join(AUDIT_DIR, `${RSLUG}-gaps.md`), reportToMarkdown(`Gap analysis (${REVIEWER})`, g.report));
+  const c = runClaude("gaps", all, gapPromptClaude(previous), cfg.fixModel);
   if (!c.ok) finish("failed", "Claude gap analysis failed.");
   commitAll("docs: gap analyses");
 
   // 3. Debate: each reviewer rebuts the other's list, item by item, with evidence.
   log("\n## Debate\n");
   const cr = runCodex("rebuttal", all, rebuttalPromptCodex(), { schema: debateSchema(), kind: "debate" });
-  if (!cr.ok) finish("failed", "Codex rebuttal failed.");
-  fs.writeFileSync(path.join(AUDIT_DIR, "codex-rebuttal.md"), debateToMarkdown("Codex's rebuttal of Claude's gap list", cr.report));
+  if (!cr.ok) finish("failed", `${REVIEWER} rebuttal failed.`);
+  writeAuditFile(path.join(AUDIT_DIR, `${RSLUG}-rebuttal.md`), debateToMarkdown(`${REVIEWER}'s rebuttal of Claude ${cfg.fixModel}'s gap list`, cr.report));
   const clr = runClaude("rebuttal", all, rebuttalPromptClaude(), cfg.fixModel);
   if (!clr.ok) finish("failed", "Claude rebuttal failed.");
   commitAll("docs: gap debate");
 
   // 4. The boss rules on every disputed item and writes the audit milestone and the founder summary.
-  const mrg = runClaude("audit-merge", all, auditMergePrompt(milestones), cfg.bossModel);
+  const mrg = runClaude("audit-merge", all, auditMergePrompt(milestones, auditId, previous), cfg.bossModel);
   if (!mrg.ok) finish("failed", "Audit merge failed.");
   commitAll("docs: audit summary");
   if (!cfg.dryRun) {
@@ -316,7 +349,29 @@ function runAudit() {
   }
 }
 
-function auditMilestonePrompt(m, previousReport) {
+// Moves the last audit's top-level files into docs/audit/<date>/ so this run starts clean and can check
+// that the last audit's findings really were fixed. Returns the archive folder, or null if there was none.
+// Dry runs must not overwrite real audit reports with placeholders.
+function writeAuditFile(file, text) {
+  if (!cfg.dryRun) fs.writeFileSync(file, text);
+}
+
+function archivePreviousAudit() {
+  if (!fs.existsSync(path.join(AUDIT_DIR, "SUMMARY.md"))) return null;
+  const date = git(["log", "-1", "--format=%ad", "--date=short", "--", path.join(AUDIT_DIR, "SUMMARY.md")]).stdout.trim() || "previous";
+  const dest = path.join(AUDIT_DIR, date);
+  if (cfg.dryRun) return dest;
+  if (fs.existsSync(dest)) finish("failed", `${dest} already exists; move it aside before running the audit again.`);
+  fs.mkdirSync(dest, { recursive: true });
+  for (const f of fs.readdirSync(AUDIT_DIR)) {
+    if (f.endsWith(".md")) git(["mv", path.join(AUDIT_DIR, f), path.join(dest, f)]);
+  }
+  commitAll(`docs: archive the ${date} audit`);
+  return dest;
+}
+
+
+function auditMilestonePrompt(m, previousReport, previousAudit) {
   const tasks = m.tasks.filter((t) => t.done).map((t) => `- ${t.text}`).join("\n");
   return [
     `You are an independent auditor for LeaseDesk, a lease and rent billing product for Indian commercial landlords, built mostly by another AI agent (Claude Code). The build is finished through several milestones. Audit milestone ${m.id} (${m.title}) against the code AS IT IS NOW, not against old diffs: later milestones may have changed it, and what matters is whether it works today.`,
@@ -326,18 +381,23 @@ function auditMilestonePrompt(m, previousReport) {
     "",
     "Read first: CLAUDE.md, docs/BILLING_RULES.md, docs/DATA_MODEL.md, docs/UX_PRINCIPLES.md, docs/SETTINGS.md, docs/ROADMAP.md, and docs/milestones/" + m.id + ".md if it exists. You are read-only; you may run read-only commands such as pnpm test, pnpm typecheck and git log.",
     "",
-    "For every ticked task: find the code and tests that implement it, and say whether it works as described. A ticked task with no working implementation, or with tests that don't exercise it, is a must_fix. Then check, in priority order: money correctness (recompute at least three figures by hand against BILLING_RULES.md), spec drift between docs and code, weakened or skipped tests, multi-tenancy and role checks in server actions, immutability of sent invoices and payments, and UX rules from UX_PRINCIPLES.md.",
-    previousReport ? `\nA previous audit report is at ${previousReport}; Claude has since fixed its must_fix items. Re-verify each one and report only what is still wrong.` : "",
+    "For every ticked task: find the code and tests that implement it, and say whether it works as described. A ticked task with no working implementation, or with tests that don't exercise it, is a must_fix. Then check, in priority order: money correctness (recompute at least five figures by hand against BILLING_RULES.md, including at least one edge case), spec drift between docs and code, weakened or skipped tests, multi-tenancy and role checks in server actions, immutability of sent invoices and payments, activity logging, and UX rules from UX_PRINCIPLES.md. Run pnpm test and read the failures, if any.",
+    "",
+    STRICT,
+    previousAudit ? `\nThe previous audit is archived in ${previousAudit}/ (its RULINGS.md and SUMMARY.md, and the per-milestone reports). Any item from it that touches ${m.id} and is claimed fixed: verify it really is; if not, it's a must_fix.` : "",
+    previousReport ? `\nA previous report from this audit is at ${previousReport}; Claude has since fixed its must_fix items (or disputed them in a "Disputed" note). Re-verify each one with fresh eyes, judge each dispute on the evidence, and report what is still wrong, including anything the fixes broke.` : "",
     "",
     "Report rules: must_fix = wrong number, rule violation, security hole, or a ticked task that doesn't work. should_fix = everything else worth doing. For each finding: file, problem, concrete evidence (quote the line or calculation), fix. Don't pad. In `verified`, list what you checked by hand and found correct, task by task.",
   ].join("\n");
 }
 
-function gapPromptCodex() {
+function gapPromptCodex(previousAudit) {
   return [
     "You are an independent product and engineering auditor for LeaseDesk, a lease and rent billing product for Indian commercial landlords with 20–100 tenants, built mostly by another AI agent. The planned v1 build is finished. Decide what is still missing before (a) a convincing demo to a landlord and (b) a paid pilot where a real landlord's monthly billing runs through it.",
     "",
-    "Read: docs/PRODUCT_PLAN.md (the v1 scope and the 'Keeping it simple' rules), docs/UX_PRINCIPLES.md, docs/ROADMAP.md (M8 is pilot readiness), docs/BACKLOG.md, docs/DECISIONS_NEEDED.md, docs/milestones/*.md, docs/audit/*.md (today's per-milestone audits), and then the code: src/app, src/lib, src/server, tests. Run pnpm test and pnpm test:e2e if you can; read-only otherwise.",
+    "Read: docs/PRODUCT_PLAN.md (the v1 scope and the 'Keeping it simple' rules), docs/UX_PRINCIPLES.md, docs/ROADMAP.md (M8 is pilot readiness; later milestones followed it), docs/BACKLOG.md, docs/DECISIONS_NEEDED.md, docs/DEMO_SCRIPT.md, docs/milestones/*.md, docs/audit/*.md (today's per-milestone audits), and then the code: src/app, src/lib, src/server, tests. Run pnpm test and pnpm test:e2e if you can; read-only otherwise.",
+    previousAudit ? `The previous audit is archived in ${previousAudit}/. Check that every item in its RULINGS.md and SUMMARY.md that was meant to be fixed actually was; an item that was claimed fixed but isn't is a must_fix.` : "",
+    "Be strict and assume it is not ready until the code proves otherwise. Walk docs/DEMO_SCRIPT.md step by step against the code. Don't pad the list with trivia either: every finding needs evidence.",
     "",
     "Look for: v1 features in PRODUCT_PLAN.md that don't exist or are half-built; flows that work in tests but not end to end in the browser; things a landlord or accountant would hit in the first week (import of real data, invoice PDF correctness, Tally export matching a real accountant's ledgers, reminders, TDS tracking); security and data-safety gaps (multi-tenancy, backups, audit log, secrets); operational gaps (migrations, seed, error reporting, logging); performance at 100 tenants and 3 years of history; UX rules broken; and anything that would make a demo look amateurish.",
     "",
@@ -345,17 +405,17 @@ function gapPromptCodex() {
   ].join("\n");
 }
 
-function gapPromptClaude() {
+function gapPromptClaude(previousAudit) {
   return `${header("gap-analysis", null)}
 
-The v1 build is finished and an independent auditor (Codex) has reviewed each milestone (reports in docs/audit/). Do NOT read docs/audit/codex-gaps.md: your gap analysis must be independent of Codex's.
+The v1 build is finished and an independent auditor (${REVIEWER}) has reviewed each milestone (reports in docs/audit/). Do NOT read docs/audit/${RSLUG}-gaps.md or docs/audit/${RSLUG}-rebuttal.md: your gap analysis must be independent of ${REVIEWER}'s.${previousAudit ? ` The previous audit is archived in ${previousAudit}/; check that every item its RULINGS.md and SUMMARY.md meant to be fixed actually was, and list any that weren't.` : ""}
 
-Write docs/audit/claude-gaps.md: compare the product as it exists now against docs/PRODUCT_PLAN.md (v1 scope, Keeping it simple), docs/UX_PRINCIPLES.md and the pilot-readiness goal in docs/ROADMAP.md (M8). Start the dev server, log in with the demo data and click through every flow yourself before writing. Sections: (1) Demo readiness: what would look wrong or break in a 10-minute landlord demo. (2) Pilot readiness: what a real landlord's first month would hit (data import, PDF correctness, Tally export, reminders, TDS, reports). (3) Missing or half-built v1 features. (4) Security, data safety and operations. (5) Simplicity: UX rules broken, jargon, screens with more than one primary action. (6) Technical debt that will bite within 3 months. Each item: one line, concrete, with the file or screen. Order by importance within each section. End with a verdict in plain words for a non-technical founder. Commit as "docs: Claude gap analysis".`;
+Be strict: you are the founder's last check before a real landlord's money runs through this, and you built most of it, so distrust your own earlier work. Write docs/audit/claude-gaps.md: compare the product as it exists now against docs/PRODUCT_PLAN.md (v1 scope, Keeping it simple), docs/UX_PRINCIPLES.md and the pilot-readiness goal in docs/ROADMAP.md (M8 and later milestones). Start the dev server, reset and log in with the demo data (pnpm db:seed:demo), follow docs/DEMO_SCRIPT.md click by click, then click through every other flow yourself at 375px and 1280px before writing. Recompute at least five invoice figures by hand against docs/BILLING_RULES.md. Sections: (1) Demo readiness: what would look wrong or break in a 10-minute landlord demo. (2) Pilot readiness: what a real landlord's first month would hit (data import, PDF correctness, Tally export, reminders, TDS, reports). (3) Missing or half-built v1 features. (4) Security, data safety and operations. (5) Simplicity: UX rules broken, jargon, screens with more than one primary action. (6) Technical debt that will bite within 3 months. Each item: one line, concrete, with the file or screen. Order by importance within each section. End with a verdict in plain words for a non-technical founder. Commit as "docs: Claude gap analysis".`;
 }
 
 function rebuttalPromptCodex() {
   return [
-    "You are one of two independent reviewers of LeaseDesk, a lease and rent billing product for Indian commercial landlords. You wrote docs/audit/codex-gaps.md. The other reviewer (Claude) wrote docs/audit/claude-gaps.md without seeing yours. Now rebut Claude's list.",
+    `You are one of two independent reviewers of LeaseDesk, a lease and rent billing product for Indian commercial landlords. You wrote docs/audit/${RSLUG}-gaps.md. The other reviewer (Claude ${cfg.fixModel}) wrote docs/audit/claude-gaps.md without seeing yours. Now rebut its list. You are read-only: don't modify any file; your answer is the structured report.`,
     "",
     "For every item in docs/audit/claude-gaps.md, take a position: agree (it's real and matters), disagree (it's wrong, already handled, or out of v1 scope; say why with evidence from the code or docs), or modify (real but the fix or priority should change; give the revised fix). Verify in the code before you disagree: cite the file and line. Then, in `summary`, name the three items you think matter most across BOTH lists and the one item you'd drop, with reasons. Be direct; this is a debate a third model will judge, and evidence wins.",
   ].join("\n");
@@ -364,26 +424,26 @@ function rebuttalPromptCodex() {
 function rebuttalPromptClaude() {
   return `${header("rebuttal", null)}
 
-You wrote docs/audit/claude-gaps.md. An independent reviewer (Codex) wrote docs/audit/codex-gaps.md without seeing yours, and has now rebutted your list in docs/audit/codex-rebuttal.md. Read all three.
+You wrote docs/audit/claude-gaps.md. An independent reviewer (${REVIEWER}) wrote docs/audit/${RSLUG}-gaps.md without seeing yours, and has now rebutted your list in docs/audit/${RSLUG}-rebuttal.md. Read all three.
 
-Write docs/audit/claude-rebuttal.md: for every item in Codex's gap list, take a position: agree, disagree (with evidence from the code or docs, file and line), or modify (revised fix or priority). Then respond to Codex's rebuttal of your items: concede where it's right, hold your ground with evidence where it's wrong. End with the three items you think matter most across both lists and the one you'd drop. Be direct; a third model will judge, and evidence wins. Commit as "docs: Claude rebuttal".`;
+Write docs/audit/claude-rebuttal.md: for every item in ${REVIEWER}'s gap list, take a position: agree, disagree (with evidence from the code or docs, file and line), or modify (revised fix or priority). Then respond to ${REVIEWER}'s rebuttal of your items: concede where it's right, hold your ground with evidence where it's wrong. End with the three items you think matter most across both lists and the one you'd drop. Be direct; a third model will judge, and evidence wins. Commit as "docs: Claude rebuttal".`;
 }
 
-function auditMergePrompt(milestones) {
+function auditMergePrompt(milestones, auditId, previousAudit) {
   return `${header("audit-merge", null)}
 
-You are the boss: the final judge. Two reviewers, Codex and Claude (Opus), each wrote a gap analysis (docs/audit/codex-gaps.md, docs/audit/claude-gaps.md) and then rebutted each other (docs/audit/codex-rebuttal.md, docs/audit/claude-rebuttal.md). Per-milestone audit reports are in docs/audit/ too. Read all of it, then rule:
+You are the boss: the final judge, and a strict one. Two reviewers, ${REVIEWER} and Claude ${cfg.fixModel}, each wrote a gap analysis (docs/audit/${RSLUG}-gaps.md, docs/audit/claude-gaps.md) and then rebutted each other (docs/audit/${RSLUG}-rebuttal.md, docs/audit/claude-rebuttal.md). If you are the same model as one of them, be extra hard on that side's claims. Per-milestone audit reports are in docs/audit/ too. ${previousAudit ? `The previous audit is archived in ${previousAudit}/; anything it ruled must be fixed that still isn't goes back in. ` : ""}Read all of it, then rule. Check the code yourself for every disputed item and every money, security or data-safety item, even where both agree:
 1. Where both agree, keep it. Where they disagree, check the code yourself and decide; write one line per ruling in docs/audit/RULINGS.md (item, who was right, why). Drop items that are out of v1 scope per docs/PRODUCT_PLAN.md, and say so.
-2. Add a milestone "## M9. Audit findings" to docs/ROADMAP.md after M8, one task per item, ordered: demo blockers, then pilot blockers, then the rest. Each task small enough for one commit; tag (human) and (blocked: D-xxx) as usual. Don't duplicate tasks already in M8 or docs/BACKLOG.md; move backlog items in if they matter.
+2. Add a milestone "## ${auditId}. Audit findings (${new Date().toISOString().slice(0, 10)})" at the end of docs/ROADMAP.md, after every existing milestone; don't renumber or edit existing milestones. One task per item, ordered: demo blockers, then pilot blockers, then the rest. Each task small enough for one commit, with a clear done-when; tag (human) and (blocked: D-xxx) as usual. Don't duplicate open tasks already in the roadmap or docs/BACKLOG.md; move backlog items in if they matter.
 3. Anything that needs the founder (scope, spend, tax) goes into docs/DECISIONS_NEEDED.md with options and a recommendation.
-4. Write docs/audit/SUMMARY.md for the founder: a one-paragraph verdict (demo-ready? pilot-ready?), the three most important things to do next, a table of all audited milestones (${milestones.map((m) => m.id).join(", ")}) with Codex's verdict and what was fixed today, the debate's main disagreements and how you ruled, and the count of M9 tasks and new decisions.
-5. Set "Current milestone" in docs/ROADMAP.md to M8 or M9, whichever has the first unfinished buildable task. Run pnpm typecheck and pnpm test. Commit as "docs: audit summary and M9 audit milestone".`;
+4. Write docs/audit/SUMMARY.md for the founder: a one-paragraph verdict (demo-ready? pilot-ready?), the three most important things to do next, a table of all audited milestones (${milestones.map((m) => m.id).join(", ")}) with ${REVIEWER}'s verdict and what was fixed today, the debate's main disagreements and how you ruled, and the count of ${auditId} tasks and new decisions.
+5. Set "Current milestone" in docs/ROADMAP.md to the milestone with the first unfinished buildable task (normally ${auditId}). Update the docs/audit line in CLAUDE.md to describe this audit. Run pnpm typecheck and pnpm test. Commit as "docs: audit summary and ${auditId} audit milestone".`;
 }
 
 // ---------- Codex (independent reviewer) ----------
 
 function codexEnabled() {
-  return !cfg.noCodex && (cfg.dryRun || codexAvailable());
+  return !cfg.noCodex && (cfg.dryRun || cfg.reviewer === "claude" || codexAvailable());
 }
 
 function codexAvailable() {
@@ -485,10 +545,12 @@ function cell(s) {
 }
 
 function runCodex(stage, m, prompt, opts = {}) {
+  if (cfg.reviewer === "claude") return runClaudeReviewer(stage, m, prompt, opts);
   fs.writeFileSync(CODEX_SCHEMA, JSON.stringify(opts.schema || codexSchema()));
   const outFile = path.join(REVIEWS, `${m.id}-${stage}.json`);
   const cliArgs = ["exec", "--sandbox", "read-only", "--output-schema", CODEX_SCHEMA, "-o", outFile, "--color", "never"];
   if (cfg.codexModel) cliArgs.push("-m", cfg.codexModel);
+  if (cfg.codexEffort) cliArgs.push("-c", `model_reasoning_effort="${cfg.codexEffort}"`);
   cliArgs.push(prompt);
   let limitWaits = 0;
   let retried = false;
@@ -538,11 +600,35 @@ function runCodex(stage, m, prompt, opts = {}) {
   }
 }
 
+// The independent reviewer as a fresh Claude session: no file-editing tools, same structured report as Codex.
+function runClaudeReviewer(stage, m, prompt, opts = {}) {
+  if (cfg.dryRun) {
+    log(`- ▶ ${m.id} ${stage} (${REVIEWER}) (dry run) claude -p <${prompt.length} character prompt> --model ${cfg.reviewerModel}`);
+    return { ok: true, report: opts.kind === "debate" ? { summary: "dry run", positions: [] } : { verdict: "pass", summary: "dry run", must_fix: [], should_fix: [], verified: [] } };
+  }
+  const readOnly = "\n\nYou are read-only: do not modify, create or delete any file, and do not commit. Your only output is the structured report.";
+  const extra = ["--json-schema", JSON.stringify(opts.schema || codexSchema()), "--disallowedTools", "Edit", "Write", "NotebookEdit"];
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const r = runClaude(`${stage}-${RSLUG}`, m, prompt + readOnly, cfg.reviewerModel, extra);
+    if (!r.ok) return { ok: false, report: null };
+    const report = parseCodexReport(null, typeof r.structured === "object" && r.structured ? JSON.stringify(r.structured) : r.result, opts.kind);
+    if (report) {
+      if (opts.kind === "debate") log(`  ✔ ${REVIEWER}: ${report.positions.length} positions. ${short(oneLine(report.summary), 300)}`);
+      else log(`  ✔ ${REVIEWER}: ${report.verdict}, ${report.must_fix.length} must-fix, ${report.should_fix.length} should-fix. ${short(oneLine(report.summary), 300)}`);
+      return { ok: true, report };
+    }
+    log(`  ⚠ ${REVIEWER} didn't return a valid report (attempt ${attempt}/2).`);
+  }
+  return { ok: false, report: null };
+}
+
 function parseCodexReport(outFile, stdout, kind) {
   const candidates = [];
-  try {
-    candidates.push(fs.readFileSync(outFile, "utf8"));
-  } catch {}
+  if (outFile) {
+    try {
+      candidates.push(fs.readFileSync(outFile, "utf8"));
+    } catch {}
+  }
   if (stdout) candidates.push(stdout);
   for (const c of candidates) {
     const text = String(c).trim();
@@ -593,27 +679,27 @@ function reportToMarkdown(title, report) {
   ].join("\n");
 }
 
-// Codex reviews; Claude fixes must-fix items; repeat until Codex is satisfied or rounds run out.
+// The independent reviewer reviews; Claude fixes must-fix items; repeat until it is satisfied or rounds run out.
 function codexReviewLoop(m, startSha) {
   for (let round = 1; round <= cfg.codexRounds; round++) {
-    const r = runCodex(`codex-review-${round}`, m, codexReviewContext(m, startSha));
+    const r = runCodex(`${RSLUG}-review-${round}`, m, codexReviewContext(m, startSha));
     if (!r.ok) return "failed";
-    const mdFile = path.join(REVIEWS, `${m.id}-codex-review-${round}.md`);
-    fs.writeFileSync(mdFile, reportToMarkdown(`Codex review of ${m.id}, round ${round}`, r.report));
+    const mdFile = path.join(REVIEWS, `${m.id}-${RSLUG}-review-${round}.md`);
+    fs.writeFileSync(mdFile, reportToMarkdown(`${REVIEWER} review of ${m.id}, round ${round}`, r.report));
     if (r.report.must_fix.length === 0) {
       if (r.report.should_fix.length && !cfg.dryRun) {
         const f = runClaude(`codex-triage`, m, codexTriagePrompt(m, mdFile), cfg.fixModel);
         if (!f.ok) return "failed";
-        if (!checksWithFixes(m, "after Codex triage")) return "failed";
+        if (!checksWithFixes(m, `after ${REVIEWER} triage`)) return "failed";
       }
       return "pass";
     }
-    log(`- Codex found ${r.report.must_fix.length} must-fix item(s); asking Claude to fix them (round ${round}/${cfg.codexRounds}).`);
+    log(`- ${REVIEWER} found ${r.report.must_fix.length} must-fix item(s); asking Claude to fix them (round ${round}/${cfg.codexRounds}).`);
     const f = runClaude(`codex-fix-${round}`, m, codexFixPrompt(m, mdFile), cfg.fixModel);
     if (!f.ok) return "failed";
-    if (!checksWithFixes(m, `after Codex fixes (round ${round})`)) return "failed";
+    if (!checksWithFixes(m, `after ${REVIEWER} fixes (round ${round})`)) return "failed";
   }
-  log(`- ⚠ Codex still had must-fix items after ${cfg.codexRounds} round(s). Logged to docs/DECISIONS_NEEDED.md for you; continuing.`);
+  log(`- ⚠ ${REVIEWER} still had must-fix items after ${cfg.codexRounds} round(s). Logged to docs/DECISIONS_NEEDED.md for you; continuing.`);
   const n = runClaude("codex-escalate", m, codexEscalatePrompt(m), cfg.fixModel);
   return n.ok ? "unresolved" : "failed";
 }
@@ -621,11 +707,11 @@ function codexReviewLoop(m, startSha) {
 function codexFixPrompt(m, mdFile) {
   return `${header("codex-fix", m)}
 
-An independent reviewer (OpenAI Codex, which did not write this code) reviewed ${m.id} and found problems. Its report is in ${mdFile}; read it in full.
+An independent reviewer (${REVIEWER}, in a separate session that did not write this code) reviewed ${m.id} and found problems. Its report is in ${mdFile}; read it in full.
 
 For each item under "Must fix":
 1. Check the evidence yourself against docs/BILLING_RULES.md, CLAUDE.md and the code. The reviewer can be wrong.
-2. If it's right: fix it properly, test-first (a failing test with a hand calculation in a comment, then the fix). One commit per item: "fix(${m.id}): <what>, found by Codex review".
+2. If it's right: fix it properly, test-first (a failing test with a hand calculation in a comment, then the fix). One commit per item: "fix(${m.id}): <what>, found by ${REVIEWER} review".
 3. If it's wrong: don't change the code. Append a short "Disputed" note to ${mdFile} explaining why, with the spec line that supports the current behaviour.
 Then go through "Should fix": fix the small, clearly correct ones; add the rest to docs/BACKLOG.md.
 Never weaken, skip or delete tests, and never change golden expectations in docs/BILLING_RULES.md. Finish with pnpm typecheck, pnpm lint and pnpm test passing.`;
@@ -634,13 +720,13 @@ Never weaken, skip or delete tests, and never change golden expectations in docs
 function codexTriagePrompt(m, mdFile) {
   return `${header("codex-triage", m)}
 
-An independent reviewer (OpenAI Codex) reviewed ${m.id} and found no must-fix problems, but listed suggestions under "Should fix" in ${mdFile}. Read it. Fix the ones that are small and clearly right (one commit each, "fix(${m.id}): <what>, from Codex review"); add the rest to docs/BACKLOG.md with file, problem and suggested fix. Don't weaken tests. Finish with pnpm typecheck, pnpm lint and pnpm test passing.`;
+An independent reviewer (${REVIEWER}) reviewed ${m.id} and found no must-fix problems, but listed suggestions under "Should fix" in ${mdFile}. Read it. Fix the ones that are small and clearly right (one commit each, "fix(${m.id}): <what>, from ${REVIEWER} review"); add the rest to docs/BACKLOG.md with file, problem and suggested fix. Don't weaken tests. Finish with pnpm typecheck, pnpm lint and pnpm test passing.`;
 }
 
 function codexEscalatePrompt(m) {
   return `${header("codex-escalate", m)}
 
-Codex (an independent reviewer) and you disagree, or its must-fix items couldn't be resolved, after ${cfg.codexRounds} rounds. Read the latest file matching .pipeline/reviews/${m.id}-codex-review-*.md. Add one entry to docs/DECISIONS_NEEDED.md of Type "product", Blocking: no, titled "Codex review of ${m.id}: unresolved items", with the remaining items, what each side says, and your recommendation. Update the summary table. Commit as "docs: escalate Codex review of ${m.id}".`;
+${REVIEWER} (an independent reviewer) and you disagree, or its must-fix items couldn't be resolved, after ${cfg.codexRounds} rounds. Read the latest file matching .pipeline/reviews/${m.id}-${RSLUG}-review-*.md. Add one entry to docs/DECISIONS_NEEDED.md of Type "product", Blocking: no, titled "${REVIEWER} review of ${m.id}: unresolved items", with the remaining items, what each side says, and your recommendation. Update the summary table. Commit as "docs: escalate ${REVIEWER} review of ${m.id}".`;
 }
 
 // Final independent verdict on the finished milestone, saved where the founder reads milestone reports.
@@ -650,21 +736,21 @@ function codexSignOff(m, startSha) {
     "",
     `This is the final sign-off after all fixes. Also read docs/milestones/${m.id}.md, the plain-language report written for the founder, and check that every claim in it is true in the code. Any false claim is a must_fix. In summary, write three to five sentences for a non-technical founder: what this milestone delivers, how confident you are in the money calculations, and what they should look at themselves.`,
   ].join("\n");
-  const r = runCodex("codex-signoff", m, prompt);
+  const r = runCodex(`${RSLUG}-signoff`, m, prompt);
   if (!r.ok) {
-    log("- ⚠ Codex sign-off failed; continuing without it.");
+    log(`- ⚠ ${REVIEWER} sign-off failed; continuing without it.`);
     return;
   }
-  const md = reportToMarkdown(`Independent review of ${m.id} (Codex)`, r.report);
-  fs.writeFileSync(path.join(REVIEWS, `${m.id}-codex-signoff.md`), md);
+  const md = reportToMarkdown(`Independent review of ${m.id} (${REVIEWER})`, r.report);
+  fs.writeFileSync(path.join(REVIEWS, `${m.id}-${RSLUG}-signoff.md`), md);
   if (!cfg.dryRun) {
     fs.mkdirSync("docs/milestones", { recursive: true });
     fs.writeFileSync(path.join("docs/milestones", `${m.id}-independent-review.md`), md);
     git(["add", "docs/milestones"]);
-    git(["commit", "-m", `docs: Codex sign-off for ${m.id} (${r.report.verdict})`]);
+    git(["commit", "-m", `docs: ${REVIEWER} sign-off for ${m.id} (${r.report.verdict})`]);
   }
   if (r.report.verdict === "fail") {
-    log(`- ⚠ Codex sign-off for ${m.id} is FAIL with ${r.report.must_fix.length} item(s). Read docs/milestones/${m.id}-independent-review.md.`);
+    log(`- ⚠ ${REVIEWER} sign-off for ${m.id} is FAIL with ${r.report.must_fix.length} item(s). Read docs/milestones/${m.id}-independent-review.md.`);
   }
 }
 
@@ -731,8 +817,8 @@ function runChecks(label) {
 
 // ---------- running Claude ----------
 
-function runClaude(stage, m, prompt, model) {
-  const cliArgs = ["-p", prompt, "--output-format", "json", "--permission-mode", "auto", "--permission-prompts", "none"];
+function runClaude(stage, m, prompt, model, extraArgs = []) {
+  const cliArgs = ["-p", prompt, "--output-format", "json", "--permission-mode", "auto", "--permission-prompts", "none", ...extraArgs];
   if (model) cliArgs.push("--model", model);
   let limitWaits = 0;
   let retried = false;
@@ -760,7 +846,7 @@ function runClaude(stage, m, prompt, model) {
 
     if (!failed) {
       log(`  ✔ done in ${mins} min${out.num_turns ? `, ${out.num_turns} turns` : ""}. ${short(oneLine(out.result || ""), 400)}`);
-      return { ok: true, result: out.result || "" };
+      return { ok: true, result: out.result || "", structured: out.structured_output };
     }
     if (r.error && r.error.code === "ENOENT") {
       finish("failed", `Couldn't run "${cfg.claudeBin}". Is Claude Code installed and on your PATH? (On Windows you may need CLAUDE_BIN=claude.exe.)`);
@@ -868,7 +954,7 @@ function preflight() {
   const v = spawnSync(cfg.claudeBin, ["--version"], { encoding: "utf8" });
   if (v.status !== 0) finish("failed", `Couldn't run "${cfg.claudeBin} --version". Is Claude Code installed?`);
   log(`- Claude Code ${oneLine(v.stdout)}`);
-  if (!cfg.noCodex) codexAvailable();
+  if (!cfg.noCodex && cfg.reviewer === "codex") codexAvailable();
   if (!gitClean()) {
     log("- ⚠ The working tree has uncommitted changes. The first stage will see them; commit or stash them if they aren't meant for the pipeline.");
   }

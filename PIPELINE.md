@@ -9,22 +9,24 @@
 3. **Checks:** the script itself runs `pnpm typecheck`, `lint`, `test`, `build` and the end-to-end tests. If any fail, a fix stage gets the error output; this repeats up to 3 times.
 4. **Review:** the billing and UX reviewer agents check the milestone's changes. "Must fix" items get fixed, small "Should fix" items too, and the rest go to `docs/BACKLOG.md`. Open questions are turned into settings or decisions.
 5. **Checks again.**
-6. **Independent review by Codex:** OpenAI's Codex CLI, which didn't write the code, reviews the milestone's changes in a read-only sandbox against the specs: it recomputes billing figures by hand, looks for spec drift, security gaps and roadmap tasks ticked but not working. Claude fixes what Codex finds, Codex re-checks, up to 2 rounds. If they still disagree, it's logged in `docs/DECISIONS_NEEDED.md` for you.
+6. **Independent review:** a fresh, read-only Claude Fable session (or Codex, with `--reviewer codex`) that didn't write the code reviews the milestone's changes against the specs: it recomputes billing figures by hand, looks for spec drift, security gaps and roadmap tasks ticked but not working. Opus fixes what it finds, the reviewer re-checks, up to 2 rounds. If they still disagree, it's logged in `docs/DECISIONS_NEEDED.md` for you.
 7. **Wrap-up:** docs updated, a plain-language report written to `docs/milestones/M#.md`, and the milestone tagged in git (`m2-done`, `m3-done`, …).
-8. **Codex sign-off:** a final independent verdict, including a check that every claim in the milestone report is true, saved as `docs/milestones/M#-independent-review.md`.
+8. **Independent sign-off:** a final independent verdict, including a check that every claim in the milestone report is true, saved as `docs/milestones/M#-independent-review.md`.
 9. On to the next milestone.
 
 Tasks that need a person are tagged `(human)` and skipped. Tasks waiting for a decision are tagged `(blocked: D-012)` and skipped until you answer. Everything else keeps going.
 
-## Set up Codex (the second reviewer)
+## The independent reviewer
 
-Codex is OpenAI's coding agent CLI. Here it only reads and reports; it never edits. Two AI models from different companies checking each other catches more than one model reviewing itself.
+By default it's **Claude Fable** in its own session, with no file-editing tools. It returns a structured report and never changes code. Pick a different Claude model with `--reviewer-model <name>`.
+
+To use **Codex** (OpenAI's coding agent CLI) instead, pass `--reviewer codex`. Two models from different companies catch more than one model family reviewing itself, so it's worth switching back when Codex is available. Codex setup:
 
 1. Install: `npm install -g @openai/codex`
 2. Sign in: `codex login` (uses a ChatGPT Plus/Pro/Team account), or set `CODEX_API_KEY` to an OpenAI API key.
 3. Check: `codex --version`
 
-If Codex isn't installed, the pipeline warns and skips those stages. Pass `--require-codex` to make it stop instead, or `--no-codex` to skip on purpose.
+With `--reviewer codex`, if Codex isn't installed the pipeline warns and skips those stages; pass `--require-codex` to make it stop instead. `--no-codex` skips the independent review stages with either reviewer.
 
 ## Start it
 
@@ -46,11 +48,13 @@ Useful options:
 | `node scripts/pipeline.mjs --to M4` | Stop after M4 |
 | `node scripts/pipeline.mjs --from M3 --to M3` | Run only M3 |
 | `node scripts/pipeline.mjs --dry-run` | Show what would run, without running anything |
-| `node scripts/pipeline.mjs --fix-model sonnet` | Use a faster model for fix, review and wrap-up stages (build stays on your default) |
+| `node scripts/pipeline.mjs --fix-model sonnet` | Use a different model for fix, review and wrap-up stages (default `opus`; build stays on your default) |
 | `node scripts/pipeline.mjs --skip-e2e` | Skip end-to-end tests in the checks (faster, less thorough) |
-| `node scripts/pipeline.mjs --codex-model <name>` | Pick the Codex model (otherwise Codex's default) |
-| `node scripts/pipeline.mjs --codex-rounds 3` | More Codex review/fix rounds per milestone (default 2) |
-| `node scripts/pipeline.mjs --no-codex` | Skip the Codex stages |
+| `node scripts/pipeline.mjs --reviewer codex` | Use Codex as the independent reviewer (default: Claude Fable) |
+| `node scripts/pipeline.mjs --reviewer-model <name>` | Pick the Claude reviewer model (default `fable`) |
+| `node scripts/pipeline.mjs --codex-model <name>` | Pick the Codex model, with `--reviewer codex` (otherwise Codex's default) |
+| `node scripts/pipeline.mjs --codex-rounds 3` | More independent review/fix rounds per milestone (default 2) |
+| `node scripts/pipeline.mjs --no-codex` | Skip the independent review stages |
 
 ## The overnight command
 
@@ -60,9 +64,9 @@ One command that finishes the build, audits everything, has the reviewers debate
 caffeinate -i node scripts/pipeline.mjs --overnight
 ```
 
-Who does what: **Opus** builds and fixes, **Fable** is the boss (reviews each milestone, judges the debate, writes the reports), **Codex** is the outside reviewer (independent review of every milestone, the audit, and one side of the debate). Override with `--build-model`, `--boss-model`, `--fix-model`, `--codex-model`.
+Who does what: **Opus** builds and fixes, **Fable** is the boss (reviews each milestone, judges the debate, writes the reports) and also the independent reviewer (review of every milestone, the audit, and one side of the debate). Fable and Opus are the defaults in every run, not only overnight. Override with `--build-model`, `--boss-model`, `--fix-model`, `--reviewer-model`, or `--reviewer codex`.
 
-The debate: Codex and Opus each write a gap analysis without seeing the other's, then each rebuts the other's list item by item with evidence from the code. Fable reads all four documents, rules on every disputed item (`docs/audit/RULINGS.md`), and turns the result into `M9. Audit findings` in the roadmap, which is then built like any other milestone.
+The debate: Fable (or Codex) and Opus each write a gap analysis without seeing the other's, then each rebuts the other's list item by item with evidence from the code. Fable reads all four documents, rules on every disputed item (`docs/audit/RULINGS.md`), and turns the result into a new `Audit findings` milestone (the next free number) in the roadmap, which is then built like any other milestone.
 
 Read `docs/audit/SUMMARY.md` in the morning.
 
@@ -74,9 +78,9 @@ Once the build is through M7, run:
 node scripts/pipeline.mjs --audit
 ```
 
-Codex audits each milestone against the code as it stands today (every ticked task must actually work; figures recomputed by hand), Claude fixes what it finds, Codex re-checks. Then Codex and Claude each write an independent gap analysis against the product plan and the pilot goal, without seeing each other's. Claude merges them into a new roadmap milestone, `M9. Audit findings`, and writes `docs/audit/SUMMARY.md` for you: demo-ready or not, pilot-ready or not, top three things to do, and where the two reviewers disagreed.
+The previous audit is first moved to `docs/audit/<date>/`, and this one checks its findings were really fixed. Fable audits each milestone against the code as it stands today (every ticked task must actually work; figures recomputed by hand), Opus fixes what it finds, Fable re-checks, up to `--codex-rounds` times. Then Fable and Opus each write an independent gap analysis against the product plan and the pilot goal, without seeing each other's, and rebut each other's. Fable rules and turns the result into a new roadmap milestone, `Audit findings` (the next free number), and writes `docs/audit/SUMMARY.md` for you: demo-ready or not, pilot-ready or not, top three things to do, and where the two reviewers disagreed.
 
-Then run `node scripts/pipeline.mjs` again to build M9. To do both without coming back:
+Then run `node scripts/pipeline.mjs` again to build it. To do both without coming back:
 
 ```
 node scripts/pipeline.mjs --to M7 && node scripts/pipeline.mjs --audit && node scripts/pipeline.mjs
@@ -87,8 +91,8 @@ node scripts/pipeline.mjs --to M7 && node scripts/pipeline.mjs --audit && node s
 ## Check on it
 
 - **`.pipeline/status.md`**: a running log of every stage, how long it took, and a one-line summary
-- **`docs/milestones/`**: one plain-language report per finished milestone, plus Codex's independent verdict (`M#-independent-review.md`). Read the verdict first; a FAIL there means the two reviewers disagree and you should look.
-- **`.pipeline/reviews/`**: every Codex report, each round
+- **`docs/milestones/`**: one plain-language report per finished milestone, plus the independent reviewer's verdict (`M#-independent-review.md`). Read the verdict first; a FAIL there means the two reviewers disagree and you should look.
+- **`.pipeline/reviews/`**: every independent review report, each round
 - **`git log --oneline`**: every task is its own commit
 - **`.pipeline/logs/`**: the full output of every stage, if something went wrong
 
@@ -117,7 +121,7 @@ Run `node scripts/pipeline.mjs` again to continue where it left off.
 | Unfinished tasks after 3 build rounds | Read the latest build log in `.pipeline/logs/`; usually a task was too big or stuck. Run again, or split the task in the roadmap |
 | Checks still failing after 3 fix attempts | Look at the last fix log. Open Claude Code and ask it to fix the failing check, then run again |
 | Usage limit | It waits and retries on its own (every 30 minutes, up to 6 hours). On the Pro plan you'll hit limits often; Max helps |
-| Codex isn't logged in | Run `codex login` and start again, or pass `--no-codex` |
+| Codex isn't logged in (with `--reviewer codex`) | Run `codex login` and start again, or drop `--reviewer codex` |
 
 ## How long it takes
 
